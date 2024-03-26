@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org/"
+      th:replace="base::layout(~{::section})">
+<head>
+  <meta charset="UTF-8">
+  <title>Home Page</title>
+</head>
+<body>
+<section class="container">
+  <div class="row justify-content-center">
+    <div class="col-md-6">
+      <h4 class="text-center">Add User</h4>
+      <div th:if="${session.message}" th:classappend="${session.message.type}" class="alert" role="alert">
+        <p th:text="${session.message.content}"></p>
+        <th:block th:text="${@sessionHelper.removeMessagesFromSession()}"></th:block>
+      </div>
+      <form action="" th:action="@{/do_add_user}" method="post" th:object="${user}">
+        <div class="form-group">
+          <label for="inputName">Name</label>
+          <input required name="name" type="text" class="form-control form-control-sm" id="inputName" placeholder="Enter name" th:value="${user.name}" />
+        </div>
+        <div class="form-group">
+          <label for="inputUsername">Username</label>
+          <input required name="username" type="text" class="form-control form-control-sm" id="inputUsername" placeholder="Enter username" th:value="${user.username}">
+        </div>
+        <div class="form-group">
+          <label for="inputEmail">Email address</label>
+          <input required name="email" type="email" class="form-control form-control-sm" id="inputEmail" placeholder="Enter email" th:value="${user.email}">
+        </div>
+        <div class="form-group">
+          <label for="inputPassword">Password</label>
+          <input required name="password" type="password" class="form-control form-control-sm" id="inputPassword" placeholder="Password">
+        </div>
+<!--        <div class="form-group">-->
+<!--          <label for="inputRole">Role</label>-->
+<!--          <select name="role" id="inputRole" class="form-control form-control-sm" th:value="${user.role}">-->
+<!--            <option selected>Choose...</option>-->
+<!--            &lt;!&ndash; Add options dynamically based on roles &ndash;&gt;-->
+<!--          </select>-->
+<!--        </div>-->
+<!--        <div class="form-group">-->
+<!--          <label for="inputActiveStatus">Active Status</label>-->
+<!--          <select name="activeStatus" id="inputActiveStatus" class="form-control form-control-sm" th:value="${user.activeStatus}">-->
+<!--            <option selected>Choose...</option>-->
+<!--            &lt;!&ndash; Add options for active status &ndash;&gt;-->
+<!--          </select>-->
+<!--        </div>-->
+        <div class="form-group">
+          <label for="inputImageUrl">Image URL</label>
+          <input name="imageUrl" type="text" class="form-control form-control-sm" id="inputImageUrl" placeholder="Enter image URL">
+        </div>
+        <div class="form-group">
+          <label for="inputContactNumber">Contact Number</label>
+          <input name="contactNumber" type="text" class="form-control form-control-sm" id="inputContactNumber" placeholder="Enter contact number" th:value="${user.contactNumber}">
+        </div>
+        <div class="">
+          <button type="submit" class="btn btn-primary btn-sm btn-block">Submit</button>
+          <button type="reset" class="btn btn-info btn-sm btn-block">Reset</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</section>
+</body>
+
+</html>
