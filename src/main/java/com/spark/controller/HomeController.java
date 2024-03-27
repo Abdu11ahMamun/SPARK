@@ -17,7 +17,8 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import javax.validation.Valid;
 
 @Controller
-public class HomeController {
+public class
+HomeController {
     @Autowired
     private UserRepository userRepository;
     @RequestMapping(value = "/")
