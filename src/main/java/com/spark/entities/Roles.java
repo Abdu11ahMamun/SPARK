@@ -1,8 +1,8 @@
 package com.spark.entities;
 
 public enum Roles {
-    ADMIN,
-    DEVELOPER,
-    PRODUCT_OWNER,
-    SCRUM_MASTER
+    ROLE_ADMIN,
+    ROLE_DEVELOPER,
+    ROLE_PRODUCT_OWNER,
+    ROLE_SCRUM_MASTER
 }

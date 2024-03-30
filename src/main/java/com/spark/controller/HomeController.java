@@ -7,6 +7,7 @@ import com.spark.helper.Message;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpMethod;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -19,6 +20,8 @@ import javax.validation.Valid;
 @Controller
 public class
 HomeController {
+    @Autowired
+    private BCryptPasswordEncoder passwordEncoder;
     @Autowired
     private UserRepository userRepository;
     @RequestMapping(value = "/")
@@ -38,6 +41,12 @@ HomeController {
         model.addAttribute("user", new User());
         return "addUser";
     }
+    @RequestMapping(value = "/testing")
+    public String testing(Model model) {
+        model.addAttribute("title", "Add User");
+        model.addAttribute("user", new User());
+        return "devtesting";
+    }
 
     @RequestMapping(value = "/do_add_user", method = RequestMethod.POST)
     public String doAddUser(@Valid @ModelAttribute("user") User user, Model model, HttpSession session) {
@@ -47,7 +56,8 @@ HomeController {
 //               return "addUser";
 //           }
            //System.out.println("USER: " + user);
-           user.setRole(Roles.ADMIN);
+           user.setPassword(passwordEncoder.encode(user.getPassword()));
+           user.setRole(Roles.ROLE_ADMIN);
            User result = this.userRepository.save(user);
            model.addAttribute("user", new User());
            session.setAttribute("message",new Message("Data Save Successfully","alert-success"));

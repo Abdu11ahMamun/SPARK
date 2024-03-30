@@ -1,5 +1,6 @@
 <!doctype html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org/"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
         th:replace="base::layout(~{::section})">
 <head>
     <meta charset="UTF-8">
@@ -8,6 +9,8 @@
 <body>
 <section class="d-flex justify-content-center align-items-center vh-120">
     <div class="text-center">
+        <p>User: <span sec:authentication="username">NOT FOUND</span></p>
+        <p>Spring Roles: <span sec:authentication="principal.authorities">NOT FOUND</span></p>
         <h1>Sprint Planning and Agile Resource Keeper</h1>
         <button class="btn btn-primary btn-sm">Get Started</button>
     </div>
