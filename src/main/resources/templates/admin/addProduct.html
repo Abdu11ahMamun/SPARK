@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org/"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      th:replace="base::layout(~{::section})">
+<head>
+    <meta charset="UTF-8">
+    <title>Add Products</title>
+</head>
+<body>
+<section class="d-flex justify-content-center align-items-center vh-120">
+<div class="container">
+    <h2>Add Product</h2>
+    <form th:action="@{/admin/do_add_product}" th:object="${product}" method="post">
+        <div th:if="${session.message}" th:classappend="${session.message.type}" class="alert" role="alert">
+            <p th:text="${session.message.content}"></p>
+            <th:block th:text="${@sessionHelper.removeMessagesFromSession()}"></th:block>
+        </div>
+        <div class="form-group">
+            <label for="name">Product Name</label>
+            <input type="text" th:field="*{name}" class="form-control" id="name" placeholder="Enter product name">
+        </div>
+        <div class="form-group">
+            <label for="description">Description</label>
+            <textarea th:field="*{description}" class="form-control" id="description" placeholder="Enter product description"></textarea>
+        </div>
+        <div class="form-group form-check">
+            <input type="checkbox" th:field="*{activeStatus}" class="form-check-input" id="activeStatus">
+            <label class="form-check-label" for="activeStatus">Active Status</label>
+        </div>
+        <div class="form-group">
+            <label for="productOwner">Product Owner</label>
+            <select th:field="*{productOwner.id}" class="form-control" id="productOwner">
+                <option th:each="admin : ${admins}" th:value="${admin.id}" th:text="${admin.name}"></option>
+            </select>
+        </div>
+
+        <button type="submit" class="btn btn-primary">Submit</button>
+    </form>
+</div>
+</section>
+</body>
+</html>

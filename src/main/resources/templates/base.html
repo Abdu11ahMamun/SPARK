@@ -32,11 +32,11 @@
       <li class="nav-item">
         <a class="nav-link" th:href="@{/admin/teams}" href="#">Teams</a>
       </li>
-      <li class="nav-item" sec:authorize="hasRole('USER')">
-        <a class="nav-link" th:href="@{/testing}" href="#">Testing</a>
+      <li class="nav-item" sec:authorize="hasRole('ADMIN')">
+        <a class="nav-link" th:href="@{/admin/products}" href="#">Products</a>
       </li>
       <li class="nav-item" sec:authorize="hasRole('ADMIN')">
-        <a class="nav-link" th:href="@{/addUser}" href="#">Old Admin</a>
+        <a class="nav-link" th:href="@{/admin/modules}" href="#">Modules</a>
       </li>
       <li class="nav-item" sec:authorize="hasRole('DEVELOPER')">
         <a class="nav-link" th:href="@{/common/addUser}" href="#">DEVELOPER</a>

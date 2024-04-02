@@ -2,6 +2,9 @@ package com.spark.entities;
 
 import jakarta.persistence.*;
 
+import java.util.Date;
+import java.util.Set;
+
 @Entity
 @Table(name = "PRODUCT")
 public class Product {
@@ -15,6 +18,13 @@ public class Product {
     private String description;
     private boolean activeStatus;
 
+    @Temporal(TemporalType.TIMESTAMP)
+    private Date createdAt;
+
+    @Temporal(TemporalType.TIMESTAMP)
+    private Date updatedAt;
+    @OneToMany(mappedBy = "product", cascade = CascadeType.ALL)
+    private Set<Module> modules;
     public Product() {
         super();
     }
@@ -58,5 +68,22 @@ public class Product {
 
     public void setActiveStatus(boolean activeStatus) {
         this.activeStatus = activeStatus;
+    }
+
+    public Set<Module> getModules() {
+        return modules;
+    }
+
+    public void setModules(Set<Module> modules) {
+        this.modules = modules;
+    }
+    @PrePersist
+    protected void onCreate() {
+        createdAt = new Date();
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        updatedAt = new Date();
     }
 }
