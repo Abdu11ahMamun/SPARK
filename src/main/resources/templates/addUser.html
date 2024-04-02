@@ -31,20 +31,22 @@
           <label for="inputPassword">Password</label>
           <input required name="password" type="password" class="form-control form-control-sm" id="inputPassword" placeholder="Password">
         </div>
-<!--        <div class="form-group">-->
-<!--          <label for="inputRole">Role</label>-->
-<!--          <select name="role" id="inputRole" class="form-control form-control-sm" th:value="${user.role}">-->
-<!--            <option selected>Choose...</option>-->
-<!--            &lt;!&ndash; Add options dynamically based on roles &ndash;&gt;-->
-<!--          </select>-->
-<!--        </div>-->
-<!--        <div class="form-group">-->
-<!--          <label for="inputActiveStatus">Active Status</label>-->
-<!--          <select name="activeStatus" id="inputActiveStatus" class="form-control form-control-sm" th:value="${user.activeStatus}">-->
-<!--            <option selected>Choose...</option>-->
-<!--            &lt;!&ndash; Add options for active status &ndash;&gt;-->
-<!--          </select>-->
-<!--        </div>-->
+        <div class="form-group">
+          <label for="inputRole">Role</label>
+          <select name="role" id="inputRole" class="form-control form-control-sm" th:value="${user.role}">
+            <option selected>Choose...</option>
+            <option th:each="role : ${T(com.spark.entities.Roles).values()}"
+                    th:text="${role}" th:value="${role}"></option>
+          </select>
+        </div>
+        <div class="form-group">
+            <label for="inputActiveStatus">Active Status</label>
+            <select name="activeStatus" id="inputActiveStatus" class="form-control form-control-sm" th:value="${user.activeStatus}">
+                <option value="" selected>Choose...</option>
+                <option value="true">Active</option>
+                <option value="false">Inactive</option>
+            </select>
+        </div>
         <div class="form-group">
           <label for="inputImageUrl">Image URL</label>
           <input name="imageUrl" type="text" class="form-control form-control-sm" id="inputImageUrl" placeholder="Enter image URL">
@@ -52,6 +54,12 @@
         <div class="form-group">
           <label for="inputContactNumber">Contact Number</label>
           <input name="contactNumber" type="text" class="form-control form-control-sm" id="inputContactNumber" placeholder="Enter contact number" th:value="${user.contactNumber}">
+        </div>
+        <div class="form-group">
+          <label for="inputTeam">Team</label>
+          <select name="teams" id="inputTeam" class="form-control form-control-sm" multiple="multiple">
+            <option th:each="team : ${teams}" th:text="${team.name}" th:value="${team.teamId}"></option>
+          </select>
         </div>
         <div class="">
           <button type="submit" class="btn btn-primary btn-sm btn-block">Submit</button>
@@ -61,6 +69,12 @@
     </div>
   </div>
 </section>
+<script>
+  $(document).ready(function() {
+      $('#inputTeam').multiselect({
+          includeSelectAllOption: true
+      });
+  });
+</script>
 </body>
-
 </html>

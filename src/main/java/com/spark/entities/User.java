@@ -42,6 +42,17 @@ public class User {
             inverseJoinColumns = @JoinColumn(name = "team_id"))
     private Set<Team> teams;
 
+    @OneToMany(mappedBy = "productOwner", cascade = CascadeType.ALL)
+    private Set<Product> products;
+
+    public Set<Product> getProducts() {
+        return products;
+    }
+
+    public void setProducts(Set<Product> products) {
+        this.products = products;
+    }
+
     public String getContactNumber() {
         return contactNumber;
     }
@@ -127,7 +138,15 @@ public class User {
     public void setImageUrl(String imageUrl) {
         this.imageUrl = imageUrl;
     }
+    private String teamsString;
 
+    public String getTeamsString() {
+        return teamsString;
+    }
+
+    public void setTeamsString(String teamsString) {
+        this.teamsString = teamsString;
+    }
     @Override
     public String toString() {
         return "User{" +

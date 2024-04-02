@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org/"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      th:replace="base::layout(~{::section})">
+<head>
+    <meta charset="UTF-8">
+    <title>Add Team</title>
+</head>
+<body>
+<section class="d-flex justify-content-center align-items-center vh-120">
+    <div class="container">
+        <div class="row justify-content-end mb-3">
+            <div class="col-auto">
+                <a th:href="@{/admin/teams}" class="btn btn-info">Teams</a>
+            </div>
+        </div>
+        <div class="row justify-content-center">
+            <div class="text-center">
+                <h1 class="mt-5">Add Team</h1>
+                <form action="#" th:action="@{/admin/do_add_team}" th:object="${team}" method="post" class="mt-4">
+                    <div th:if="${session.message}" th:classappend="${session.message.type}" class="alert" role="alert">
+                        <p th:text="${session.message.content}"></p>
+                        <th:block th:text="${@sessionHelper.removeMessagesFromSession()}"></th:block>
+                    </div>
+                    <div class="form-group">
+                        <label for="name">Team Name:</label>
+                        <input type="text" id="name" th:field="*{name}" name="name" class="form-control">
+                    </div>
+                    <div class="form-group">
+                        <label for="slogan">Slogan:</label>
+                        <input type="text" id="slogan" th:field="*{slogan}" name="slogan" class="form-control">
+                    </div>
+                    <div class="form-group">
+                        <label for="description">Description:</label>
+                        <textarea id="description" th:field="*{description}" name="description" class="form-control"></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Submit</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</section>
+</body>
+</html>

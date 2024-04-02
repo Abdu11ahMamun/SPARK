@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org/"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      th:replace="base::layout(~{::section})">
+<head>
+    <meta charset="UTF-8">
+    <title>Home Page</title>
+</head>
+<body>
+<section class="d-flex justify-content-center align-items-center vh-120">
+    <div class="text-center">
+<!--        <p>User: <span sec:authentication="username">NOT FOUND</span></p>-->
+<!--        <p>Spring Roles: <span sec:authentication="principal.authorities">NOT FOUND</span></p>-->
+        <h1>Username: <span th:text="${user.name}"></span></h1>
+        <h1>email: <span th:text="${user.email}"></span></h1>
+        <h1>phone: <span th:text="${user.contactNumber}"></span></h1>
+        <h1>Role: <span th:text="${user.role}"></span></h1>
+
+    </div>
+</section>
+</body>
+</html>

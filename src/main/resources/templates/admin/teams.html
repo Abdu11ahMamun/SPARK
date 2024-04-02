@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org/"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      th:replace="base::layout(~{::section})">
+<head>
+    <meta charset="UTF-8">
+    <title>Home Page</title>
+</head>
+<body>
+<section class="d-flex justify-content-center align-items-center vh-120">
+    <div class="container">
+        <div class="row justify-content-end mb-3">
+            <div class="col-auto">
+                <a th:href="@{/admin/addTeam}" class="btn btn-info">Add Team</a>
+            </div>
+        </div>
+        <div class="row justify-content-center">
+            <div class="text-center">
+                <table class="table table-striped">
+                    <thead>
+                    <tr>
+                        <th scope="col">#</th>
+                        <th scope="col">Team Name</th>
+                        <th scope="col">Slogan</th>
+                        <th scope="col">Description</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="team, stat : ${teams}">
+                        <th scope="row" th:text="${stat.count}"></th>
+                        <td th:text="${team.name}"></td>
+                        <td th:text="${team.slogan}"></td>
+                        <td th:text="${team.description}"></td>
+                    </tr>
+                    </tbody>
+                </table>
+
+                <!-- Pagination -->
+                <div th:if="${teams.totalPages > 1}" class="d-flex justify-content-center">
+                    <ul class="pagination">
+                        <li th:class="${teams.first ? 'page-item disabled' : 'page-item'}">
+                            <a class="page-link" th:href="@{/teams(page=${teams.number - 1})}">Previous</a>
+                        </li>
+                        <li th:each="pageNumber : ${#numbers.sequence(0, teams.totalPages - 1)}"
+                            th:class="${pageNumber == teams.number ? 'page-item active' : 'page-item'}">
+                            <a class="page-link" th:href="@{/teams(page=${pageNumber})}" th:text="${pageNumber + 1}"></a>
+                        </li>
+                        <li th:class="${teams.last ? 'page-item disabled' : 'page-item'}">
+                            <a class="page-link" th:href="@{/teams(page=${teams.last ? teams.number : teams.number + 1})}">Next</a>
+                        </li>
+
+                    </ul>
+                </div>
+
+                <!-- End Pagination -->
+            </div>
+        </div>
+    </div>
+</section>
+</body>
+</html>
