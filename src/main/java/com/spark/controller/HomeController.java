@@ -156,12 +156,19 @@ HomeController {
             return "backlogs";
         }
         @GetMapping("/sprints")
-    public String getAllSprints(Model model, @RequestParam(defaultValue = "0") int page) {
+        public String getAllSprints(Model model, @RequestParam(defaultValue = "0") int page) {
         Pageable pageable = PageRequest.of(page, 10);
         Page<Sprint> sprints = sprintService.getAllSprints(pageable);
         model.addAttribute("sprints", sprints);
         return "sprints";
-    }
+        }
+        @GetMapping("/api/sprints")
+        @ResponseBody
+        public List<Sprint> getSprintsJson(@RequestParam(defaultValue = "0") int page) {
+            Pageable pageable = PageRequest.of(page, 10);
+            Page<Sprint> sprints = sprintService.getAllSprints(pageable);
+            return sprints.getContent();
+        }
 
     @GetMapping("/addSprint")
     public String showAddSprintForm(Model model) {
