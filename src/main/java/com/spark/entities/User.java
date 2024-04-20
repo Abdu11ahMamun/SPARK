@@ -3,6 +3,7 @@ package com.spark.entities;
 import jakarta.persistence.*;
 
 import javax.validation.constraints.NotBlank;
+import java.util.List;
 import java.util.Set;
 
 @Entity
@@ -44,6 +45,19 @@ public class User {
 
     @OneToMany(mappedBy = "productOwner", cascade = CascadeType.ALL)
     private Set<Product> products;
+
+    @OneToMany(mappedBy = "assignedPerson")
+    private List<SprintTask> assignedTasks;
+
+
+    public List<SprintTask> getAssignedTasks() {
+        return assignedTasks;
+    }
+
+    public void setAssignedTasks(List<SprintTask> assignedTasks) {
+        this.assignedTasks = assignedTasks;
+    }
+
 
     public Set<Product> getProducts() {
         return products;

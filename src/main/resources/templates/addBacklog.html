@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org/"
+      th:replace="base::layout(~{::section})">
+<head>
+    <meta charset="UTF-8">
+    <title>Add Backlog</title>
+</head>
+<body>
+<section class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <h4 class="text-center">Add Backlog</h4>
+            <div th:if="${session.message}" th:classappend="${session.message.type}" class="alert" role="alert">
+                <p th:text="${session.message.content}"></p>
+                <th:block th:text="${@sessionHelper.removeMessagesFromSession()}"></th:block>
+            </div>
+            <form action="" th:action="@{/do_add_backlog}" method="post" th:object="${backlog}">
+                <div class="form-group">
+                    <label for="inputName">Name</label>
+                    <input required name="name" type="text" class="form-control form-control-sm" id="inputName"
+                           placeholder="Enter name" th:value="${backlog.name}"/>
+                </div>
+                <div class="form-group">
+                    <label for="inputTaskType">Task Type</label>
+                    <select name="taskType" id="inputTaskType" class="form-control form-control-sm"
+                            th:value="${backlog.taskType}">
+                        <option th:each="taskType : ${T(com.spark.enums.TaskType).values()}"
+                                th:text="${taskType}" th:value="${taskType}"></option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="inputPriority">Priority</label>
+                    <select name="priority" id="inputPriority" class="form-control form-control-sm"
+                            th:value="${backlog.priority}">
+                        <option th:each="priority : ${T(com.spark.enums.Priority).values()}"
+                                th:text="${priority}" th:value="${priority}"></option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="inputSourceReference">Source Reference</label>
+                    <select name="sourceReference" id="inputSourceReference" class="form-control form-control-sm"
+                            th:value="${backlog.sourceReference}">
+                        <option th:each="sourceReference : ${T(com.spark.enums.SourceReference).values()}"
+                                th:text="${sourceReference}" th:value="${sourceReference}"></option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="inputStatus">Status</label>
+                    <select name="status" id="inputStatus" class="form-control form-control-sm"
+                            th:value="${backlog.status}">
+                        <option th:each="status : ${T(com.spark.enums.Status).values()}"
+                                th:text="${status}" th:value="${status}"></option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="inputDescription">Description</label>
+                    <textarea name="description" class="form-control form-control-sm" id="inputDescription" rows="3"
+                              th:value="${backlog.description}"></textarea>
+                </div>
+<!--                <div class="form-group">-->
+<!--                    <label for="inputStartDate">Start Date</label>-->
+<!--                    <input name="startDate" type="date" class="form-control form-control-sm" id="inputStartDate"-->
+<!--                           th:value="${backlog.startDate}"/>-->
+<!--                </div>-->
+<!--                <div class="form-group">-->
+<!--                    <label for="inputEndDate">End Date</label>-->
+<!--                    <input name="endDate" type="date" class="form-control form-control-sm" id="inputEndDate"-->
+<!--                           th:value="${backlog.endDate}"/>-->
+<!--                </div>-->
+<!--                <div class="form-group">-->
+<!--                    <label for="inputImageUrl">Image URL</label>-->
+<!--                    <input name="imageUrl" type="text" class="form-control form-control-sm" id="inputImageUrl"-->
+<!--                           placeholder="Enter image URL" th:value="${backlog.imageUrl}"/>-->
+<!--                </div>-->
+                <div class="form-group">
+                    <label for="inputModule">Module</label>
+                    <select class="form-control" id="inputModule" th:field="*{module.id}">
+                        <option th:each="module : ${modules}" th:value="${module.id}" th:text="${module.name}"></option>
+                    </select>
+                </div>
+<!--                <div class="form-group">-->
+<!--                    <label for="inputSprint">Sprint</label>-->
+<!--                    <select name="sprint" id="inputSprint" class="form-control form-control-sm"-->
+<!--                            th:value="${backlog.sprint}">-->
+<!--                        <option th:each="sprint : ${sprints}" th:text="${sprint.name}"-->
+<!--                                th:value="${sprint.sprintId}"></option>-->
+<!--                    </select>-->
+<!--                </div>-->
+                <div class="form-group">
+                    <label for="inputTeam">Team</label>
+                    <select name="teams" id="inputTeam" class="form-control form-control-sm" multiple="multiple">
+                        <option th:each="team : ${teams}" th:text="${team.name}" th:value="${team.teamId}"></option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="inputClient">Client</label>
+                    <select name="client" id="inputClient" class="form-control form-control-sm">
+                        <option th:each="client : ${clients}" th:text="${client.name}" th:value="${client.id}"></option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="inputAssignedTo">Assigned To</label>
+                    <select name="assignedTo" id="inputAssignedTo" class="form-control form-control-sm"
+                            th:value="${backlog.assignedTo}">
+                        <option th:each="user : ${users}" th:text="${user.name}" th:value="${user.id}"></option>
+                    </select>
+                </div>
+<!--                <div class="form-group">-->
+<!--                    <label for="inputEstimatedTime">Target Date</label>-->
+<!--                    <input name="estimatedTime" type="date" class="form-control form-control-sm" id="inputEstimatedTime"-->
+<!--                           th:value="${backlog.estimatedTime}"/>-->
+<!--                </div>-->
+
+
+<!--                <div class="form-group">-->
+<!--                    <label for="inputAttachments">Attachments</label><br>-->
+<!--                    <input type="file" id="inputAttachments" name="attachments" multiple>-->
+<!--                </div>-->
+
+<!--                <div class="form-group">-->
+<!--                    <label for="inputDependencies">Dependencies</label>-->
+<!--                    <select name="dependencies" id="inputDependencies" class="form-control form-control-sm"-->
+<!--                            multiple="multiple">-->
+<!--                        <option th:each="backlog : ${backlogs}" th:text="${backlog.name}"-->
+<!--                                th:value="${backlog.id}"></option>-->
+<!--                    </select>-->
+<!--                </div>-->
+
+
+                <div class="">
+                    <button type="submit" class="btn btn-primary btn-sm btn-block">Submit</button>
+                    <button type="reset" class="btn btn-info btn-sm btn-block">Reset</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</section>
+</body>
+</html>

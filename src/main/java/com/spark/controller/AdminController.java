@@ -1,9 +1,6 @@
 package com.spark.controller;
 
-import com.spark.config.service.ModuleService;
-import com.spark.config.service.ProductService;
-import com.spark.config.service.TeamService;
-import com.spark.config.service.UserService;
+import com.spark.config.service.*;
 import com.spark.dto.ModuleRepository;
 import com.spark.dto.TeamRepository;
 import com.spark.dto.UserRepository;
@@ -41,6 +38,9 @@ public class AdminController {
     private ModuleService moduleService;
 
     @Autowired
+    private ClientService clientService;
+
+    @Autowired
     private UserService userService;
     @RequestMapping("/index")
     public String dashboard(Model model, Principal principal) {
@@ -66,7 +66,8 @@ public class AdminController {
 
     @RequestMapping(value = "/do_add_team", method = RequestMethod.POST)
     public String doAddTeam(@ModelAttribute("team") Team team, Model model, Principal principal, HttpSession session) {
-        String username = principal.getName();
+//        String username = principal.getName();
+        String username = "admin";
         User user = userRepository.getUserByUsername(username);
         team.setUsers(Set.of(user));
         model.addAttribute("user", new User());
@@ -84,7 +85,8 @@ public class AdminController {
     public String addProduct(Model model, Principal principal){
         model.addAttribute("title", "Add Product");
         model.addAttribute("product", new Product());
-        String username = principal.getName();
+//        String username = principal.getName();
+        String username = "admin";
         User user= userRepository.getUserByUsername(username);
         model.addAttribute("user", user);
         List<User> admins = userRepository.findByRole(Roles.ROLE_ADMIN); // fetch only users with ROLE_ADMIN
@@ -119,6 +121,7 @@ public class AdminController {
         model.addAttribute("module", new com.spark.entities.Module());
         model.addAttribute("teams", teams);
         model.addAttribute("products", products);
+        model.addAttribute("clients", clientService.getAllClients());
         List<User> admins = userRepository.findByRole(Roles.ROLE_ADMIN); // fetch only users with ROLE_ADMIN
         model.addAttribute("users", admins);
         return "admin/addModule";
@@ -143,6 +146,7 @@ public class AdminController {
     public String showModulesPage(Model model, @RequestParam(defaultValue = "0") int page) {
         Page<Module> modulesPage = moduleService.getAllModules(PageRequest.of(page, 10));
         model.addAttribute("modules", modulesPage);
+        model.addAttribute("clients", clientService.getAllClients());
         return "admin/modules";
     }
 }

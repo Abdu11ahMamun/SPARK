@@ -38,8 +38,11 @@
       <li class="nav-item" sec:authorize="hasRole('ADMIN')">
         <a class="nav-link" th:href="@{/admin/modules}" href="#">Modules</a>
       </li>
-      <li class="nav-item" sec:authorize="hasRole('DEVELOPER')">
-        <a class="nav-link" th:href="@{/common/addUser}" href="#">DEVELOPER</a>
+      <li class="nav-item" sec:authorize="hasRole('ADMIN')">
+        <a class="nav-link" th:href="@{/backlogs}" href="#">Backlog</a>
+      </li>
+      <li class="nav-item" sec:authorize="hasRole('ADMIN')">
+        <a class="nav-link" th:href="@{/sprints}" href="#">Sprints</a>
       </li>
       <li class="nav-item" sec:authorize="!isAuthenticated()">
         <a class="nav-link" th:href="@{/login}" href="#">Login</a>

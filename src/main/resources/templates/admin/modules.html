@@ -24,6 +24,7 @@
                             <th>Release Version</th>
                             <th>Owner</th>
                             <th>Product</th>
+                            <th>Clients</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -33,6 +34,11 @@
                             <td th:text="${module.releaseVersion}"></td>
                             <td th:text="${module.owner.name}"></td>
                             <td th:text="${module.product.name}"></td>
+                            <td>
+                                <ul>
+                                    <li th:each="client : ${module.clients}" th:text="${client.name}"></li>
+                                </ul>
+                            </td>
                         </tr>
                     </tbody>
                 </table>

@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org/"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      th:replace="base::layout(~{::section})">
+<head>
+    <meta charset="UTF-8">
+    <title>Backlogs</title>
+</head>
+<body>
+<section class="d-flex justify-content-center align-items-center vh-120">
+    <div class="container">
+        <div class="row justify-content-end mb-3">
+            <div class="col-auto">
+                <a th:href="@{/addBacklog}" class="btn btn-info">Add Backlog</a>
+                <button id="testButton" type="button" class="btn btn-danger">Add2Sprint</button>
+        </div>
+        <div class="row justify-content-center">
+            <div class="text-center">
+                <table class="table table-striped">
+                    <thead>
+                    <tr>
+                        <th scope="col">#</th>
+                        <th scope="col">Select</th>
+                        <th scope="col">Name</th>
+                        <th scope="col">Task Type</th>
+                        <th scope="col">Category</th>
+                        <th scope="col">Module</th>
+                        <th scope="col">Release Version</th>
+                        <th scope="col">Description</th>
+                        <th scope="col">Client</th>
+                        <th scope="col">Source Reference</th>
+                        <th scope="col">Priority</th>
+                        <th scope="col">Status</th>
+                        <th scope="col">Assigned To</th>
+                        <th scope="col">Remarks</th>
+                        <th scope="col">Sprint List</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="backlog, stat : ${backlogs}">
+                        <th scope="row" th:text="${stat.count}"></th>
+                        <td>
+                            <input type="checkbox" th:value="${backlog.id}" class="backlogCheckbox" name="backlogCheck"/>
+                        </td>
+                        <td th:text="${backlog.name}"></td>
+                        <td th:text="${backlog.taskType}"></td>
+                        <td th:text="${backlog.category}"></td>
+                        <td th:text="${backlog.module?.name}"></td>
+                        <td th:text="${backlog.releaseVersion}"></td>
+                        <td th:text="${backlog.description}"></td>
+                        <td th:text="${backlog.client?.name}"></td>
+                        <td th:text="${backlog.sourceReference}"></td>
+                        <td th:text="${backlog.priority}"></td>
+                        <td th:text="${backlog.status}"></td>
+                        <td th:text="${backlog.assignedTo?.name}"></td>
+                        <td th:text="${backlog.remarks}"></td>
+                        <td>
+                            <ul>
+                                <li th:each="sprint : ${backlog.sprints}" th:text="${sprint.name}"></li>
+                            </ul>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+                <div class="d-flex justify-content-center">
+                    <nav aria-label="Page navigation example">
+                        <ul class="pagination">
+                            <li class="page-item" th:class="${backlogs.first ? 'disabled' : ''}">
+                                <a class="page-link" th:href="@{/backlogs(page=${backlogs.number - 1})}">Previous</a>
+                            </li>
+                            <li class="page-item" th:each="pageNumber : ${#numbers.sequence(0, backlogs.totalPages - 1)}">
+                                <a class="page-link" th:href="@{/backlogs(page=${pageNumber})}" th:text="${pageNumber + 1}"></a>
+                            </li>
+                            <li class="page-item" th:class="${backlogs.last ? 'disabled' : ''}">
+                                <a class="page-link" th:href="@{/backlogs(page=${backlogs.number + 1})}">Next</a>
+                            </li>
+                        </ul>
+                    </nav>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="selectedTasksModal" class="modal fade" tabindex="-1" role="dialog">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Selected Tasks</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <ul id="selectedTasksList"></ul>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    </div>
+</section>
+</body>
+</html>
