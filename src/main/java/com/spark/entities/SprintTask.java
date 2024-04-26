@@ -12,10 +12,6 @@ public class SprintTask {
 
     private String name;
 
-    @ManyToOne
-    @JoinColumn(name = "assigned_person_id")
-    private User assignedPerson;
-
     private Integer timeEstimate;
 
     private Integer storySize;
@@ -58,14 +54,6 @@ public class SprintTask {
 
     public void setName(String name) {
         this.name = name;
-    }
-
-    public User getAssignedPerson() {
-        return assignedPerson;
-    }
-
-    public void setAssignedPerson(User assignedPerson) {
-        this.assignedPerson = assignedPerson;
     }
 
     public Integer getTimeEstimate() {

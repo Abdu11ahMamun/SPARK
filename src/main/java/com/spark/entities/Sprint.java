@@ -33,14 +33,16 @@ public class Sprint {
     @Enumerated(EnumType.STRING)
     private SprintStatus sprintStatus;
 
-    @ManyToMany
-    @JoinTable(
-            name = "sprint_backlog",
-            joinColumns = @JoinColumn(name = "sprint_id"),
-            inverseJoinColumns = @JoinColumn(name = "backlog_id")
-    )
-    private List<Backlog> backlogs;
+//    @OneToMany
+//    @JoinTable(
+//            name = "sprint_backlog",
+//            joinColumns = @JoinColumn(name = "sprint_id"),
+//            inverseJoinColumns = @JoinColumn(name = "backlog_id")
+//    )
+//    private List<Backlog> backlogs;
 
+//    @OneToMany(mappedBy = "sprint")
+//    private List<Backlog> backlogs;
 
     public Long getId() {
         return id;
@@ -96,11 +98,11 @@ public class Sprint {
     public void setSprintStatus(SprintStatus sprintStatus) {
         this.sprintStatus = sprintStatus;
     }
-    public List<Backlog> getBacklogs() {
-        return backlogs;
-    }
-
-    public void setBacklogs(List<Backlog> backlogs) {
-        this.backlogs = backlogs;
-    }
+//    public List<Backlog> getBacklogs() {
+//        return backlogs;
+//    }
+//
+//    public void setBacklogs(List<Backlog> backlogs) {
+//        this.backlogs = backlogs;
+//    }
 }

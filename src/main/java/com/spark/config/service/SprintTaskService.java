@@ -16,7 +16,10 @@ public class SprintTaskService {
         this.sprintTaskRepository = sprintTaskRepository;
     }
 
-    public List<SprintTask> getSprintTasksBySprintId(Long sprintId) {
-        return sprintTaskRepository.findBySprintId(sprintId);
+//    public List<SprintTask> getSprintTasksBySprintId(Long sprintId) {
+//        return sprintTaskRepository.findBySprintId(sprintId);
+//    }
+    public List<SprintTask> getSprintTasksBySprintIdWithBacklogDetails(Long sprintId) {
+        return sprintTaskRepository.findBySprintIdWithBacklogDetails(sprintId);
     }
 }

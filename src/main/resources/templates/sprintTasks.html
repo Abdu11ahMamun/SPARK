@@ -16,18 +16,28 @@
                     <tr>
                         <th scope="col">#</th>
                         <th scope="col">Task Name</th>
+                        <th scope="col">Task Type</th>
+                        <th scope="col">Category</th>
+                        <th scope="col">Module</th>
+                        <th scope="col">Description</th>
+                        <th scope="col">Client</th>
+                        <th scope="col">Priority</th>
                         <th scope="col">Assigned To</th>
                         <th scope="col">Status</th>
-                        <!-- Add more columns as needed -->
                     </tr>
                     </thead>
                     <tbody>
                     <tr th:each="task, stat : ${tasks}">
                         <th scope="row" th:text="${stat.count}"></th>
-                        <td th:text="${task.name}"></td>
-                        <td th:text="${task.assignedPerson}"></td>
-<!--                        <td th:text="${task.status}"></td>-->
-                        <!-- Add more data cells as needed -->
+                        <td th:text="${task.backlog.name != null ? task.backlog.name : 'N/A'}"></td>
+                        <td th:text="${task.backlog.taskType != null ? task.backlog.taskType : 'N/A'}"></td>
+                        <td th:text="${task.backlog.category != null ? task.backlog.category : 'N/A'}"></td>
+                        <td th:text="${task.backlog.module != null ? task.backlog.module.name : 'N/A'}"></td>
+                        <td th:text="${task.backlog.description != null ? task.backlog.description : 'N/A'}"></td>
+                        <td th:text="${task.backlog.client != null ? task.backlog.client.name : 'N/A'}"></td>
+                        <td th:text="${task.backlog.priority != null ? task.backlog.priority : 'N/A'}"></td>
+                        <td th:text="${task.backlog.assignedTo != null ? task.backlog.assignedTo.name : 'N/A'}"></td>
+                        <td th:text="${task.backlog.status != null ? task.backlog.status : 'N/A'}"></td>
                     </tr>
                     </tbody>
                 </table>
