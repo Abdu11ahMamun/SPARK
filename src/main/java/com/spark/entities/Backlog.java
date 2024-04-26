@@ -56,6 +56,7 @@ public class Backlog {
     @JoinColumn(name = "document_id")
     private List<Documents> attachments;
 
+    //one to many
     @ManyToMany
     @JoinTable(
             name = "task_dependencies",
@@ -64,9 +65,9 @@ public class Backlog {
     )
     private Set<Backlog> dependencies;
 
-
-    @ManyToMany(mappedBy = "backlogs")
-    private List<Sprint> sprints;
+    @ManyToOne
+    @JoinColumn(name = "sprint_id")
+    private Sprint sprint;
 
     public Long getId() {
         return id;
@@ -204,11 +205,10 @@ public class Backlog {
         this.dependencies = dependencies;
     }
 
-    public List<Sprint> getSprints() {
-        return sprints;
+    public Sprint getSprint() {
+        return sprint;
     }
-
-    public void setSprints(List<Sprint> sprints) {
-        this.sprints = sprints;
+    public void setSprint(Sprint sprint) {
+        this.sprint = sprint;
     }
 }

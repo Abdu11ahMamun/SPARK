@@ -162,14 +162,24 @@ HomeController {
         model.addAttribute("sprints", sprints);
         return "sprints";
         }
-        @GetMapping("/api/sprints")
-        @ResponseBody
-        public List<Sprint> getSprintsJson(@RequestParam(defaultValue = "0") int page) {
-            Pageable pageable = PageRequest.of(page, 10);
-            Page<Sprint> sprints = sprintService.getAllSprints(pageable);
-            return sprints.getContent();
-        }
+    @GetMapping("/api/sprints")
+    @ResponseBody
+    public List<Sprint> getSprintsJson(@RequestParam(defaultValue = "0") int page) {
+        Pageable pageable = PageRequest.of(page, 10);
+        Page<Sprint> sprints = sprintService.getAllSprints(pageable);
+        return sprints.getContent();
+    }
 
+//    @PostMapping("/api/sprints/{sprintId}/assign-backlogs")
+//    @ResponseBody
+//    public void assignBacklogsToSprint(@PathVariable Long sprintId, @RequestBody List<Long> backlogIds) {
+//        sprintService.assignBacklogsToSprint(backlogIds, sprintId);
+//    }
+    @PostMapping("/api/sprints/{sprintId}/assign-backlogs")
+    @ResponseBody
+    public void assignBacklogsToSprint(@PathVariable Long sprintId, @RequestBody List<Long> backlogIds) {
+        sprintService.assignBacklogsToSprint(backlogIds, sprintId);
+    }
     @GetMapping("/addSprint")
     public String showAddSprintForm(Model model) {
         List<Team> teams = teamRepository.findAll();
@@ -194,12 +204,26 @@ HomeController {
     @Autowired
     private SprintTaskService sprintTaskService;
 
-    @GetMapping("/sprintTasks/{sprintId}")
-    public String getSprintTasks(@PathVariable("sprintId") Long sprintId, Model model) {
-        List<SprintTask> sprintTasks = sprintTaskService.getSprintTasksBySprintId(sprintId);
-        model.addAttribute("tasks", sprintTasks);
-        return "sprintTasks";
-    }
+//    @GetMapping("/sprintTasks/{sprintId}")
+//    public String getSprintTasks(@PathVariable("sprintId") Long sprintId, Model model) {
+//        List<SprintTask> sprintTasks = sprintTaskService.getSprintTasksBySprintId(sprintId);
+//        model.addAttribute("tasks", sprintTasks);
+//        return "sprintTasks";
+//    }
+//    @GetMapping("/sprintTasks/{sprintId}")
+//    public String getSprintTasks(@PathVariable("sprintId") Long sprintId, Model model) {
+//        List<SprintTask> sprintTasks = sprintTaskService.getSprintTasksBySprintIdWithBacklogDetails(sprintId);
+//        model.addAttribute("tasks", sprintTasks);
+//        return "sprintTasks";
+//    }
+@GetMapping("/sprintTasks/{sprintId}")
+public String getSprintTasks(@PathVariable("sprintId") Long sprintId, Model model) {
+    List<SprintTask> sprintTasks = sprintTaskService.getSprintTasksBySprintIdWithBacklogDetails(sprintId);
+    model.addAttribute("tasks", sprintTasks);
+    return "sprintTasks";
+}
+
+
 }
 
 //1. Server side validation need to be implemented

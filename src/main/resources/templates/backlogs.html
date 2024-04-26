@@ -56,7 +56,7 @@
                         <td th:text="${backlog.remarks}"></td>
                         <td>
                             <ul>
-                                <li th:each="sprint : ${backlog.sprints}" th:text="${sprint.name}"></li>
+                                <li th:text="${backlog.sprint?.name}"></li>
                             </ul>
                         </td>
                     </tr>
