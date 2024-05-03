@@ -1,5 +1,6 @@
 package com.spark.entities;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 
 import javax.validation.constraints.NotEmpty;
@@ -25,6 +26,7 @@ public class Team {
     @Temporal(TemporalType.TIMESTAMP)
     private Date updatedAt;
 
+    @JsonBackReference
     @ManyToMany(mappedBy = "teams", cascade = CascadeType.ALL)
     private Set<User> users;
 

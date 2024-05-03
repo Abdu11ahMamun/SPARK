@@ -5,6 +5,7 @@ import com.spark.dto.SprintTaskRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.Date;
 import java.util.List;
 
 @Service
@@ -16,9 +17,7 @@ public class SprintTaskService {
         this.sprintTaskRepository = sprintTaskRepository;
     }
 
-//    public List<SprintTask> getSprintTasksBySprintId(Long sprintId) {
-//        return sprintTaskRepository.findBySprintId(sprintId);
-//    }
+
     public List<SprintTask> getSprintTasksBySprintIdWithBacklogDetails(Long sprintId) {
         return sprintTaskRepository.findBySprintIdWithBacklogDetails(sprintId);
     }

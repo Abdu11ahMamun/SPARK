@@ -22,6 +22,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import javax.validation.Valid;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Controller
@@ -199,29 +200,25 @@ HomeController {
             return "redirect:/addSprint";
         }
 
-    @Autowired
-    private SprintTaskRepository sprintTaskRepository;
-    @Autowired
-    private SprintTaskService sprintTaskService;
+        @Autowired
+        private SprintTaskRepository sprintTaskRepository;
+        @Autowired
+        private SprintTaskService sprintTaskService;
 
-//    @GetMapping("/sprintTasks/{sprintId}")
-//    public String getSprintTasks(@PathVariable("sprintId") Long sprintId, Model model) {
-//        List<SprintTask> sprintTasks = sprintTaskService.getSprintTasksBySprintId(sprintId);
-//        model.addAttribute("tasks", sprintTasks);
-//        return "sprintTasks";
-//    }
-//    @GetMapping("/sprintTasks/{sprintId}")
-//    public String getSprintTasks(@PathVariable("sprintId") Long sprintId, Model model) {
-//        List<SprintTask> sprintTasks = sprintTaskService.getSprintTasksBySprintIdWithBacklogDetails(sprintId);
-//        model.addAttribute("tasks", sprintTasks);
-//        return "sprintTasks";
-//    }
-@GetMapping("/sprintTasks/{sprintId}")
-public String getSprintTasks(@PathVariable("sprintId") Long sprintId, Model model) {
-    List<SprintTask> sprintTasks = sprintTaskService.getSprintTasksBySprintIdWithBacklogDetails(sprintId);
-    model.addAttribute("tasks", sprintTasks);
-    return "sprintTasks";
-}
+
+    @GetMapping("/sprintTasks/{sprintId}")
+    public String getSprintTasks(@PathVariable("sprintId") Long sprintId, Model model) {
+        List<SprintTask> sprintTasks = sprintTaskService.getSprintTasksBySprintIdWithBacklogDetails(sprintId);
+        model.addAttribute("tasks", sprintTasks);
+        Sprint sprint = sprintService.getSprintById(sprintId);
+        Long teamId = (long) sprint.getTeam().getTeamId();
+        Team team = sprint.getTeam();
+        Set<User> teamMembers = teamService.getMembers(team.getTeamId());
+        model.addAttribute("teamId", teamId);
+        model.addAttribute("teamMembers", teamMembers);
+        return "sprintTasks";
+    }
+
 
 
 }

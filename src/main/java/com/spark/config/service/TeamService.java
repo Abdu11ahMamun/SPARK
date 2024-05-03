@@ -8,6 +8,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
+import java.util.Set;
+
 @Service
 public class TeamService {
     @Autowired
@@ -15,6 +17,12 @@ public class TeamService {
 
     public Page<Team> getAllTeams(Pageable pageable) {
         return teamRepository.findAll(pageable);
+    }
+
+    public Set<User> getMembers(int teamId) {
+        Team team = teamRepository.findById(teamId)
+                .orElseThrow(() -> new RuntimeException("Team not found"));
+        return team.getUsers();
     }
 
 }

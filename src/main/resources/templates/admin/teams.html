@@ -23,6 +23,7 @@
                         <th scope="col">Team Name</th>
                         <th scope="col">Slogan</th>
                         <th scope="col">Description</th>
+                        <th scope="col">Actions</th>
                     </tr>
                     </thead>
                     <tbody>
@@ -31,6 +32,9 @@
                         <td th:text="${team.name}"></td>
                         <td th:text="${team.slogan}"></td>
                         <td th:text="${team.description}"></td>
+                        <td>
+                            <a th:href="@{/admin/teamMembers/{teamId}(teamId=${team.teamId})}" class="btn btn-info">View Members</a> <!-- New button -->
+                        </td>
                     </tr>
                     </tbody>
                 </table>

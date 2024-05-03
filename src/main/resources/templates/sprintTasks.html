@@ -9,9 +9,20 @@
 <body>
 <section class="d-flex justify-content-center align-items-center vh-120">
     <div class="container">
+        <div class="position-sticky top-0 overflow-auto" style="max-height: 120px;">
+            <h4 style="text-align:center;">Team Members</h4>
+            <ul>
+                <li th:each="member : ${teamMembers}" th:text="${member.name}"></li>
+            </ul>
+        </div>
         <div class="row justify-content-center">
             <div class="text-center">
-                <table class="table table-striped">
+                <div style="display: flex; justify-content: flex-end;">
+                    <div class="form-group">
+                        <input type="text" class="search form-control" placeholder="Search Here..." style="width: 400px;">
+                    </div>
+                </div>
+                    <table class="table table-striped" style="font-size: 14px;">
                     <thead>
                     <tr>
                         <th scope="col">#</th>
@@ -24,6 +35,14 @@
                         <th scope="col">Priority</th>
                         <th scope="col">Assigned To</th>
                         <th scope="col">Status</th>
+                        <th scope="col">Story Size</th>
+                        <th scope="col">Time Estimate</th>
+                        <th scope="col">Completed Points</th>
+                        <th scope="col">Completed Hours</th>
+                        <th scope="col">Actual Hours</th>
+                        <th scope="col">Date of Done</th>
+                        <th scope="col">Remarks</th>
+                        <th scope="col">Action</th>
                     </tr>
                     </thead>
                     <tbody>
@@ -38,11 +57,20 @@
                         <td th:text="${task.backlog.priority != null ? task.backlog.priority : 'N/A'}"></td>
                         <td th:text="${task.backlog.assignedTo != null ? task.backlog.assignedTo.name : 'N/A'}"></td>
                         <td th:text="${task.backlog.status != null ? task.backlog.status : 'N/A'}"></td>
+                        <td th:text="${task.storySize != null ? task.storySize : 'N/A'}"></td>
+                        <td th:text="${task.timeEstimate != null ? task.timeEstimate : 'N/A'}"></td>
+                        <td th:text="${task.completedPoints != null ? task.completedPoints : 'N/A'}"></td>
+                        <td th:text="${task.completedHours != null ? task.completedHours : 'N/A'}"></td>
+                        <td th:text="${task.actualHours != null ? task.actualHours : 'N/A'}"></td>
+                        <td th:text="${task.dateOfDone != null ? task.dateOfDone : 'N/A'}"></td>
+                        <td th:text="${task.remarks != null ? task.remarks : 'N/A'}"></td>
+
+                        <td>
+                            <button type="button" class="btn btn-primary">Action</button>
+                        </td>
                     </tr>
                     </tbody>
                 </table>
-                <!-- Pagination -->
-                <!-- ... rest of your code ... -->
             </div>
         </div>
     </div>

@@ -1,5 +1,6 @@
 package com.spark.entities;
 
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 
 import javax.validation.constraints.NotBlank;
@@ -36,6 +37,7 @@ public class User {
 
     private String contactNumber;
 
+    @JsonManagedReference
     @ManyToMany(cascade = CascadeType.ALL)
     @JoinTable(
             name = "user_team",

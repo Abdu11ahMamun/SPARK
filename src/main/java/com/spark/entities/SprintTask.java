@@ -10,8 +10,6 @@ public class SprintTask {
     @GeneratedValue(strategy = GenerationType.AUTO)
     private Long id;
 
-    private String name;
-
     private Integer timeEstimate;
 
     private Integer storySize;
@@ -19,6 +17,15 @@ public class SprintTask {
     private Integer completedPoints;
 
     private Integer completedHours;
+    private Integer actualHours;
+
+    public Integer getActualHours() {
+        return actualHours;
+    }
+
+    public void setActualHours(Integer actualHours) {
+        this.actualHours = actualHours;
+    }
 
     public Integer getCompletedHours() {
         return completedHours;
@@ -46,14 +53,6 @@ public class SprintTask {
 
     public void setId(Long id) {
         this.id = id;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
     }
 
     public Integer getTimeEstimate() {

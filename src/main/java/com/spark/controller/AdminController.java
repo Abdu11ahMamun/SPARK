@@ -63,6 +63,12 @@ public class AdminController {
         model.addAttribute("teams", teams);
         return "admin/teams";
     }
+    @GetMapping("/teamMembers/{teamId}")
+    public String getTeamMembers(@PathVariable("teamId") int teamId, Model model) {
+        Set<User> teamMembers = teamService.getMembers(teamId);
+        model.addAttribute("teamMembers", teamMembers);
+        return "admin/teamMembers";
+    }
 
     @RequestMapping(value = "/do_add_team", method = RequestMethod.POST)
     public String doAddTeam(@ModelAttribute("team") Team team, Model model, Principal principal, HttpSession session) {

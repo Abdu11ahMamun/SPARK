@@ -29,6 +29,10 @@ public class SprintService {
         this.sprintRepository = sprintRepository;
         this.backlogRepository = backlogRepository;
     }
+    public Sprint getSprintById(Long id) {
+        return sprintRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Sprint not found"));
+    }
     public Sprint addSprint(Sprint sprint) {
         return sprintRepository.save(sprint);
     }

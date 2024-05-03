@@ -10,10 +10,14 @@ import java.util.List;
 public interface SprintTaskRepository extends JpaRepository<SprintTask, Long> {
     List<SprintTask> findBySprintId(Long sprintId);
 
-//    @Query("SELECT st FROM SprintTask st JOIN FETCH st.backlog b JOIN FETCH b.assignedTo u WHERE st.sprint.id = :sprintId")
+//    @Query("SELECT st FROM SprintTask st JOIN FETCH st.backlog b JOIN FETCH b.module m JOIN FETCH b.client c WHERE st.sprint.id = :sprintId")
 //    List<SprintTask> findBySprintIdWithBacklogDetails(@Param("sprintId") Long sprintId);
-
-    @Query("SELECT st FROM SprintTask st JOIN FETCH st.backlog b JOIN FETCH b.module m JOIN FETCH b.client c WHERE st.sprint.id = :sprintId")
-    List<SprintTask> findBySprintIdWithBacklogDetails(@Param("sprintId") Long sprintId);
+@Query("SELECT st FROM SprintTask st " +
+        "JOIN FETCH st.backlog b " +
+        "JOIN FETCH b.module m " +
+        "JOIN FETCH b.client c " +
+        "JOIN FETCH b.assignedTo u " +
+        "WHERE st.sprint.id = :sprintId")
+List<SprintTask> findBySprintIdWithBacklogDetails(@Param("sprintId") Long sprintId);
 
 }
