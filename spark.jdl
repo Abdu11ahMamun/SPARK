@@ -1,0 +1,145 @@
+enum TaskStatus {
+    MASTER_BACKLOG, SPRINT_BACKLOG, QA_FEEDBACK, IN_PROGRESS, PENDING_FOR_REVIEW,
+    FOR_QA, QA_IN_PROGRESS, QA_DONE, RELEASEABLE, RELEASED, DONE, REVISION
+}
+enum Source {
+    INHOUSE, CLIENT
+}
+enum IssueType {
+    NEW_REQUIREMENT, BUG, CHANGE_REQUEST, CUSTOMIZATION, SUPPORT
+}
+enum Priority {
+    High, Medium, Low
+}
+enum TaskType {
+    PLANNED, UNPLANNED
+}
+enum TaskCategory {
+    UI, BACKEND, REPORT, SERVICE, BUSINESS, QA, TESTCASE, FEEDBACK,
+    REVIEW, DESIGN, DEPLOYMENT, KNOWLEDGESHARING, FACTFINDINGS
+}
+enum Role {
+    DEVELOPER, QA, PRODUCT_OWNER, SCRUM_MASTER, BUSINESS_ANALYTICS, SUPPORT
+}
+
+entity Member {
+    name String
+    username String
+    id String
+    email String
+    password String
+    role Role
+    enabled Boolean
+    lastLogin LocalDate
+    lastModifiedDate Instant
+    lastModifiedBy String
+}
+
+entity Team {
+    name String
+    slogan String
+    lastModifiedDate Instant
+    lastModifiedBy String
+}
+
+
+entity Project {
+    name String
+    version String
+    projectCreatedAt LocalDate
+    lastModifiedDate Instant
+    lastModifiedBy String
+}
+
+entity Client {
+    name String
+    shortName String
+    lastDelivery LocalDate
+    releaseTrackFK String
+    lastModifiedDate Instant
+    lastModifiedBy String
+}
+
+entity ClientInfo {
+    name String
+    sourceFKTOClient String
+    lastModifiedDate Instant
+    lastModifiedBy String
+}
+
+entity Product {
+    name String
+    version String
+    lastModifiedDate Instant
+    lastModifiedBy String
+}
+
+entity Sprint {
+    title String
+    startDate LocalDate
+    endDate LocalDate
+    lastModifiedDate Instant
+    lastModifiedBy String
+}
+
+entity SprintTask {
+    mitsId String
+    title String
+    taskType TaskType
+    sourceRef Source
+    status TaskStatus
+    estimatedTimeInHour Integer
+    actualTimeInHour Integer
+    storyPoint Integer
+    issueDate LocalDate
+    dateOfDone LocalDate
+    description String
+    remarks String
+    priority Priority
+    taskCategory TaskCategory
+    storySize Integer
+    completedPoints Integer
+    variationStoryPoints Integer
+    createdDate Instant
+    createdBy String
+    lastModifiedDate Instant
+    lastModifiedBy String
+}
+
+entity ProductVersion {
+    version String
+    releaseDate LocalDate
+    description String
+    isCurrent Boolean
+    createdDate Instant
+    createdBy String
+    lastModifiedDate Instant
+    lastModifiedBy String
+}
+
+// Relationships
+relationship OneToOne {
+    ClientInfo{client(name)} to Client{clientInfo(name)}
+}
+
+relationship OneToMany {
+    Project{product(name)} to Product{projects}
+    Team{sprint(title)} to Sprint{team}
+    Project{team(name)} to Team{projects}
+    Member{projects(name)} to Project{owner}
+    ProductVersion{product(name)} to Product{productVersions}
+}
+
+relationship ManyToOne {
+    Member{team(name)} to Team{members}  
+    SprintTask{addedBy(username)} to Member
+    SprintTask{assignedTo(username)} to Member
+}
+
+relationship ManyToMany {
+    SprintTask{product(name)} to Product{sprintTasks}
+    Sprint{sprintTasks} to SprintTask{sprints}
+    Sprint{project(name)} to Project{sprints}
+    SprintTask{clients(name)} to Client{sprintTasks}
+    // Removing ManyToMany relationships related to Member
+}

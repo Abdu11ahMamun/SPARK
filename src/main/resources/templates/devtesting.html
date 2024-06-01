@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org/"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      th:replace="base::layout(~{::section})">
+<script src="/path/to/sprintUserLog.js"></script>
+<head>
+  <meta charset="UTF-8">
+  <title>Sprint Tasks</title>
+</head>
+<body>
+<section class="d-flex justify-content-center align-items-center vh-120">
+  <div class="container">
+    <div class="position-sticky top-0 overflow-auto" style="max-height: 120px;">
+      <h4 style="text-align:center;">Team Members</h4>
+      <ul id="team-members-list">
+        <!-- Team members will be added here by jQuery -->
+      </ul>
+    </div>
+    <div class="row justify-content-center">
+      <div class="text-center">
+        <table class="table table-striped">
+          <thead>
+          <tr>
+            <th scope="col">#</th>
+            <th scope="col">Task Name</th>
+            <th scope="col">Task Type</th>
+            <th scope="col">Category</th>
+            <th scope="col">Module</th>
+            <th scope="col">Description</th>
+            <th scope="col">Client</th>
+            <th scope="col">Priority</th>
+            <th scope="col">Assigned To</th>
+            <th scope="col">Status</th>
+          </tr>
+          </thead>
+          <tbody>
+          <!-- Tasks will be added here by jQuery -->
+          </tbody>
+        </table>
+        <!-- Pagination -->
+        <!-- ... rest of your code ... -->
+      </div>
+    </div>
+  </div>
+</section>
+</body>
+</html>
