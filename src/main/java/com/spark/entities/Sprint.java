@@ -16,6 +16,10 @@ public class Sprint {
 
     private String name;
 
+    private Integer workingDays;
+
+
+
     @ManyToOne
     @JoinColumn(name = "team_id")
     private Team team;
@@ -32,17 +36,6 @@ public class Sprint {
 
     @Enumerated(EnumType.STRING)
     private SprintStatus sprintStatus;
-
-//    @OneToMany
-//    @JoinTable(
-//            name = "sprint_backlog",
-//            joinColumns = @JoinColumn(name = "sprint_id"),
-//            inverseJoinColumns = @JoinColumn(name = "backlog_id")
-//    )
-//    private List<Backlog> backlogs;
-
-//    @OneToMany(mappedBy = "sprint")
-//    private List<Backlog> backlogs;
 
     public Long getId() {
         return id;
@@ -97,6 +90,14 @@ public class Sprint {
 
     public void setSprintStatus(SprintStatus sprintStatus) {
         this.sprintStatus = sprintStatus;
+    }
+
+    public Integer getWorkingDays() {
+        return workingDays;
+    }
+
+    public void setWorkingDays(Integer workingDays) {
+        this.workingDays = workingDays;
     }
 //    public List<Backlog> getBacklogs() {
 //        return backlogs;

@@ -19,6 +19,10 @@
                 <label for="name">Sprint Name</label>
                 <input type="text" th:field="*{name}" class="form-control" id="name" placeholder="Enter sprint name">
             </div>
+           <div class="form-group">
+            <label for="name">Sprint Working Days</label>
+            <input type="number" th:field="*{workingDays}" class="form-control" id="workingDays" placeholder="Working days">
+            </div>
             <div class="form-group">
                 <label for="team">Team</label>
                 <select id="team" th:field="*{team}" class="form-control">

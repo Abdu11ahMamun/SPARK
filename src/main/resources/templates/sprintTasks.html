@@ -9,12 +9,13 @@
 <body>
 <section class="d-flex justify-content-center align-items-center vh-120">
     <div class="container">
-        <div class="position-sticky top-0 overflow-auto" style="max-height: 120px;">
-            <h4 style="text-align:center;">Team Members</h4>
-            <ul>
-                <li th:each="member : ${teamMembers}" th:text="${member.name}"></li>
-            </ul>
-        </div>
+       <div class="position-sticky top-0 overflow-auto" style="max-height: 120px;">
+    <h4 style="text-align:center;">Team Members</h4>
+    <ul>
+        <li th:each="member : ${teamMembers}" th:text="${member.name}"></li>
+    </ul>
+<!--    <h4 th:text="'Working Days: ' + ${sprint.workingDays}" style="text-align:center;"></h4>-->
+    </div>
         <div class="row justify-content-center">
             <div class="text-center">
                 <div style="display: flex; justify-content: flex-end;">

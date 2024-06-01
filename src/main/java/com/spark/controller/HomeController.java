@@ -22,6 +22,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import javax.validation.Valid;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -206,20 +207,40 @@ HomeController {
         private SprintTaskService sprintTaskService;
 
 
-    @GetMapping("/sprintTasks/{sprintId}")
-    public String getSprintTasks(@PathVariable("sprintId") Long sprintId, Model model) {
-        List<SprintTask> sprintTasks = sprintTaskService.getSprintTasksBySprintIdWithBacklogDetails(sprintId);
-        model.addAttribute("tasks", sprintTasks);
-        Sprint sprint = sprintService.getSprintById(sprintId);
-        Long teamId = (long) sprint.getTeam().getTeamId();
-        Team team = sprint.getTeam();
-        Set<User> teamMembers = teamService.getMembers(team.getTeamId());
-        model.addAttribute("teamId", teamId);
-        model.addAttribute("teamMembers", teamMembers);
-        return "sprintTasks";
+//    @GetMapping("/sprintTasks/{sprintId}")
+//    public String getSprintTasks(@PathVariable("sprintId") Long sprintId, Model model) {
+//        List<SprintTask> sprintTasks = sprintTaskService.getSprintTasksBySprintIdWithBacklogDetails(sprintId);
+//        model.addAttribute("tasks", sprintTasks);
+//        Sprint sprint = sprintService.getSprintById(sprintId);
+//        Long teamId = (long) sprint.getTeam().getTeamId();
+//        Team team = sprint.getTeam();
+//        Set<User> teamMembers = teamService.getMembers(team.getTeamId());
+//        model.addAttribute("teamId", teamId);
+//        model.addAttribute("teamMembers", teamMembers);
+//        return "sprintTasks";
+//    }
+@GetMapping("/sprintTasks/{sprintId}")
+public String getSprintTasks(@PathVariable("sprintId") Long sprintId, @RequestParam(required = false) Map<String, String> searchParams, Model model) {
+    List<SprintTask> sprintTasks;
+
+    if (searchParams != null && !searchParams.isEmpty()) {
+        sprintTasks = sprintTaskService.searchSprintTasks(sprintId, searchParams);
+    } else {
+        sprintTasks = sprintTaskService.getSprintTasksBySprintIdWithBacklogDetails(sprintId);
     }
 
+    model.addAttribute("tasks", sprintTasks);
 
+    Sprint sprint = sprintService.getSprintById(sprintId);
+    Long teamId = (long) sprint.getTeam().getTeamId();
+    Team team = sprint.getTeam();
+    Set<User> teamMembers = teamService.getMembers(team.getTeamId());
+
+    model.addAttribute("teamId", teamId);
+    model.addAttribute("teamMembers", teamMembers);
+
+    return "sprintTasks";
+}
 
 }
 

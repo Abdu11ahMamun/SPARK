@@ -2,10 +2,10 @@
 <script>
 $(document).ready(function() {
     $.ajax({
-            url: '/teamMembers', // Replace with your actual API endpoint
+            url: '/teamMembers',
             type: 'GET',
             success: function(data) {
-                console.log(data); // Print the data to the console
+                console.log(data);
                 var teamMembersList = '';
                 $.each(data, function(index, member) {
                     teamMembersList += '<li>' + checkValue(member.name) + '</li>';
@@ -15,10 +15,10 @@ $(document).ready(function() {
         });
     var sprintId = /* Insert your sprintId here */;
      $.ajax({
-         url: '/tasks', // Replace with your actual API endpoint
+         url: '/tasks',
          type: 'GET',
          success: function(data) {
-             console.log(data); // Print the data to the console
+             console.log(data);
              var tasksTableRows = '';
              $.each(data, function(index, task) {
                  tasksTableRows += '<tr>' +

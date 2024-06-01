@@ -48,7 +48,6 @@ public class Module {
         super();
     }
 
-    // getters and setters for all fields...
 
     public int getId() {
         return id;
