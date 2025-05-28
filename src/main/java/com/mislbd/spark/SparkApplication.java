@@ -1,4 +1,4 @@
-package com.spark;
+package com.mislbd.spark;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;

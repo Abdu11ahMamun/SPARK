@@ -1,4 +1,4 @@
-package com.spark;
+package com.mislbd.spark;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
