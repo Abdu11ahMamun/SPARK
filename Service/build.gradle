@@ -35,6 +35,8 @@ dependencies {
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 	implementation 'com.oracle.database.jdbc:ojdbc8:19.8.0.0'
+	implementation "org.mapstruct:mapstruct:1.5.3.Final"
+	annotationProcessor "org.mapstruct:mapstruct-processor:1.5.3.Final"
 }
 tasks.named('test') {
 	useJUnitPlatform()
