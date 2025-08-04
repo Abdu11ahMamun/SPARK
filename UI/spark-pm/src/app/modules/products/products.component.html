@@ -1,0 +1,461 @@
+<div class="products-container">
+  <!-- Products Header -->
+  <div class="products-header">
+    <h1 class="products-title">Product Management</h1>
+    <div class="products-actions">
+      <button class="action-btn search-btn" (click)="toggleSearchPanel()" title="Advanced Search" [class.active]="showSearchPanel">
+        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <circle cx="11" cy="11" r="8"/>
+          <path d="m21 21-4.35-4.35"/>
+        </svg>
+      </button>
+      <button class="action-btn refresh-btn" (click)="refreshProducts()" title="Refresh Products" [disabled]="isLoading">
+        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" [class.spinning]="isLoading">
+          <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/>
+          <path d="M21 3v5h-5"/>
+          <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/>
+          <path d="M3 21v-5h5"/>
+        </svg>
+      </button>
+      <button class="btn btn-primary" (click)="addProduct()" [disabled]="isLoading">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path d="M12 5v14M5 12h14"/>
+        </svg>
+        Add Product
+      </button>
+    </div>
+  </div>
+
+  <!-- Advanced Search Panel -->
+  <div *ngIf="showSearchPanel" class="search-panel">
+    <div class="search-panel-header">
+      <h3>Advanced Search</h3>
+      <button class="close-btn" (click)="toggleSearchPanel()">
+        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path d="M18 6 6 18"/>
+          <path d="m6 6 12 12"/>
+        </svg>
+      </button>
+    </div>
+    <div class="search-panel-content">
+      <div class="search-filters">
+        <div class="filter-item">
+          <label>Search by Name/Client/Version:</label>
+          <input
+            type="text"
+            class="form-control"
+            placeholder="Enter search term..."
+            [(ngModel)]="searchTerm"
+            (input)="onSearchChange()"
+          />
+        </div>
+        <div class="filter-item">
+          <label>Status:</label>
+          <select class="form-control" [(ngModel)]="selectedStatus" (change)="onSearchChange()">
+            <option value="">All Statuses</option>
+            <option value="ACTIVE">Active</option>
+            <option value="INACTIVE">Inactive</option>
+            <option value="DEVELOPMENT">Development</option>
+            <option value="MAINTENANCE">Maintenance</option>
+            <option value="DEPRECATED">Deprecated</option>
+          </select>
+        </div>
+        <div class="filter-item">
+          <label>Product Owner:</label>
+          <select class="form-control" [(ngModel)]="selectedOwner" (change)="onSearchChange()">
+            <option value="">All Owners</option>
+            <option *ngFor="let user of users" [value]="user.id">
+              {{ user.firstName }} {{ user.lastName }}
+            </option>
+          </select>
+        </div>
+        <div class="filter-item">
+          <label>Version:</label>
+          <input
+            type="text"
+            class="form-control"
+            placeholder="Filter by version..."
+            [(ngModel)]="versionFilter"
+            (input)="onSearchChange()"
+          />
+        </div>
+        <div class="filter-item">
+          <label>Client:</label>
+          <input
+            type="text"
+            class="form-control"
+            placeholder="Filter by client..."
+            [(ngModel)]="clientFilter"
+            (input)="onSearchChange()"
+          />
+        </div>
+      </div>
+      <div class="search-actions">
+        <button class="btn btn-secondary" (click)="clearFilters()">Clear Filters</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Error Message -->
+  <div *ngIf="error" class="alert alert-error">
+    {{ error }}
+    <button class="alert-close" (click)="error = null">×</button>
+  </div>
+
+  <!-- Loading Spinner -->
+  <div *ngIf="isLoading" class="loading-spinner">
+    <div class="spinner"></div>
+    <p>Loading...</p>
+  </div>
+
+  <!-- Product Form (Add/Edit) -->
+  <div *ngIf="isAdd || isEdit" class="common-form">
+    <h3 class="card-title">{{ isAdd ? 'Add New Product' : 'Edit Product' }}</h3>
+    <form (ngSubmit)="saveProduct()">
+      <div class="form-grid">
+        <div class="form-group">
+          <label class="form-label">Product Name *</label>
+          <input type="text" class="form-control" [(ngModel)]="productForm.name" name="name" required placeholder="Enter product name">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Status *</label>
+          <select class="form-control" [(ngModel)]="productForm.status" name="status" required>
+            <option value="DEVELOPMENT">Development</option>
+            <option value="ACTIVE">Active</option>
+            <option value="MAINTENANCE">Maintenance</option>
+            <option value="INACTIVE">Inactive</option>
+            <option value="DEPRECATED">Deprecated</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Version *</label>
+          <input type="text" class="form-control" [(ngModel)]="productForm.version" name="version" required placeholder="e.g., 1.0.0">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Current Release</label>
+          <input type="text" class="form-control" [(ngModel)]="productForm.currentRelease" name="currentRelease" placeholder="e.g., v1.0.0-beta">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Product Owner</label>
+          <select class="form-control" [(ngModel)]="productForm.productOwnerId" name="productOwnerId">
+            <option [value]="undefined">Select Product Owner</option>
+            <option *ngFor="let user of users" [value]="user.id">
+              {{ user.firstName }} {{ user.lastName }}
+            </option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Client</label>
+          <input type="text" class="form-control" [(ngModel)]="productForm.client" name="client" placeholder="Enter client name">
+        </div>
+        <div class="form-group full-width">
+          <label class="form-label">Vision</label>
+          <textarea class="form-control" [(ngModel)]="productForm.vision" name="vision" rows="3" placeholder="Describe the product vision..."></textarea>
+        </div>
+      </div>
+      <div class="form-actions">
+        <button type="button" class="btn btn-secondary" (click)="cancel()">Cancel</button>
+        <button type="submit" class="btn btn-primary" [disabled]="isLoading">
+          <span *ngIf="isLoading" class="spinner-border spinner-border-sm me-2"></span>
+          {{ isLoading ? 'Saving...' : (isAdd ? 'Create Product' : 'Update Product') }}
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Products Table -->
+  <div class="common-table-container" *ngIf="!isLoading && !isAdd && !isEdit && filteredProducts && filteredProducts.length > 0">
+    <table class="common-table">
+      <thead>
+        <tr>
+          <th>Product</th>
+          <th>Version</th>
+          <th>Owner</th>
+          <th>Status</th>
+          <th>Client</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let product of getPaginatedProducts()">
+          <td>
+            <div class="product-info">
+              <div class="product-avatar">
+                {{ product.name.charAt(0).toUpperCase() }}
+              </div>
+              <div class="product-details">
+                <div class="product-name">{{ product.name }}</div>
+                <div class="product-release" *ngIf="product.currentRelease">{{ product.currentRelease }}</div>
+                <div class="product-vision" *ngIf="product.vision">{{ product.vision | slice:0:50 }}{{ product.vision!.length > 50 ? '...' : '' }}</div>
+              </div>
+            </div>
+          </td>
+          <td>
+            <div class="version-info">
+              <div class="version">{{ product.version }}</div>
+            </div>
+          </td>
+          <td>
+            <div class="owner-info">
+              {{ getOwnerName(product.productOwnerId) }}
+            </div>
+          </td>
+          <td>
+            <span class="status-badge" [class]="getStatusBadgeClass(product.status)">
+              {{ getStatusDisplayName(product.status) }}
+            </span>
+          </td>
+          <td>
+            <div class="client-info">
+              {{ product.client || 'No client' }}
+            </div>
+          </td>
+          <td>
+            <div class="product-actions">
+              <button class="action-btn edit-btn" (click)="editProduct(product)" title="Edit Product">
+                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                </svg>
+              </button>
+              <button class="action-btn modules-btn" (click)="viewProductModules(product)" title="Manage Modules">
+                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <rect width="7" height="9" x="3" y="3" rx="1"/>
+                  <rect width="7" height="5" x="14" y="3" rx="1"/>
+                  <rect width="7" height="9" x="14" y="12" rx="1"/>
+                  <rect width="7" height="5" x="3" y="16" rx="1"/>
+                </svg>
+              </button>
+              <button class="action-btn delete-btn" (click)="confirmDeleteProduct(product)" title="Delete Product">
+                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <path d="M3 6h18"/>
+                  <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/>
+                  <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>
+                </svg>
+              </button>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Pagination -->
+  <div class="pagination-container" *ngIf="!isLoading && !isAdd && !isEdit && filteredProducts && filteredProducts.length > 0">
+    <div class="pagination-info">
+      Showing {{ ((currentPage - 1) * pageSize) + 1 }} to {{ Math.min(currentPage * pageSize, filteredProducts.length) }} of {{ filteredProducts.length }} products
+    </div>
+    <div class="pagination-controls">
+      <button class="pagination-btn" (click)="goToFirstPage()" [disabled]="currentPage === 1">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path d="m11 17-5-5 5-5"/>
+          <path d="m18 17-5-5 5-5"/>
+        </svg>
+      </button>
+      <button class="pagination-btn" (click)="goToPreviousPage()" [disabled]="currentPage === 1">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path d="m15 18-6-6 6-6"/>
+        </svg>
+      </button>
+      <div class="page-numbers">
+        <button 
+          *ngFor="let page of getPageNumbers()" 
+          class="page-btn" 
+          [class.active]="page === currentPage"
+          (click)="goToPage(page)">
+          {{ page }}
+        </button>
+      </div>
+      <button class="pagination-btn" (click)="goToNextPage()" [disabled]="currentPage === totalPages">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path d="m9 18 6-6-6-6"/>
+        </svg>
+      </button>
+      <button class="pagination-btn" (click)="goToLastPage()" [disabled]="currentPage === totalPages">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path d="m13 17 5-5-5-5"/>
+          <path d="m6 17 5-5-5-5"/>
+        </svg>
+      </button>
+    </div>
+    <div class="page-size-selector">
+      <span>Show:</span>
+      <select [(ngModel)]="pageSize" (change)="changePageSize()" class="form-control">
+        <option value="10">10</option>
+        <option value="25">25</option>
+        <option value="50">50</option>
+        <option value="100">100</option>
+      </select>
+      <span>per page</span>
+    </div>
+  </div>
+
+  <!-- Empty State -->
+  <div class="empty-state" *ngIf="!isLoading && !isAdd && !isEdit && (!filteredProducts || filteredProducts.length === 0)">
+    <svg width="64" height="64" fill="none" stroke="currentColor" stroke-width="1" viewBox="0 0 24 24">
+      <rect width="7" height="9" x="3" y="3" rx="1"/>
+      <rect width="7" height="5" x="14" y="3" rx="1"/>
+      <rect width="7" height="9" x="14" y="12" rx="1"/>
+      <rect width="7" height="5" x="3" y="16" rx="1"/>
+    </svg>
+    <h3>No products found</h3>
+    <p>{{ searchTerm || selectedStatus || selectedOwner ? 'Try adjusting your search criteria' : 'Get started by creating your first product' }}</p>
+    <button class="btn btn-primary" (click)="addProduct()" *ngIf="!searchTerm && !selectedStatus && !selectedOwner">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <path d="M12 5v14M5 12h14"/>
+      </svg>
+      Add Product
+    </button>
+  </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal-overlay" *ngIf="showDeleteConfirm">
+  <div class="modal-content">
+    <h3>Confirm Delete</h3>
+    <p>Are you sure you want to delete the product <strong>{{ productToDelete?.name }}</strong>?</p>
+    <p class="warning-text">This action cannot be undone and will also delete all associated modules.</p>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" (click)="showDeleteConfirm = false; productToDelete = null">Cancel</button>
+      <button class="btn btn-danger" (click)="deleteProduct()" [disabled]="isLoading">
+        <span *ngIf="isLoading" class="spinner-border spinner-border-sm me-2"></span>
+        {{ isLoading ? 'Deleting...' : 'Delete Product' }}
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Product Modules Modal -->
+<div class="modal-overlay" *ngIf="showModuleModal">
+  <div class="modal-content large-modal">
+    <div class="modal-header">
+      <h3>Manage Modules - {{ selectedProduct?.name }}</h3>
+      <button class="close-btn" (click)="showModuleModal = false">
+        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path d="M18 6 6 18"/>
+          <path d="m6 6 12 12"/>
+        </svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <!-- Add/Edit Module Form -->
+      <div class="add-module-form">
+        <h4>{{ isEditingModule ? 'Edit Module' : 'Add New Module' }}</h4>
+        <div class="module-form-grid">
+          <input 
+            type="text" 
+            class="form-control" 
+            [(ngModel)]="newModuleForm.name" 
+            placeholder="Module Name *" 
+            required>
+          <input 
+            type="text" 
+            class="form-control" 
+            [(ngModel)]="newModuleForm.release" 
+            placeholder="Release (optional)">
+          <select class="form-control" [(ngModel)]="newModuleForm.moduleStatus">
+            <option value="DEVELOPMENT">Development</option>
+            <option value="TESTING">Testing</option>
+            <option value="PRODUCTION">Production</option>
+            <option value="ACTIVE">Active</option>
+            <option value="INACTIVE">Inactive</option>
+          </select>
+          <select class="form-control" [(ngModel)]="newModuleForm.moduleOwnerId">
+            <option [value]="undefined">Select Owner</option>
+            <option *ngFor="let user of users" [value]="user.id">
+              {{ user.firstName }} {{ user.lastName }}
+            </option>
+          </select>
+          <input 
+            type="text" 
+            class="form-control" 
+            [(ngModel)]="newModuleForm.client" 
+            placeholder="Client (optional)">
+          <div class="form-actions-inline">
+            <button 
+              *ngIf="!isEditingModule"
+              class="btn btn-primary" 
+              (click)="addProductModule()" 
+              [disabled]="!newModuleForm.name || isLoading">
+              <span *ngIf="isLoading" class="spinner-border spinner-border-sm me-2"></span>
+              {{ isLoading ? 'Adding...' : 'Add Module' }}
+            </button>
+            <div *ngIf="isEditingModule" class="edit-actions">
+              <button 
+                class="btn btn-primary" 
+                (click)="updateProductModule()" 
+                [disabled]="!newModuleForm.name || isLoading">
+                <span *ngIf="isLoading" class="spinner-border spinner-border-sm me-2"></span>
+                {{ isLoading ? 'Updating...' : 'Update Module' }}
+              </button>
+              <button 
+                class="btn btn-secondary" 
+                (click)="cancelModuleEdit()" 
+                [disabled]="isLoading">
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Current Modules -->
+      <div class="current-modules">
+        <h4>Current Modules ({{ productModules.length }})</h4>
+        <div class="modules-list">
+          <div *ngFor="let module of productModules" class="module-item">
+            <div class="module-info">
+              <div class="module-avatar">
+                {{ module.name.charAt(0).toUpperCase() }}
+              </div>
+              <div class="module-details">
+                <div class="module-name">{{ module.name }}</div>
+                <div class="module-release" *ngIf="module.release">Release: {{ module.release }}</div>
+                <div class="module-owner">Owner: {{ getOwnerName(module.moduleOwnerId) }}</div>
+              </div>
+            </div>
+            <div class="module-status">
+              <span class="status-badge" [class]="getStatusBadgeClass(module.moduleStatus)">
+                {{ getStatusDisplayName(module.moduleStatus) }}
+              </span>
+            </div>
+            <div class="module-actions">
+              <button class="action-btn edit-btn" (click)="editProductModule(module)" title="Edit Module" [disabled]="isLoading">
+                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                </svg>
+              </button>
+              <button class="action-btn delete-btn" (click)="confirmDeleteModule(module)" title="Remove Module" [disabled]="isLoading">
+                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <path d="M3 6h18"/>
+                  <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/>
+                  <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+        <div *ngIf="productModules.length === 0" class="no-modules">
+          <p>No modules added yet. Add the first module above.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Delete Module Confirmation Modal -->
+<div class="modal-overlay" *ngIf="showDeleteModuleConfirm">
+  <div class="modal-content">
+    <h3>Confirm Delete Module</h3>
+    <p>Are you sure you want to delete the module <strong>{{ moduleToDelete?.name }}</strong>?</p>
+    <p class="warning-text">This action cannot be undone.</p>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" (click)="showDeleteModuleConfirm = false; moduleToDelete = null" [disabled]="isLoading">Cancel</button>
+      <button class="btn btn-danger" (click)="removeProductModule()" [disabled]="isLoading">
+        <span *ngIf="isLoading" class="spinner-border spinner-border-sm me-2"></span>
+        {{ isLoading ? 'Deleting...' : 'Delete Module' }}
+      </button>
+    </div>
+  </div>
+</div>
