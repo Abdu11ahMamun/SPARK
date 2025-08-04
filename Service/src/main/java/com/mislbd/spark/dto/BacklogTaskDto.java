@@ -1,0 +1,44 @@
+package com.mislbd.spark.dto;
+
+import lombok.*;
+import java.time.Instant;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class BacklogTaskDto {
+    private Integer id;
+    private String title;
+    private String description;
+    private String status;
+    private String priority;
+    private Instant deadline;
+    private Instant createddate;
+    private Instant modifieddate;
+    private Integer assignedto;
+    private Integer sprintid;
+    private Integer productid;
+    private Integer points;
+    private Integer tasktypeid;
+    private Integer productModuleId;
+    private Integer parentId;
+    private Integer primaryClient;
+    private String sptrackingId;
+    private String issueRaceVia;
+    private Integer mitsId;
+    private Integer taskStatus;
+    private Integer taskType;
+    private String createBy;
+    private String updateBy;
+    private Instant updatedate;
+    private Integer teamId;
+    
+    // Frontend compatibility field for task type as string
+    private String type;
+    
+    // Frontend-friendly field names that map to the backend fields
+    private Integer assigneeId;
+    private Integer moduleId;
+    private Integer sprintId;
+}
