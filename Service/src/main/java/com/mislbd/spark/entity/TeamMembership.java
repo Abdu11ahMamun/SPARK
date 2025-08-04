@@ -1,21 +1,25 @@
 package com.mislbd.spark.entity;
 
-import jakarta.persistence.EmbeddedId;
-import jakarta.persistence.Entity;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.MapsId;
+import jakarta.persistence.*;
+import lombok.*;
+import com.mislbd.spark.repository.schema.SchemaConstant;
 
 @Entity
+@Table(name = SchemaConstant.TEAM_MEMBERSHIP_TABLE_NAME)
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class TeamMembership {
-
     @EmbeddedId
     private TeamMembershipId id;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @MapsId("userId")
     private User user;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @MapsId("teamId")
     private Team team;
 

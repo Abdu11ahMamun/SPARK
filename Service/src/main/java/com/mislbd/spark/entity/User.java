@@ -1,5 +1,6 @@
 package com.mislbd.spark.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.mislbd.spark.entity.types.Roles;
 import com.mislbd.spark.repository.schema.SchemaConstant;
 import jakarta.persistence.*;
@@ -45,6 +46,7 @@ public class User {
     private LocalDateTime createdate;
     private LocalDateTime updatedate;
 
-    @OneToMany(mappedBy = "user")
+    @OneToMany(mappedBy = "user", fetch = FetchType.LAZY)
+    @JsonIgnore // Prevent JSON serialization loops
     private List<TeamMembership> memberships;
 }
