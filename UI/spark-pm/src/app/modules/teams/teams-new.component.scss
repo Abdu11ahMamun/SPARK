@@ -1,0 +1,94 @@
+/* Import common styles */
+@import '../../shared/styles/common-styles.scss';
+
+/* Team-specific styles - extending common styles */
+
+/* Main container - using common styles */
+.teams-container {
+  @extend .common-container;
+}
+
+/* Header section - using common styles */
+.teams-header {
+  @extend .common-header;
+}
+
+.teams-title {
+  @extend .common-title;
+}
+
+.teams-actions {
+  @extend .common-actions;
+}
+
+/* Team form - using common styles */
+.team-form {
+  @extend .common-form;
+}
+
+/* Teams table - using common styles */
+.teams-table-container {
+  @extend .common-table-container;
+}
+
+.teams-table {
+  @extend .common-table;
+}
+
+/* Team-specific table content styles */
+.team-info {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.team-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 1.25rem;
+}
+
+.team-details .team-name {
+  font-weight: 600;
+  color: #2d3748;
+  margin-bottom: 0.25rem;
+}
+
+.team-details .team-description {
+  font-size: 0.875rem;
+  color: #718096;
+}
+
+.members-info {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.member-badge {
+  padding: 0.25rem 0.5rem;
+  background: #e2e8f0;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  color: #4a5568;
+  font-weight: 500;
+}
+
+/* Team actions - extending common action styles */
+.team-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.team-actions .action-btn {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+}

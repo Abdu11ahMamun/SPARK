@@ -1,0 +1,227 @@
+<div class="modules-container">
+  <!-- Header -->
+  <div class="modules-header">
+    <div class="header-content">
+      <h1 class="modules-title">Product Modules</h1>
+      <div class="modules-actions">
+        <button class="btn btn-primary" (click)="showAddForm()">
+          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path d="M12 5v14m-7-7h14"/>
+          </svg>
+          Add Module
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading Spinner -->
+  <div *ngIf="isLoading" class="loading-spinner">
+    <div class="spinner"></div>
+    <p>Loading modules...</p>
+  </div>
+
+  <!-- Add/Edit Form Modal -->
+  <div class="modal-overlay" *ngIf="showForm" (click)="hideForm()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>{{ isEditMode ? 'Edit Module' : 'Add New Module' }}</h2>
+        <button class="btn-close" (click)="hideForm()">
+          <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path d="M18 6L6 18M6 6l12 12"/>
+          </svg>
+        </button>
+      </div>
+      
+      <form (ngSubmit)="submitForm()" class="module-form">
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="name">Module Name</label>
+            <input 
+              type="text" 
+              id="name"
+              class="form-control" 
+              [(ngModel)]="moduleForm.name" 
+              name="name" 
+              placeholder="Enter module name"
+              required>
+          </div>
+
+          <div class="form-group">
+            <label for="productId">Product</label>
+            <select 
+              id="productId"
+              class="form-control" 
+              [(ngModel)]="moduleForm.productId" 
+              name="productId" 
+              required>
+              <option value="0" disabled>Select a product</option>
+              <option *ngFor="let product of products" [value]="product.id">
+                {{ product.name }}
+              </option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="release">Release</label>
+            <input 
+              type="text" 
+              id="release"
+              class="form-control" 
+              [(ngModel)]="moduleForm.release" 
+              name="release" 
+              placeholder="Enter release version">
+          </div>
+
+          <div class="form-group">
+            <label for="moduleStatus">Status</label>
+            <select 
+              id="moduleStatus"
+              class="form-control" 
+              [(ngModel)]="moduleForm.moduleStatus" 
+              name="moduleStatus">
+              <option value="Active">Active</option>
+              <option value="Inactive">Inactive</option>
+              <option value="Completed">Completed</option>
+              <option value="In-Progress">In Progress</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="moduleOwnerId">Module Owner</label>
+            <select 
+              id="moduleOwnerId"
+              class="form-control" 
+              [(ngModel)]="moduleForm.moduleOwnerId" 
+              name="moduleOwnerId">
+              <option [value]="undefined">Select Owner</option>
+              <option *ngFor="let user of users" [value]="user.id">
+                {{ user.firstName }} {{ user.lastName }}
+              </option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="client">Client</label>
+            <input 
+              type="text" 
+              id="client"
+              class="form-control" 
+              [(ngModel)]="moduleForm.client" 
+              name="client" 
+              placeholder="Enter client name">
+          </div>
+        </div>
+
+        <div class="form-actions">
+          <button type="button" class="btn btn-secondary" (click)="hideForm()">Cancel</button>
+          <button type="submit" class="btn btn-primary">
+            {{ isEditMode ? 'Update Module' : 'Add Module' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Delete Confirmation Modal -->
+  <div class="modal-overlay" *ngIf="showDeleteConfirm" (click)="cancelDelete()">
+    <div class="modal-content delete-modal" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>Confirm Delete</h2>
+      </div>
+      <div class="modal-body">
+        <p>Are you sure you want to delete the module <strong>{{ moduleToDelete?.name }}</strong>?</p>
+        <p class="warning-text">This action cannot be undone.</p>
+      </div>
+      <div class="form-actions">
+        <button type="button" class="btn btn-secondary" (click)="cancelDelete()">Cancel</button>
+        <button type="button" class="btn btn-danger" (click)="deleteModule()">Delete</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading State -->
+  <div class="loading-container" *ngIf="isLoading">
+    <div class="loading-spinner">
+      <svg class="animate-spin" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <path d="M12 2v4m0 12v4m8-10h-4M6 12H2m15.364-7.364l-2.828 2.828M7.464 16.536l-2.828 2.828m12.728 0l-2.828-2.828M7.464 7.464L4.636 4.636"/>
+      </svg>
+      Loading modules...
+    </div>
+  </div>
+
+  <!-- Modules Table -->
+  <div class="common-table-container" *ngIf="!isLoading && modules && modules.length > 0">
+    <table class="common-table">
+      <thead>
+        <tr>
+          <th>Module</th>
+          <th>Product</th>
+          <th>Status</th>
+          <th>Owner</th>
+          <th>Client</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let module of modules; trackBy: trackByModuleId">
+          <td>
+            <div class="module-info">
+              <div class="module-avatar">
+                {{ module.name.charAt(0).toUpperCase() }}
+              </div>
+              <div class="module-details">
+                <div class="module-name">{{ module.name }}</div>
+                <div class="module-product">{{ module.productName || 'Unknown Product' }}</div>
+                <div class="module-release" *ngIf="module.release">{{ module.release }}</div>
+              </div>
+            </div>
+          </td>
+          <td class="product-name">{{ module.productName || 'Unknown Product' }}</td>
+          <td>
+            <span class="status-badge" [ngClass]="getStatusClass(module.moduleStatus)">
+              {{ module.moduleStatus }}
+            </span>
+          </td>
+          <td>{{ module.ownerName || 'No Owner' }}</td>
+          <td>{{ module.client || '-' }}</td>
+          <td>
+            <div class="action-buttons">
+              <button 
+                class="btn-icon btn-edit" 
+                (click)="editModule(module)"
+                title="Edit module">
+                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                  <path d="m18.5 2.5 3 3L12 15l-4 1 1-4z"/>
+                </svg>
+              </button>
+              <button 
+                class="btn-icon btn-delete" 
+                (click)="confirmDelete(module)"
+                title="Delete module">
+                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <path d="m3 6 3 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2l3-12"/>
+                  <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                </svg>
+              </button>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Empty State -->
+  <div *ngIf="!isLoading && (!modules || modules.length === 0)" class="empty-state">
+    <div class="empty-icon">
+      <svg width="64" height="64" fill="none" stroke="currentColor" stroke-width="1" viewBox="0 0 24 24">
+        <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5.586a1 1 0 0 1 .707.293l5.414 5.414a1 1 0 0 1 .293.707V19a2 2 0 0 1-2 2z"/>
+      </svg>
+    </div>
+    <h3>No modules found</h3>
+    <p>Start by adding your first product module.</p>
+    <button class="btn btn-primary" (click)="showAddForm()">
+      Add First Module
+    </button>
+  </div>
+</div>

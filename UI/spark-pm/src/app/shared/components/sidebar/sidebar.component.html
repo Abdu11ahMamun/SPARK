@@ -1,0 +1,118 @@
+<nav class="sidebar" [class.collapsed]="isCollapsed()">
+  <div class="sidebar-header">
+    <div class="sidebar-title" [class.hidden]="isCollapsed()">SPARK</div>
+    <div class="sidebar-subtitle" [class.hidden]="isCollapsed()">Project Management</div>
+    <button class="sidebar-toggle" (click)="toggleSidebar()" [attr.aria-label]="isCollapsed() ? 'Expand sidebar' : 'Collapse sidebar'">
+      <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" [class.rotated]="isCollapsed()">
+        <path d="M15 18l-6-6 6-6"/>
+      </svg>
+    </button>
+  </div>
+  
+  <ul class="sidebar-menu">
+    <li>
+      <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" [title]="isCollapsed() ? 'Dashboard' : ''">
+        <span class="menu-icon" [innerHTML]="icons.home"></span>
+        <span class="menu-text" [class.hidden]="isCollapsed()">Dashboard</span>
+      </a>
+    </li>
+    
+    <!-- Management Section -->
+    <li class="menu-section-divider" *ngIf="!isCollapsed()">
+      <span class="section-title">Management</span>
+    </li>
+    <li>
+      <a routerLink="/teams" routerLinkActive="active" [title]="isCollapsed() ? 'Team Management' : ''">
+        <span class="menu-icon" [innerHTML]="icons.teamList"></span>
+        <span class="menu-text" [class.hidden]="isCollapsed()">Team Management</span>
+      </a>
+    </li>
+    <li>
+      <a routerLink="/users" routerLinkActive="active" [title]="isCollapsed() ? 'User Management' : ''">
+        <span class="menu-icon" [innerHTML]="icons.userInfo"></span>
+        <span class="menu-text" [class.hidden]="isCollapsed()">User Management</span>
+      </a>
+    </li>
+    <li>
+      <a routerLink="/products" routerLinkActive="active" [title]="isCollapsed() ? 'Products' : ''">
+        <span class="menu-icon" [innerHTML]="icons.productList"></span>
+        <span class="menu-text" [class.hidden]="isCollapsed()">Products</span>
+      </a>
+    </li>
+    <li>
+      <a routerLink="/product-modules" routerLinkActive="active" [title]="isCollapsed() ? 'Product Modules' : ''">
+        <span class="menu-icon" [innerHTML]="icons.productModule"></span>
+        <span class="menu-text" [class.hidden]="isCollapsed()">Product Modules</span>
+      </a>
+    </li>
+
+    <!-- Task Management Section -->
+    <li class="menu-section-divider" *ngIf="!isCollapsed()">
+      <span class="section-title">Task Management</span>
+    </li>
+    <li>
+      <a routerLink="/tasks" routerLinkActive="active" [title]="isCollapsed() ? 'Tasks' : ''">
+        <span class="menu-icon" [innerHTML]="icons.tasks"></span>
+        <span class="menu-text" [class.hidden]="isCollapsed()">Tasks</span>
+      </a>
+    </li>
+    <li>
+      <a routerLink="/backlog" routerLinkActive="active" [title]="isCollapsed() ? 'Backlog' : ''">
+        <span class="menu-icon" [innerHTML]="icons.backlog"></span>
+        <span class="menu-text" [class.hidden]="isCollapsed()">Backlog</span>
+      </a>
+    </li>
+
+    <!-- Project Management Section -->
+    <li class="menu-section-divider" *ngIf="!isCollapsed()">
+      <span class="section-title">Project Management</span>
+    </li>
+    <li>
+      <a routerLink="/backlog-mits" routerLinkActive="active" [title]="isCollapsed() ? 'Backlog to MITS' : ''">
+        <span class="menu-icon" [innerHTML]="icons.backlogToMITS"></span>
+        <span class="menu-text" [class.hidden]="isCollapsed()">Backlog to MITS</span>
+      </a>
+    </li>
+    <li>
+      <a routerLink="/sprint-declare" routerLinkActive="active" [title]="isCollapsed() ? 'Sprint Planning' : ''">
+        <span class="menu-icon" [innerHTML]="icons.sprintDeclare"></span>
+        <span class="menu-text" [class.hidden]="isCollapsed()">Sprint Planning</span>
+      </a>
+    </li>
+    <li>
+      <a routerLink="/sprints" routerLinkActive="active" [title]="isCollapsed() ? 'Sprint Management' : ''">
+        <span class="menu-icon" [innerHTML]="icons.sprints"></span>
+        <span class="menu-text" [class.hidden]="isCollapsed()">Sprint Management</span>
+      </a>
+    </li>
+
+    <!-- Reports Section -->
+    <li class="menu-section-divider" *ngIf="!isCollapsed()">
+      <span class="section-title">Reports</span>
+    </li>
+    <li>
+      <a routerLink="/comparative-statement" routerLinkActive="active" [title]="isCollapsed() ? 'Comparative Statement' : ''">
+        <span class="menu-icon" [innerHTML]="icons.comparativeStatement"></span>
+        <span class="menu-text" [class.hidden]="isCollapsed()">Comparative Statement</span>
+      </a>
+    </li>
+    <li>
+      <a routerLink="/summary-report" routerLinkActive="active" [title]="isCollapsed() ? 'Summary Report' : ''">
+        <span class="menu-icon" [innerHTML]="icons.summaryReport"></span>
+        <span class="menu-text" [class.hidden]="isCollapsed()">Summary Report</span>
+      </a>
+    </li>
+    <li>
+      <a routerLink="/user-comparative" routerLinkActive="active" [title]="isCollapsed() ? 'User Comparative' : ''">
+        <span class="menu-icon" [innerHTML]="icons.userComparative"></span>
+        <span class="menu-text" [class.hidden]="isCollapsed()">User Comparative</span>
+      </a>
+    </li>
+    <li>
+      <a routerLink="/backlog-task-assigned" routerLinkActive="active" [title]="isCollapsed() ? 'Backlog Task Assigned' : ''">
+        <span class="menu-icon" [innerHTML]="icons.backlogTaskAssigned"></span>
+        <span class="menu-text" [class.hidden]="isCollapsed()">Backlog Task Assigned</span>
+      </a>
+    </li>
+  </ul>
+</nav>

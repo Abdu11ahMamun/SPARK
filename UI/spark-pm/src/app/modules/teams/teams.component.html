@@ -1,0 +1,276 @@
+<div class="teams-container">
+  <!-- Teams Header -->
+  <div class="teams-header">
+    <h1 class="teams-title">Team Management</h1>
+    <div class="teams-actions">
+      <button class="action-btn refresh-btn" (click)="refreshTeams()" [disabled]="isLoading" title="Refresh Teams">
+        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" [class.spinning]="isLoading">
+          <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/>
+          <path d="M21 3v5h-5"/>
+          <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/>
+          <path d="M3 21v-5h5"/>
+        </svg>
+      </button>
+      <button class="btn btn-primary" (click)="addTeam()">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path d="M12 5v14M5 12h14"/>
+        </svg>
+        Add Team
+      </button>
+    </div>
+  </div>
+
+  <!-- Error Message -->
+  <div *ngIf="error" class="alert alert-error">
+    {{ error }}
+    <button class="alert-close" (click)="error = null">×</button>
+  </div>
+
+  <!-- Loading Spinner -->
+  <div *ngIf="isLoading" class="loading-spinner">
+    <div class="spinner"></div>
+    <p>Loading...</p>
+  </div>
+
+  <!-- Team Form (Add/Edit) -->
+  <div *ngIf="isAdd || isEdit" class="common-form">
+    <h3 class="card-title">{{ isAdd ? 'Add New Team' : 'Edit Team' }}</h3>
+    <form (ngSubmit)="saveTeam()">
+      <div class="form-grid">
+        <div class="form-group span-2">
+          <label class="form-label">Team Name *:</label>
+          <input 
+            class="form-control" 
+            [(ngModel)]="teamForm.teamName" 
+            name="teamName" 
+            required 
+            placeholder="Enter team name"
+          />
+        </div>
+        
+        <div class="form-group span-2">
+          <label class="form-label">Description:</label>
+          <textarea 
+            class="form-control" 
+            [(ngModel)]="teamForm.description" 
+            name="description" 
+            rows="3"
+            placeholder="Enter team description"
+          ></textarea>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Product Owner:</label>
+          <select class="form-control" [(ngModel)]="teamForm.pOwner" name="pOwner">
+            <option value="">Select Product Owner</option>
+            <option *ngFor="let user of users" [value]="user.id">
+              {{ user.firstName }} {{ user.lastName }}
+            </option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Scrum Master:</label>
+          <select class="form-control" [(ngModel)]="teamForm.sMaster" name="sMaster">
+            <option value="">Select Scrum Master</option>
+            <option *ngFor="let user of users" [value]="user.id">
+              {{ user.firstName }} {{ user.lastName }}
+            </option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Status:</label>
+          <select class="form-control" [(ngModel)]="teamForm.status" name="status" required>
+            <option [value]="1">Active</option>
+            <option [value]="0">Inactive</option>
+            <option [value]="2">Completed</option>
+          </select>
+        </div>
+      </div>
+      
+      <div class="form-actions">
+        <button type="button" class="btn btn-secondary" (click)="cancel()">Cancel</button>
+        <button type="submit" class="btn btn-primary" [disabled]="isLoading">
+          {{ isAdd ? 'Create Team' : 'Update Team' }}
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Teams Table -->
+  <div class="common-table-container" *ngIf="!isLoading && teams && teams.length > 0">
+    <table class="common-table">
+      <thead>
+        <tr>
+          <th>Team</th>
+          <th>Lead</th>
+          <th>Members</th>
+          <th>Status</th>
+          <th>Created</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let team of teams">
+          <td>
+            <div class="team-info">
+              <div class="team-avatar">
+                {{ team.teamName.charAt(0).toUpperCase() }}
+              </div>
+              <div>
+                <div class="team-name">{{ team.teamName }}</div>
+                <div class="team-description">{{ team.description || 'No description' }}</div>
+              </div>
+            </div>
+          </td>
+          <td>
+            <div class="team-lead">
+              {{ team.leadName || 'No lead assigned' }}
+            </div>
+          </td>
+          <td>
+            <div class="member-count">
+              <span class="count-badge">{{ team.members?.length || 0 }}</span>
+              <button class="btn-link" (click)="viewTeamMembers(team)">View Members</button>
+            </div>
+          </td>
+          <td>
+            <span class="status-badge" [class]="getStatusBadgeClass(team.status)">
+              {{ getStatusLabel(team.status) }}
+            </span>
+          </td>
+          <td>
+            <div class="date-info">
+              {{ team.createdAt | date:'short' }}
+            </div>
+          </td>
+          <td>
+            <div class="team-actions">
+              <button class="action-btn edit-btn" (click)="editTeam(team)" title="Edit Team">
+                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                  <path d="m18.5 2.5 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                </svg>
+              </button>
+              <button class="action-btn members-btn" (click)="viewTeamMembers(team)" title="Manage Members">
+                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                  <circle cx="9" cy="7" r="4"/>
+                  <path d="m22 2-5 5m0-5 5 5"/>
+                </svg>
+              </button>
+              <button class="action-btn delete-btn" (click)="confirmDeleteTeam(team)" title="Delete Team">
+                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <path d="M3 6h18"/>
+                  <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/>
+                  <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>
+                </svg>
+              </button>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+    
+    <!-- Empty State -->
+    <div *ngIf="teams.length === 0 && !isLoading" class="empty-state">
+      <svg width="48" height="48" fill="none" stroke="currentColor" stroke-width="1" viewBox="0 0 24 24" style="margin-bottom: 1rem; opacity: 0.3;">
+        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+        <circle cx="9" cy="7" r="4"/>
+        <path d="m22 2-5 5m0-5 5 5"/>
+      </svg>
+      <h3>No teams found</h3>
+      <p>Get started by creating your first team.</p>
+    </div>
+  </div>
+</div>
+
+<!-- Team Members Modal -->
+<div *ngIf="showMemberModal" class="modal-overlay" (click)="closeMemberModal()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3>{{ selectedTeam?.teamName }} - Team Members</h3>
+      <button class="modal-close" (click)="closeMemberModal()">×</button>
+    </div>
+    
+    <div class="modal-body">
+      <!-- Add Member Form -->
+      <div class="add-member-form">
+        <h4>Add New Member</h4>
+        <div class="member-form-grid">
+          <select class="form-control" [(ngModel)]="newMemberForm.userId" [disabled]="users.length === 0">
+            <option value="0">{{ users.length === 0 ? 'Loading users...' : 'Select User' }}</option>
+            <option *ngFor="let user of users" [value]="user.id">
+              {{ user.firstName }} {{ user.lastName }} ({{ user.email }})
+            </option>
+          </select>
+          <select class="form-control" [(ngModel)]="newMemberForm.role">
+            <option value="member">Member</option>
+            <option value="lead">Lead</option>
+            <option value="admin">Admin</option>
+          </select>
+          <button class="btn btn-primary" (click)="addTeamMember()" [disabled]="!newMemberForm.userId || isLoading">
+            <span *ngIf="isLoading" class="spinner-border spinner-border-sm me-2"></span>
+            {{ isLoading ? 'Adding...' : 'Add Member' }}
+          </button>
+        </div>
+      </div>
+
+      <!-- Current Members -->
+      <div class="current-members">
+        <h4>Current Members ({{ teamMembers.length }})</h4>
+        <div class="members-list">
+          <div *ngFor="let member of teamMembers" class="member-item">
+            <div class="member-info">
+              <div class="member-avatar">
+                {{ member.userName.charAt(0).toUpperCase() }}
+              </div>
+              <div class="member-details">
+                <div class="member-name">{{ member.userName }}</div>
+                <div class="member-email">{{ member.userEmail }}</div>
+                <div class="member-joined">Joined: {{ member.joinedDate | date:'short' }}</div>
+              </div>
+            </div>
+            <div class="member-role">
+              <select 
+                class="form-control-sm" 
+                [value]="member.role" 
+                (change)="updateMemberRole(member, $any($event.target).value)"
+              >
+                <option value="member">Member</option>
+                <option value="lead">Lead</option>
+                <option value="admin">Admin</option>
+              </select>
+            </div>
+            <div class="member-actions">
+              <button class="action-btn delete" (click)="removeTeamMember(member)" title="Remove Member">
+                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <path d="M3 6h18"/>
+                  <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div *ngIf="showDeleteConfirm" class="modal-overlay">
+  <div class="modal-content confirm-modal">
+    <div class="modal-header">
+      <h3>Confirm Delete</h3>
+    </div>
+    <div class="modal-body">
+      <p>Are you sure you want to delete the team "{{ teamToDelete?.teamName }}"?</p>
+      <p class="warning-text">This action cannot be undone.</p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" (click)="showDeleteConfirm = false">Cancel</button>
+      <button class="btn btn-danger" (click)="deleteTeam()" [disabled]="isLoading">Delete Team</button>
+    </div>
+  </div>
+</div>

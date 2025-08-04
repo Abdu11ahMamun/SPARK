@@ -1,0 +1,99 @@
+/* Import common styles */
+@import '../../shared/styles/common-styles.scss';
+
+/* User-specific styles - extending common styles */
+
+/* Main container - using common styles */
+.users-container {
+  @extend .common-container;
+}
+
+/* Header section - using common styles */
+.users-header {
+  @extend .common-header;
+}
+
+.users-title {
+  @extend .common-title;
+}
+
+.users-actions {
+  @extend .common-actions;
+}
+
+/* User form - using common styles */
+.user-form {
+  @extend .common-form;
+}
+
+/* Users table - using common styles */
+.users-table-container {
+  @extend .common-table-container;
+}
+
+.users-table {
+  @extend .common-table;
+}
+
+/* User-specific table content styles */
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.user-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 1.25rem;
+}
+
+.user-details .user-name {
+  font-weight: 600;
+  color: #2d3748;
+  margin-bottom: 0.25rem;
+}
+
+.user-details .user-email {
+  font-size: 0.875rem;
+  color: #718096;
+}
+
+.user-role {
+  color: #4a5568;
+  font-weight: 500;
+}
+
+.teams-info {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.team-badge {
+  padding: 0.25rem 0.5rem;
+  background: #e2e8f0;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  color: #4a5568;
+  font-weight: 500;
+}
+
+/* User actions - extending common action styles */
+.user-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.user-actions .action-btn {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+}

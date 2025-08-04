@@ -1,0 +1,231 @@
+<div class="backlog-container">
+  <!-- Header -->
+  <div class="header">
+    <div class="header-content">
+      <h1>Product Backlog</h1>
+      <p class="subtitle">Manage and prioritize your product backlog items</p>
+    </div>
+    <div class="header-actions">
+      <button 
+        class="btn btn-outline" 
+        (click)="refreshBacklog()"
+        [disabled]="isLoading">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+        </svg>
+        Refresh
+      </button>
+      <button 
+        class="btn btn-primary" 
+        (click)="showAssignToSprintModal()"
+        [disabled]="selectedTasks.size === 0">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+        </svg>
+        Assign to Sprint ({{ selectedTasks.size }})
+      </button>
+    </div>
+  </div>
+
+  <!-- Filters -->
+  <div class="filters">
+    <div class="filter-group">
+      <div class="search-box">
+        <svg class="search-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+        </svg>
+        <input 
+          type="text" 
+          placeholder="Search tasks..." 
+          [(ngModel)]="searchTerm"
+          (input)="onSearchChange()"
+          class="search-input">
+      </div>
+    </div>
+
+    <div class="filter-group">
+      <select [(ngModel)]="selectedPriority" (change)="onFilterChange()" class="filter-select">
+        <option value="">All Priorities</option>
+        <option value="LOW">Low</option>
+        <option value="MEDIUM">Medium</option>
+        <option value="HIGH">High</option>
+        <option value="CRITICAL">Critical</option>
+      </select>
+
+      <select [(ngModel)]="selectedProduct" (change)="onFilterChange()" class="filter-select">
+        <option value="">All Products</option>
+        <option *ngFor="let product of products" [value]="product.id">
+          {{ product.name }}
+        </option>
+      </select>
+
+      <select [(ngModel)]="selectedType" (change)="onFilterChange()" class="filter-select">
+        <option value="">All Types</option>
+        <option value="FEATURE">Feature</option>
+        <option value="BUG">Bug</option>
+        <option value="IMPROVEMENT">Improvement</option>
+        <option value="DOCUMENTATION">Documentation</option>
+        <option value="RESEARCH">Research</option>
+        <option value="TESTING">Testing</option>
+      </select>
+
+      <button class="btn btn-outline" (click)="clearFilters()">
+        Clear Filters
+      </button>
+    </div>
+  </div>
+
+  <!-- Selection Actions -->
+  <div class="selection-actions" *ngIf="filteredTasks.length > 0">
+    <div class="selection-info">
+      <span>{{ selectedTasks.size }} of {{ filteredTasks.length }} tasks selected</span>
+    </div>
+    <div class="selection-buttons">
+      <button class="btn btn-outline btn-sm" (click)="selectAllTasks()">
+        Select All
+      </button>
+      <button class="btn btn-outline btn-sm" (click)="clearSelection()" [disabled]="selectedTasks.size === 0">
+        Clear Selection
+      </button>
+    </div>
+  </div>
+
+  <!-- Loading State -->
+  <div *ngIf="isLoading" class="loading-container">
+    <div class="loading-spinner"></div>
+    <p>Loading backlog tasks...</p>
+  </div>
+
+  <!-- Tasks Table -->
+  <div class="tasks-table-container" *ngIf="!isLoading">
+    <table class="tasks-table" *ngIf="filteredTasks.length > 0">
+      <thead>
+        <tr>
+          <th class="checkbox-column">
+            <input 
+              type="checkbox" 
+              [checked]="selectedTasks.size === filteredTasks.length && filteredTasks.length > 0"
+              [indeterminate]="selectedTasks.size > 0 && selectedTasks.size < filteredTasks.length"
+              (change)="selectedTasks.size === filteredTasks.length ? clearSelection() : selectAllTasks()"
+              class="checkbox">
+          </th>
+          <th>Task</th>
+          <th>Priority</th>
+          <th>Type</th>
+          <th>Product</th>
+          <th>Assignee</th>
+          <th>Story Points</th>
+          <th>Created</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr 
+          *ngFor="let task of filteredTasks; trackBy: trackByTaskId" 
+          class="task-row"
+          [class.selected]="isTaskSelected(task.id!)">
+          <td class="checkbox-column">
+            <input 
+              type="checkbox" 
+              [checked]="isTaskSelected(task.id!)"
+              (change)="toggleTaskSelection(task.id!)"
+              class="checkbox">
+          </td>
+          <td class="task-info">
+            <div class="task-title">{{ task.title }}</div>
+            <div class="task-description" *ngIf="task.description">
+              {{ task.description }}
+            </div>
+          </td>
+          <td>
+            <span class="priority-badge" [ngClass]="getPriorityClass(task.priority)">
+              {{ task.priority }}
+            </span>
+          </td>
+          <td>
+            <span class="type-badge" [ngClass]="getTypeClass(task.type)">
+              {{ task.type }}
+            </span>
+          </td>
+          <td>
+            <span class="product-name">{{ task.productName }}</span>
+          </td>
+          <td>
+            <div class="assignee-info">
+              <span class="assignee-name">{{ task.assigneeName }}</span>
+            </div>
+          </td>
+          <td>
+            <span class="story-points" *ngIf="task.storyPoints; else noPoints">
+              {{ task.storyPoints }}
+            </span>
+            <ng-template #noPoints>
+              <span class="no-points">-</span>
+            </ng-template>
+          </td>
+          <td>
+            <span class="created-date">
+              {{ task.createdAt | date:'MMM d, y' }}
+            </span>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- Empty State -->
+    <div *ngIf="filteredTasks.length === 0" class="empty-state">
+      <div class="empty-state-icon">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+        </svg>
+      </div>
+      <h3>No backlog tasks found</h3>
+      <p *ngIf="searchTerm || selectedPriority || selectedProduct || selectedType">
+        Try adjusting your filters to see more tasks.
+      </p>
+      <p *ngIf="!searchTerm && !selectedPriority && !selectedProduct && !selectedType">
+        Your backlog is empty. Create new tasks to get started.
+      </p>
+    </div>
+  </div>
+</div>
+
+<!-- Sprint Assignment Modal -->
+<div class="modal-overlay" *ngIf="showSprintModal" (click)="closeSprintModal()">
+  <div class="modal" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3>Assign Tasks to Sprint</h3>
+      <button class="close-btn" (click)="closeSprintModal()">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+    
+    <div class="modal-body">
+      <p>Assign {{ selectedTasks.size }} selected task(s) to a sprint:</p>
+      
+      <div class="form-group">
+        <label for="sprintSelect">Select Sprint:</label>
+        <select 
+          id="sprintSelect"
+          [(ngModel)]="selectedSprintForAssignment" 
+          class="form-control">
+          <option value="">Choose a sprint...</option>
+          <option *ngFor="let sprint of sprints" [value]="sprint.id">
+            {{ sprint.name }} ({{ sprint.startDate | date:'MMM d' }} - {{ sprint.endDate | date:'MMM d' }})
+          </option>
+        </select>
+      </div>
+    </div>
+    
+    <div class="modal-footer">
+      <button class="btn btn-outline" (click)="closeSprintModal()">Cancel</button>
+      <button 
+        class="btn btn-primary" 
+        (click)="assignToSprint()"
+        [disabled]="!selectedSprintForAssignment">
+        Assign to Sprint
+      </button>
+    </div>
+  </div>
+</div>

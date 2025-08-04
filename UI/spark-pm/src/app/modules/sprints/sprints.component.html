@@ -1,0 +1,217 @@
+<div class="sprints-container">
+  <!-- Header -->
+  <div class="header-section">
+    <h1>Sprint Management</h1>
+    <button (click)="openSprintModal()" class="btn btn-primary">
+      Create New Sprint
+    </button>
+  </div>
+
+  <!-- Sprint Information Modal -->
+  <div *ngIf="showSprintModal" class="modal-backdrop">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <!-- Modal Header -->
+        <div class="modal-header">
+          <h4 class="modal-title">Sprint Information</h4>
+          <button type="button" class="close" (click)="closeSprintModal()">×</button>
+        </div>
+
+        <!-- Tab Navigation -->
+        <div class="tab-navigation">
+          <ul class="nav nav-tabs">
+            <li class="nav-item">
+              <a 
+                class="nav-link" 
+                [class.active]="activeTab === 'Sprint Declare'"
+                (click)="setActiveTab('Sprint Declare')">
+                Sprint Declare
+              </a>
+            </li>
+            <li class="nav-item">
+              <a 
+                class="nav-link" 
+                [class.active]="activeTab === 'Sprint Task Info'"
+                (click)="setActiveTab('Sprint Task Info')">
+                Sprint Task Info
+              </a>
+            </li>
+          </ul>
+        </div>
+
+        <!-- Tab Content -->
+        <div class="tab-content">
+          <!-- Sprint Declare Tab -->
+          <div *ngIf="activeTab === 'Sprint Declare'" class="tab-pane">
+            <div class="sprint-declare-section">
+              <h5 class="section-title">Sprint Declare</h5>
+              
+              <div class="form-container">
+                <div class="form-row">
+                  <div class="form-group">
+                    <label>Team Name</label>
+                    <select [(ngModel)]="selectedTeam" class="form-control">
+                      <option *ngFor="let team of teams" [value]="team.name">
+                        {{ team.name }}
+                      </option>
+                    </select>
+                  </div>
+                </div>
+
+                <div class="form-row">
+                  <div class="form-group">
+                    <label>Sprint Name</label>
+                    <input 
+                      type="text" 
+                      [(ngModel)]="sprintName" 
+                      class="form-control"
+                      placeholder="Enter sprint name">
+                  </div>
+                </div>
+
+                <div class="form-row two-columns">
+                  <div class="form-group">
+                    <label>From Date</label>
+                    <div class="input-group">
+                      <input 
+                        type="date" 
+                        [(ngModel)]="fromDate" 
+                        (change)="onDateChange()"
+                        class="form-control">
+                      <span class="input-group-addon">📅</span>
+                    </div>
+                  </div>
+                  <div class="form-group">
+                    <label>To Date</label>
+                    <div class="input-group">
+                      <input 
+                        type="date" 
+                        [(ngModel)]="toDate" 
+                        (change)="onDateChange()"
+                        class="form-control">
+                      <span class="input-group-addon">📅</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="sprint-summary">
+                  <span class="summary-text">Total Sprint: {{ totalSprintDays }} Days</span>
+                </div>
+
+                <div class="form-row two-columns">
+                  <div class="form-group">
+                    <label>No Of Holidays</label>
+                    <input 
+                      type="number" 
+                      [(ngModel)]="noOfHolidays" 
+                      class="form-control"
+                      placeholder="Enter number of holidays">
+                  </div>
+                  <div class="form-group">
+                    <label>Sprint Point</label>
+                    <input 
+                      type="text" 
+                      [(ngModel)]="sprintPoint" 
+                      class="form-control"
+                      placeholder="Enter sprint points">
+                  </div>
+                </div>
+
+                <div class="form-row">
+                  <div class="form-group">
+                    <label>Details Remark</label>
+                    <textarea 
+                      [(ngModel)]="detailsRemark" 
+                      class="form-control"
+                      rows="4"
+                      placeholder="Enter details and remarks">
+                    </textarea>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Sprint Task Info Tab -->
+          <div *ngIf="activeTab === 'Sprint Task Info'" class="tab-pane">
+            <div class="sprint-task-info-section">
+              <h5 class="section-title">No Of Users</h5>
+              
+              <div class="users-table-container">
+                <table class="table table-bordered users-table">
+                  <thead>
+                    <tr>
+                      <th>Sl</th>
+                      <th>User Name</th>
+                      <th>User Capacity</th>
+                      <th>Leave Days</th>
+                      <th>Total Working Hour</th>
+                      <th>User Working Hour</th>
+                      <th>Remove</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr *ngFor="let user of sprintUsers; let i = index">
+                      <td>{{ i + 1 }}</td>
+                      <td>{{ user.name }}</td>
+                      <td>
+                        <input 
+                          type="number" 
+                          [(ngModel)]="user.userCapacity" 
+                          class="form-control form-control-sm"
+                          style="width: 80px;">
+                      </td>
+                      <td>
+                        <input 
+                          type="number" 
+                          [(ngModel)]="user.leaveDays" 
+                          class="form-control form-control-sm"
+                          style="width: 80px;">
+                      </td>
+                      <td>
+                        <input 
+                          type="number" 
+                          [(ngModel)]="user.totalWorkingHour" 
+                          class="form-control form-control-sm"
+                          style="width: 80px;">
+                      </td>
+                      <td>
+                        <input 
+                          type="number" 
+                          [(ngModel)]="user.userWorkingHour" 
+                          class="form-control form-control-sm"
+                          style="width: 80px;">
+                      </td>
+                      <td>
+                        <button 
+                          type="button" 
+                          (click)="removeUser(i)"
+                          class="btn btn-danger btn-sm">
+                          🗑️
+                        </button>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Modal Footer -->
+        <div class="modal-footer">
+          <button type="button" class="btn btn-success" (click)="createSprint()">Create</button>
+          <button type="button" class="btn btn-secondary" (click)="cancelSprint()">Cancel</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Content When No Modal -->
+  <div *ngIf="!showSprintModal" class="main-content">
+    <div class="empty-state">
+      <h3>No sprints created yet</h3>
+      <p>Click "Create New Sprint" to get started</p>
+    </div>
+  </div>
+</div>

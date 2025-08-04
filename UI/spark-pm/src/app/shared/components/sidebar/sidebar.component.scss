@@ -1,0 +1,228 @@
+.sidebar {
+  width: 290px;
+  height: 100vh;
+  background: white;
+  border-right: 1px solid var(--color-gray-200);
+  color: var(--color-gray-700);
+  display: flex;
+  flex-direction: column;
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 1000;
+  box-shadow: var(--shadow-sm);
+  transition: width 0.3s ease;
+  overflow-y: auto;
+  
+  &.collapsed {
+    width: 70px;
+  }
+}
+
+.sidebar-header {
+  padding: 2rem 1.25rem 1.5rem;
+  border-bottom: 1px solid var(--color-gray-100);
+  position: relative;
+  
+  .sidebar.collapsed & {
+    padding: 1rem 0.75rem;
+    text-align: center;
+  }
+}
+
+.sidebar-toggle {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  background: var(--color-gray-100);
+  border: none;
+  border-radius: 0.375rem;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: var(--color-gray-600);
+  
+  &:hover {
+    background: var(--color-gray-200);
+    color: var(--color-gray-900);
+  }
+  
+  svg {
+    transition: transform 0.3s ease;
+    
+    &.rotated {
+      transform: rotate(180deg);
+    }
+  }
+  
+  .sidebar.collapsed & {
+    right: 0.5rem;
+    top: 0.75rem;
+  }
+}
+
+.sidebar-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  color: var(--color-gray-900);
+  margin-bottom: 0.25rem;
+  transition: opacity 0.3s ease;
+  
+  &.hidden {
+    opacity: 0;
+    pointer-events: none;
+  }
+}
+
+.sidebar-subtitle {
+  font-size: 0.75rem;
+  color: var(--color-gray-500);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  transition: opacity 0.3s ease;
+  
+  &.hidden {
+    opacity: 0;
+    pointer-events: none;
+  }
+}
+
+.sidebar-menu {
+  list-style: none;
+  padding: 1.5rem 1.25rem;
+  margin: 0;
+  flex: 1;
+  
+  .sidebar.collapsed & {
+    padding: 1.5rem 0.75rem;
+  }
+}
+
+.sidebar-menu li {
+  margin-bottom: 0.25rem;
+}
+
+.menu-section-divider {
+  margin: 1.5rem 0 0.75rem 0;
+  padding: 0;
+  
+  .section-title {
+    display: block;
+    font-size: 0.75rem;
+    color: var(--color-gray-500);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    padding: 0 0.75rem;
+    margin-bottom: 0.5rem;
+    border-bottom: 1px solid var(--color-gray-100);
+    padding-bottom: 0.5rem;
+  }
+}
+
+.sidebar-menu a {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  color: var(--color-gray-700);
+  text-decoration: none;
+  font-size: 0.875rem;
+  font-weight: 500;
+  border-radius: 0.5rem;
+  transition: all 0.2s ease;
+  
+  .sidebar.collapsed & {
+    justify-content: center;
+    padding: 0.75rem 0.5rem;
+  }
+}
+
+.sidebar-menu a:hover {
+  background-color: var(--color-gray-100);
+  color: var(--color-gray-900);
+  transform: translateX(2px);
+  
+  .sidebar.collapsed & {
+    transform: translateX(0) scale(1.05);
+  }
+}
+
+.sidebar-menu a.active {
+  background-color: var(--color-brand-50);
+  color: var(--color-brand-600);
+  border-left: 3px solid var(--color-brand-500);
+  padding-left: calc(0.75rem - 3px);
+  
+  .sidebar.collapsed & {
+    border-left: none;
+    border-bottom: 3px solid var(--color-brand-500);
+    padding-left: 0.5rem;
+    padding-bottom: calc(0.75rem - 3px);
+  }
+}
+
+.menu-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+
+.menu-icon svg {
+  width: 18px;
+  height: 18px;
+  stroke: currentColor;
+}
+
+.menu-text {
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: opacity 0.3s ease;
+  
+  &.hidden {
+    opacity: 0;
+    width: 0;
+    overflow: hidden;
+  }
+}
+
+/* Custom scrollbar */
+.sidebar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.sidebar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.sidebar::-webkit-scrollbar-thumb {
+  background: var(--color-gray-300);
+  border-radius: 3px;
+}
+
+.sidebar::-webkit-scrollbar-thumb:hover {
+  background: var(--color-gray-400);
+}
+
+/* Responsive adjustments */
+@media (max-width: 1024px) {
+  .sidebar {
+    transform: translateX(-100%);
+  }
+  
+  .sidebar.open {
+    transform: translateX(0);
+  }
+}
