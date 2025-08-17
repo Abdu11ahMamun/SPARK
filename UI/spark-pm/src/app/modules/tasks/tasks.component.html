@@ -1,382 +1,438 @@
 <div class="tasks-container">
-  <!-- Tasks Header -->
+  <!-- Header -->
   <div class="tasks-header">
-    <div class="header-content">
-      <h1 class="tasks-title">Task Management</h1>
-      <div class="tasks-actions">
-        <button class="action-btn view-toggle-btn" (click)="toggleViewMode()" [title]="viewMode === 'list' ? 'Switch to Board View' : 'Switch to List View'">
-          <svg *ngIf="viewMode === 'list'" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-            <rect x="3" y="3" width="7" height="7"/>
-            <rect x="14" y="3" width="7" height="7"/>
-            <rect x="3" y="14" width="7" height="7"/>
-            <rect x="14" y="14" width="7" height="7"/>
-          </svg>
-          <svg *ngIf="viewMode === 'board'" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-            <line x1="8" y1="6" x2="21" y2="6"/>
-            <line x1="8" y1="12" x2="21" y2="12"/>
-            <line x1="8" y1="18" x2="21" y2="18"/>
-            <line x1="3" y1="6" x2="3.01" y2="6"/>
-            <line x1="3" y1="12" x2="3.01" y2="12"/>
-            <line x1="3" y1="18" x2="3.01" y2="18"/>
-          </svg>
-        </button>
-        <button class="action-btn refresh-btn" (click)="refreshTasks()" title="Refresh Tasks" [disabled]="isLoading">
-          <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" [class.spinning]="isLoading">
-            <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/>
-            <path d="M21 3v5h-5"/>
-            <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/>
-            <path d="M3 21v-5h5"/>
-          </svg>
-        </button>
-        <button class="btn btn-primary" (click)="addTask()" [disabled]="isLoading">
-          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-            <path d="M12 5v14M5 12h14"/>
-          </svg>
-          Add Task
-        </button>
-      </div>
+    <h1 class="tasks-title">Task Management</h1>
+    <div class="tasks-actions">
+      <button class="action-btn search-btn" [class.active]="showSearchPanel" (click)="toggleSearchPanel()" title="Advanced Search">
+        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <circle cx="11" cy="11" r="8"></circle>
+          <path d="m21 21-4.35-4.35"></path>
+        </svg>
+      </button>
+      <button class="action-btn refresh-btn" (click)="applyFilters()" title="Refresh" [disabled]="isLoading">
+        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" [class.spinning]="isLoading">
+          <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"></path>
+          <path d="M21 3v5h-5"></path>
+          <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"></path>
+          <path d="M3 21v-5h5"></path>
+        </svg>
+      </button>
+      <button class="btn btn-primary" (click)="addTask()">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path d="M12 5v14M5 12h14"></path>
+        </svg>
+        Add Task
+      </button>
     </div>
   </div>
 
-  <!-- Filters Section -->
-  <div class="filters-section">
-    <div class="filter-row">
-      <div class="filter-item">
-        <input 
-          type="text" 
-          class="form-control" 
-          placeholder="Search tasks..." 
-          [(ngModel)]="searchTerm" 
-          (input)="onSearchChange()">
-      </div>
-      <div class="filter-item">
-        <select class="form-control" [(ngModel)]="selectedStatus" (change)="onFilterChange()">
-          <option value="">All Status</option>
-          <option value="TODO">To Do</option>
-          <option value="IN_PROGRESS">In Progress</option>
-          <option value="IN_REVIEW">In Review</option>
-          <option value="TESTING">Testing</option>
-          <option value="DONE">Done</option>
-          <option value="BLOCKED">Blocked</option>
-        </select>
-      </div>
-      <div class="filter-item">
-        <select class="form-control" [(ngModel)]="selectedPriority" (change)="onFilterChange()">
-          <option value="">All Priority</option>
-          <option value="LOW">Low</option>
-          <option value="MEDIUM">Medium</option>
-          <option value="HIGH">High</option>
-          <option value="CRITICAL">Critical</option>
-        </select>
-      </div>
-      <div class="filter-item">
-        <select class="form-control" [(ngModel)]="selectedAssignee" (change)="onFilterChange()">
-          <option value="">All Assignees</option>
-          <option *ngFor="let user of users" [value]="user.id">
-            {{ user.firstName }} {{ user.lastName }}
-          </option>
-        </select>
-      </div>
-      <div class="filter-item">
-        <button class="btn btn-secondary" (click)="clearFilters()">Clear Filters</button>
-      </div>
+  <!-- Advanced Search Panel -->
+  <div *ngIf="showSearchPanel" class="search-panel">
+    <div class="search-panel-header">
+      <h3>Advanced Search</h3>
+      <button class="close-btn" (click)="toggleSearchPanel()">
+        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path d="M18 6 6 18"/>
+          <path d="m6 6 12 12"/>
+        </svg>
+      </button>
     </div>
-  </div>
-
-  <!-- Loading Spinner -->
-  <div *ngIf="isLoading" class="loading-spinner">
-    <div class="spinner"></div>
-    <p>Loading tasks...</p>
-  </div>
-
-  <!-- List View -->
-  <div *ngIf="viewMode === 'list' && !isLoading" class="list-view">
-    <div class="common-table-container" *ngIf="filteredTasks && filteredTasks.length > 0">
-      <table class="common-table">
-        <thead>
-          <tr>
-            <th>Task</th>
-            <th>Status</th>
-            <th>Priority</th>
-            <th>Type</th>
-            <th>Assignee</th>
-            <th>Module</th>
-            <th>Sprint</th>
-            <th>Due Date</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let task of filteredTasks; trackBy: trackByTaskId">
-            <td>
-              <div class="task-info">
-                <div class="task-title" (click)="viewTaskDetails(task)">{{ task.title }}</div>
-                <div class="task-description" *ngIf="task.description">{{ task.description | slice:0:100 }}{{ task.description.length > 100 ? '...' : '' }}</div>
-              </div>
-            </td>
-            <td>
-              <span class="status-badge" [ngClass]="getStatusClass(task.status)">
-                {{ task.status.replace('_', ' ') | titlecase }}
-              </span>
-            </td>
-            <td>
-              <span class="priority-badge" [ngClass]="getPriorityClass(task.priority)">
-                {{ task.priority | titlecase }}
-              </span>
-            </td>
-            <td>
-              <span class="type-badge" [ngClass]="getTypeClass(task.type)">
-                {{ task.type | titlecase }}
-              </span>
-            </td>
-            <td>{{ task.assigneeName || 'Unassigned' }}</td>
-            <td>{{ task.moduleName || 'No Module' }}</td>
-            <td>{{ task.sprintName || 'No Sprint' }}</td>
-            <td>{{ task.dueDate ? (task.dueDate | date:'shortDate') : '-' }}</td>
-            <td>
-              <div class="action-buttons">
-                <button class="btn-icon btn-edit" (click)="editTask(task)" title="Edit task">
-                  <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-                    <path d="m18.5 2.5 3 3L12 15l-4 1 1-4z"/>
-                  </svg>
-                </button>
-                <button class="btn-icon btn-delete" (click)="confirmDeleteTask(task)" title="Delete task">
-                  <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                    <path d="m3 6 3 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2l3-12"/>
-                    <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
-                  </svg>
-                </button>
-              </div>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-  </div>
-
-  <!-- Board View (Kanban) -->
-  <div *ngIf="viewMode === 'board' && !isLoading" class="board-view">
-    <div class="kanban-board">
-      <div *ngFor="let column of boardColumns" class="kanban-column" [class]="column.class">
-        <div class="column-header">
-          <h3>{{ column.title }}</h3>
-          <span class="task-count">{{ getTasksByStatus(column.status).length }}</span>
+    <div class="search-panel-content">
+      <div class="search-filters">
+        <div class="filter-item">
+          <label>Search by Title/Description/MITS:</label>
+          <input
+            type="text"
+            class="form-control"
+            placeholder="Enter search term..."
+            [(ngModel)]="searchTerm"
+            (input)="onSearchChange()"
+          />
         </div>
-        <div class="column-content" 
-             (drop)="onTaskDrop($event, column.status)" 
-             (dragover)="$event.preventDefault()" 
-             (dragenter)="$event.preventDefault()">
-          <div *ngFor="let task of getTasksByStatus(column.status); trackBy: trackByTaskId" 
-               class="task-card" 
-               draggable="true" 
-               (dragstart)="onTaskDragStart($event, task)"
-               (click)="viewTaskDetails(task)">
-            <div class="task-card-header">
-              <span class="task-id">#{{ task.id }}</span>
-              <span class="priority-indicator" [ngClass]="getPriorityClass(task.priority)"></span>
-            </div>
-            <div class="task-card-title">{{ task.title }}</div>
-            <div class="task-card-meta">
-              <span class="type-badge" [ngClass]="getTypeClass(task.type)">{{ task.type }}</span>
-              <span class="assignee">{{ task.assigneeName || 'Unassigned' }}</span>
-            </div>
-          </div>
+        
+        <div class="filter-item">
+          <label>Status:</label>
+          <select class="form-control" [(ngModel)]="statusFilter" (change)="applyFilters()">
+            <option value="">All Statuses</option>
+            <option value="OPEN">Open</option>
+            <option value="IN_PROGRESS">In Progress</option>
+            <option value="BLOCKED">Blocked</option>
+            <option value="DONE">Done</option>
+            <option value="CANCELLED">Cancelled</option>
+          </select>
+        </div>
+        
+        <div class="filter-item">
+          <label>Priority:</label>
+          <select class="form-control" [(ngModel)]="priorityFilter" (change)="applyFilters()">
+            <option value="">All Priorities</option>
+            <option value="LOW">Low</option>
+            <option value="MEDIUM">Medium</option>
+            <option value="HIGH">High</option>
+            <option value="CRITICAL">Critical</option>
+          </select>
+        </div>
+
+        <div class="filter-item">
+          <label>Product:</label>
+          <select class="form-control" [(ngModel)]="productFilter" (change)="onProductChangeForFilter(); applyFilters()">
+            <option value="">All Products</option>
+            <option *ngFor="let p of products" [value]="p.id">{{ p.name }}</option>
+          </select>
+        </div>
+        
+        <div class="filter-item">
+          <label>Module:</label>
+          <select class="form-control" [(ngModel)]="moduleFilter" (change)="applyFilters()">
+            <option value="">All Modules</option>
+            <option *ngFor="let m of getModulesForProduct(productFilter)" [value]="m.id">{{ m.name }}</option>
+          </select>
+        </div>
+        <div class="filter-item">
+          <label>Assignee:</label>
+          <select class="form-control" [(ngModel)]="assigneeFilter" (change)="applyFilters()">
+            <option value="">All Assignees</option>
+            <option *ngFor="let u of users" [value]="u.id">{{ getAssigneeName(u.id) }}</option>
+          </select>
+        </div>
+        
+        <div class="filter-item">
+          <label>MITS No:</label>
+          <input
+            type="text"
+            class="form-control"
+            placeholder="Enter MITS number..."
+            [(ngModel)]="mitsFilter"
+            (input)="onSearchChange()"
+          />
+        </div>
+
+        <div class="filter-item">
+          <label>Deadline From:</label>
+          <input
+            type="date"
+            class="form-control"
+            [(ngModel)]="deadlineFrom"
+            (change)="applyFilters()"
+          />
+        </div>
+
+        <div class="filter-item">
+          <label>Deadline To:</label>
+          <input
+            type="date"
+            class="form-control"
+            [(ngModel)]="deadlineTo"
+            (change)="applyFilters()"
+          />
         </div>
       </div>
+      
+      <div class="search-actions">
+        <button class="btn btn-secondary" (click)="clearFilters()">Clear All</button>
+        <button class="btn btn-primary" (click)="applyFilters()">Apply Filters</button>
+      </div>
     </div>
   </div>
 
-  <!-- Empty State -->
-  <div *ngIf="!isLoading && (!filteredTasks || filteredTasks.length === 0)" class="empty-state">
-    <div class="empty-icon">
-      <svg width="64" height="64" fill="none" stroke="currentColor" stroke-width="1" viewBox="0 0 24 24">
-        <path d="M9 11l3 3L22 4"/>
-        <path d="M21 12v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h11"/>
-      </svg>
-    </div>
-    <h3>No tasks found</h3>
-    <p>Start by creating your first task or adjust your filters.</p>
-    <button class="btn btn-primary" (click)="addTask()">
-      Add First Task
-    </button>
+  <!-- Error -->
+  <div *ngIf="error" class="alert alert-error">
+    {{ error }}
   </div>
 
-  <!-- Add/Edit Task Modal -->
-  <div class="modal-overlay" *ngIf="isAdd || isEdit" (click)="cancel()">
-    <div class="modal-content large-modal" (click)="$event.stopPropagation()">
-      <div class="modal-header">
-        <h2>{{ isAdd ? 'Add New Task' : 'Edit Task' }}</h2>
-        <button class="btn-close" (click)="cancel()">
-          <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-            <path d="M18 6L6 18M6 6l12 12"/>
-          </svg>
+  <!-- Table -->
+  <div class="table-container">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>MITS No</th>
+          <th>Task Type</th>
+          <th>Product</th>
+          <th>Module</th>
+          <th>Title</th>
+          <th>Assignee</th>
+          <th>Status</th>
+          <th>Priority</th>
+          <th>Deadline</th>
+          <th>Points</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let t of paginated">
+          <td>{{ t.mitsNo }}</td>
+          <td>{{ t.taskType }}</td>
+          <td>{{ getProductName(t.productId) }}</td>
+          <td>{{ getModuleName(t.productModuleId) }}</td>
+          <td>{{ t.title }}</td>
+          <td>{{ getAssigneeName(t.assigneeUserId) }}</td>
+          <td>{{ t.status }}</td>
+          <td>{{ t.priority }}</td>
+          <td>{{ t.deadline ? (t.deadline | date:'mediumDate') : '—' }}</td>
+          <td>{{ t.points ?? '—' }}</td>
+          <td>
+            <div class="actions-group">
+              <button class="action-btn btn-outline" (click)="editTask(t)">Edit</button>
+              <button class="action-btn btn-outline delete-btn" (click)="askDelete(t)">Delete</button>
+            </div>
+          </td>
+        </tr>
+        <tr *ngIf="paginated.length === 0">
+          <td colspan="11" class="empty-cell">
+            <div class="empty-state">
+              <h3>No tasks found</h3>
+              <p>Create the first task to get started.</p>
+              <button class="btn btn-primary" (click)="addTask()">Add Task</button>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Pagination -->
+  <div class="pagination-container" *ngIf="!isLoading && filteredTasks && filteredTasks.length > 0">
+    <div class="pagination-info">
+      Showing {{ getStartIndex() }} to {{ getEndIndex() }} of {{ totalTasks }} tasks
+    </div>
+    <div class="pagination-controls">
+      <button 
+        class="pagination-btn" 
+        (click)="goToPage(currentPage - 1)" 
+        [disabled]="currentPage === 1 || isLoading"
+        title="Previous Page">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <polyline points="15,18 9,12 15,6"/>
+        </svg>
+      </button>
+      
+      <div class="page-numbers">
+        <button 
+          *ngFor="let page of getVisiblePages()" 
+          class="page-btn" 
+          [class.active]="page === currentPage"
+          (click)="goToPage(page)"
+          [disabled]="isLoading">
+          {{ page }}
         </button>
       </div>
       
-      <form (ngSubmit)="saveTask()" class="task-form">
-        <div class="form-grid">
-          <div class="form-group full-width">
-            <label for="title">Task Title *</label>
-            <input 
-              type="text" 
-              id="title"
-              class="form-control" 
-              [(ngModel)]="taskForm.title" 
-              name="title" 
-              placeholder="Enter task title"
-              required>
-          </div>
-
-          <div class="form-group full-width">
-            <label for="description">Description</label>
-            <textarea 
-              id="description"
-              class="form-control" 
-              [(ngModel)]="taskForm.description" 
-              name="description" 
-              rows="3"
-              placeholder="Enter task description"></textarea>
-          </div>
-
-          <div class="form-group">
-            <label for="status">Status</label>
-            <select 
-              id="status"
-              class="form-control" 
-              [(ngModel)]="taskForm.status" 
-              name="status" 
-              required>
-              <option value="TODO">To Do</option>
-              <option value="IN_PROGRESS">In Progress</option>
-              <option value="IN_REVIEW">In Review</option>
-              <option value="TESTING">Testing</option>
-              <option value="DONE">Done</option>
-              <option value="BLOCKED">Blocked</option>
-            </select>
-          </div>
-
-          <div class="form-group">
-            <label for="priority">Priority</label>
-            <select 
-              id="priority"
-              class="form-control" 
-              [(ngModel)]="taskForm.priority" 
-              name="priority" 
-              required>
-              <option value="LOW">Low</option>
-              <option value="MEDIUM">Medium</option>
-              <option value="HIGH">High</option>
-              <option value="CRITICAL">Critical</option>
-            </select>
-          </div>
-
-          <div class="form-group">
-            <label for="type">Type</label>
-            <select 
-              id="type"
-              class="form-control" 
-              [(ngModel)]="taskForm.type" 
-              name="type" 
-              required>
-              <option value="FEATURE">Feature</option>
-              <option value="BUG">Bug</option>
-              <option value="IMPROVEMENT">Improvement</option>
-              <option value="DOCUMENTATION">Documentation</option>
-              <option value="RESEARCH">Research</option>
-              <option value="TESTING">Testing</option>
-            </select>
-          </div>
-
-          <div class="form-group">
-            <label for="assigneeId">Assignee</label>
-            <select 
-              id="assigneeId"
-              class="form-control" 
-              [(ngModel)]="taskForm.assigneeId" 
-              name="assigneeId">
-              <option [value]="undefined">Select Assignee</option>
-              <option *ngFor="let user of users" [value]="user.id">
-                {{ user.firstName }} {{ user.lastName }}
-              </option>
-            </select>
-          </div>
-
-          <div class="form-group">
-            <label for="moduleId">Module</label>
-            <select 
-              id="moduleId"
-              class="form-control" 
-              [(ngModel)]="taskForm.moduleId" 
-              name="moduleId">
-              <option [value]="undefined">Select Module</option>
-              <option *ngFor="let module of modules" [value]="module.id">
-                {{ module.name }}
-              </option>
-            </select>
-          </div>
-
-          <div class="form-group">
-            <label for="sprintId">Sprint</label>
-            <select 
-              id="sprintId"
-              class="form-control" 
-              [(ngModel)]="taskForm.sprintId" 
-              name="sprintId">
-              <option [value]="undefined">Select Sprint</option>
-              <option *ngFor="let sprint of sprints" [value]="sprint.id">
-                {{ sprint.name }}
-              </option>
-            </select>
-          </div>
-
-          <div class="form-group">
-            <label for="estimatedHours">Estimated Hours</label>
-            <input 
-              type="number" 
-              id="estimatedHours"
-              class="form-control" 
-              [(ngModel)]="taskForm.estimatedHours" 
-              name="estimatedHours" 
-              min="0"
-              step="0.5"
-              placeholder="0">
-          </div>
-
-          <div class="form-group">
-            <label for="dueDate">Due Date</label>
-            <input 
-              type="date" 
-              id="dueDate"
-              class="form-control" 
-              [(ngModel)]="taskForm.dueDate" 
-              name="dueDate">
-          </div>
-        </div>
-
-        <div class="form-actions">
-          <button type="button" class="btn btn-secondary" (click)="cancel()">Cancel</button>
-          <button type="submit" class="btn btn-primary">
-            {{ isAdd ? 'Create Task' : 'Update Task' }}
-          </button>
-        </div>
-      </form>
+      <button 
+        class="pagination-btn" 
+        (click)="goToPage(currentPage + 1)" 
+        [disabled]="currentPage === totalPages || isLoading"
+        title="Next Page">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <polyline points="9,18 15,12 9,6"/>
+        </svg>
+      </button>
+    </div>
+    <div class="page-size-selector">
+      <label>Show:</label>
+      <select class="form-control" [(ngModel)]="pageSize" (change)="onPageSizeChange()">
+        <option value="10">10</option>
+        <option value="25">25</option>
+        <option value="50">50</option>
+        <option value="100">100</option>
+      </select>
+      <span>per page</span>
     </div>
   </div>
 
-  <!-- Delete Confirmation Modal -->
-  <div class="modal-overlay" *ngIf="showDeleteConfirm" (click)="cancelDelete()">
-    <div class="modal-content delete-modal" (click)="$event.stopPropagation()">
+  <!-- Create/Edit Modal -->
+  <div class="modal-overlay" *ngIf="isModalOpen">
+    <div class="modal-container" role="dialog" aria-modal="true">
       <div class="modal-header">
-        <h2>Confirm Delete</h2>
+        <h3>{{ isEditMode ? 'Edit Task' : 'Add New Task' }}</h3>
+        <button class="modal-close-btn" (click)="closeModal()" aria-label="Close">
+          <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path d="M18 6 6 18"/>
+            <path d="m6 6 12 12"/>
+          </svg>
+        </button>
       </div>
-      <div class="modal-body">
-        <p>Are you sure you want to delete the task <strong>{{ taskToDelete?.title }}</strong>?</p>
-        <p class="warning-text">This action cannot be undone.</p>
+      <div class="modal-content">
+        <form [formGroup]="form" class="task-form" (ngSubmit)="saveTask()">
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="mitsNo">MITS No *</label>
+              <input 
+                id="mitsNo"
+                class="form-control" 
+                formControlName="mitsNo" 
+                placeholder="Enter MITS number"
+                [class.error]="form.get('mitsNo')?.invalid && form.get('mitsNo')?.touched"
+              />
+              <div *ngIf="form.get('mitsNo')?.invalid && form.get('mitsNo')?.touched" class="error-message">
+                MITS No is required
+              </div>
+            </div>
+            
+            <div class="form-group">
+              <label for="taskType">Task Type *</label>
+              <input 
+                id="taskType"
+                class="form-control" 
+                formControlName="taskType" 
+                placeholder="Bug/Feature/Improvement"
+                [class.error]="form.get('taskType')?.invalid && form.get('taskType')?.touched"
+              />
+              <div *ngIf="form.get('taskType')?.invalid && form.get('taskType')?.touched" class="error-message">
+                Task type is required
+              </div>
+            </div>
+            
+            <div class="form-group">
+              <label for="productId">Product *</label>
+              <select 
+                id="productId"
+                class="form-control" 
+                formControlName="productId" 
+                (change)="onProductChangeInForm()"
+                [class.error]="form.get('productId')?.invalid && form.get('productId')?.touched"
+              >
+                <option value="" disabled>Select product</option>
+                <option *ngFor="let p of products" [value]="p.id">{{ p.name }}</option>
+              </select>
+              <div *ngIf="form.get('productId')?.invalid && form.get('productId')?.touched" class="error-message">
+                Product is required
+              </div>
+            </div>
+            
+            <div class="form-group">
+              <label for="productModuleId">Product Module *</label>
+              <select 
+                id="productModuleId"
+                class="form-control" 
+                formControlName="productModuleId"
+                [class.error]="form.get('productModuleId')?.invalid && form.get('productModuleId')?.touched"
+              >
+                <option value="" disabled>Select module</option>
+                <option *ngFor="let m of getModulesForProduct(form.value.productId)" [value]="m.id">{{ m.name }}</option>
+              </select>
+              <div *ngIf="form.get('productModuleId')?.invalid && form.get('productModuleId')?.touched" class="error-message">
+                Product module is required
+              </div>
+            </div>
+            
+            <div class="form-group form-group-full">
+              <label for="title">Title *</label>
+              <input 
+                id="title"
+                class="form-control" 
+                formControlName="title" 
+                placeholder="Enter task title"
+                [class.error]="form.get('title')?.invalid && form.get('title')?.touched"
+              />
+              <div *ngIf="form.get('title')?.invalid && form.get('title')?.touched" class="error-message">
+                <div *ngIf="form.get('title')?.errors?.['required']">Title is required</div>
+                <div *ngIf="form.get('title')?.errors?.['minlength']">Title must be at least 3 characters</div>
+              </div>
+            </div>
+            
+            <div class="form-group form-group-full">
+              <label for="description">Description</label>
+              <textarea 
+                id="description"
+                class="form-control" 
+                formControlName="description" 
+                placeholder="Describe the task"
+                rows="3"
+              ></textarea>
+            </div>
+            
+            <div class="form-group">
+              <label for="assigneeUserId">Assign To</label>
+              <select id="assigneeUserId" class="form-control" formControlName="assigneeUserId">
+                <option value="">Unassigned</option>
+                <option *ngFor="let u of users" [value]="u.id">{{ getAssigneeName(u.id) }}</option>
+              </select>
+            </div>
+            
+            <div class="form-group">
+              <label for="status">Status *</label>
+              <select 
+                id="status"
+                class="form-control" 
+                formControlName="status"
+                [class.error]="form.get('status')?.invalid && form.get('status')?.touched"
+              >
+                <option value="OPEN">Open</option>
+                <option value="IN_PROGRESS">In Progress</option>
+                <option value="BLOCKED">Blocked</option>
+                <option value="DONE">Done</option>
+                <option value="CANCELLED">Cancelled</option>
+              </select>
+            </div>
+            
+            <div class="form-group">
+              <label for="priority">Priority *</label>
+              <select 
+                id="priority"
+                class="form-control" 
+                formControlName="priority"
+                [class.error]="form.get('priority')?.invalid && form.get('priority')?.touched"
+              >
+                <option value="LOW">Low</option>
+                <option value="MEDIUM">Medium</option>
+                <option value="HIGH">High</option>
+                <option value="CRITICAL">Critical</option>
+              </select>
+            </div>
+            
+            <div class="form-group">
+              <label for="deadline">Deadline</label>
+              <input 
+                id="deadline"
+                class="form-control" 
+                type="date" 
+                formControlName="deadline"
+              />
+            </div>
+            
+            <div class="form-group">
+              <label for="points">Points</label>
+              <input 
+                id="points"
+                class="form-control" 
+                type="number" 
+                min="0" 
+                formControlName="points"
+                placeholder="0"
+              />
+            </div>
+          </div>
+        </form>
       </div>
-      <div class="form-actions">
-        <button type="button" class="btn btn-secondary" (click)="cancelDelete()">Cancel</button>
-        <button type="button" class="btn btn-danger" (click)="deleteTask()">Delete</button>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" type="button" (click)="closeModal()">Cancel</button>
+        <button class="btn btn-primary" type="button" (click)="saveTask()" [disabled]="form.invalid">{{ isEditMode ? 'Save Changes' : 'Create Task' }}</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Delete Modal -->
+  <div class="modal-overlay" *ngIf="isDeleteModalOpen">
+    <div class="modal-container modal-small" role="dialog" aria-modal="true">
+      <div class="modal-header">
+        <h3>Delete Task</h3>
+        <button class="modal-close-btn" (click)="closeDelete()" aria-label="Close">
+          <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path d="M18 6 6 18"></path>
+            <path d="m6 6 12 12"></path>
+          </svg>
+        </button>
+      </div>
+      <div class="modal-content">
+        <div class="delete-confirmation">
+          <div class="delete-icon">🗑️</div>
+          <p>Are you sure you want to delete <strong>{{ selected?.title }}</strong>?</p>
+          <div class="warning-text">This action cannot be undone.</div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" type="button" (click)="closeDelete()">Cancel</button>
+        <button class="btn btn-danger" type="button" (click)="confirmDelete()">Delete</button>
       </div>
     </div>
   </div>

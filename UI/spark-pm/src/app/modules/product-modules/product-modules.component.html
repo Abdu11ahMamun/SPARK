@@ -1,227 +1,294 @@
-<div class="modules-container">
-  <!-- Header -->
-  <div class="modules-header">
-    <div class="header-content">
-      <h1 class="modules-title">Product Modules</h1>
-      <div class="modules-actions">
-        <button class="btn btn-primary" (click)="showAddForm()">
-          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-            <path d="M12 5v14m-7-7h14"/>
-          </svg>
-          Add Module
-        </button>
-      </div>
-    </div>
-  </div>
+<div class="products-container">
+	<!-- Header -->
+	<div class="products-header">
+		<h2 class="products-title">Product Modules</h2>
+		<div class="products-actions">
+			<button class="action-btn search-btn" [class.active]="showSearchPanel" (click)="toggleSearchPanel()" title="Advanced Search">
+				<svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+					<circle cx="11" cy="11" r="8"></circle>
+					<path d="m21 21-4.35-4.35"></path>
+				</svg>
+			</button>
+			<button class="action-btn refresh-btn" (click)="refreshModules()" [disabled]="isLoading" title="Refresh">
+				<svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" [class.spinning]="isLoading">
+					<path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"></path>
+					<path d="M21 3v5h-5"></path>
+					<path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"></path>
+					<path d="M3 21v-5h5"></path>
+				</svg>
+			</button>
+			<button class="btn btn-primary" (click)="addModule()">
+				<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+					<path d="M12 5v14M5 12h14"></path>
+				</svg>
+				<span>Add Module</span>
+			</button>
+		</div>
+	</div>
 
-  <!-- Loading Spinner -->
-  <div *ngIf="isLoading" class="loading-spinner">
-    <div class="spinner"></div>
-    <p>Loading modules...</p>
-  </div>
+	<!-- Search Panel -->
+	<div class="search-panel" *ngIf="showSearchPanel">
+		<div class="search-panel-header">
+			<h3>Advanced Search</h3>
+			<button class="close-btn" (click)="toggleSearchPanel()" aria-label="Close search panel">
+				<svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+					<path d="M18 6 6 18"></path>
+					<path d="m6 6 12 12"></path>
+				</svg>
+			</button>
+		</div>
+		<div class="search-panel-content">
+			<div class="search-filters">
+				<div class="filter-item">
+					<label>Search by Name/Version/Release/Vision:</label>
+					<input type="text" class="form-control" [(ngModel)]="searchTerm" (input)="onSearchChange()" placeholder="Enter search term..." />
+				</div>
+				<div class="filter-item">
+					<label>Status:</label>
+					<select class="form-control" [(ngModel)]="statusFilter" (change)="applyFilters()">
+						<option value="">All Statuses</option>
+						<option value="ACTIVE">Active</option>
+						<option value="INACTIVE">Inactive</option>
+						<option value="DEVELOPMENT">Development</option>
+						<option value="MAINTENANCE">Maintenance</option>
+					</select>
+				</div>
+				<div class="filter-item">
+					<label>Product:</label>
+					<select class="form-control" [(ngModel)]="productFilter" (change)="applyFilters()">
+						<option value="">All Products</option>
+						<option *ngFor="let p of products" [value]="p.id">{{ p.name }}</option>
+					</select>
+				</div>
+			</div>
+			<div class="search-actions">
+				<button class="btn btn-secondary" (click)="clearFilters()">Clear All</button>
+				<button class="btn btn-primary" (click)="applyFilters()">Apply Filters</button>
+			</div>
+		</div>
+	</div>
 
-  <!-- Add/Edit Form Modal -->
-  <div class="modal-overlay" *ngIf="showForm" (click)="hideForm()">
-    <div class="modal-content" (click)="$event.stopPropagation()">
-      <div class="modal-header">
-        <h2>{{ isEditMode ? 'Edit Module' : 'Add New Module' }}</h2>
-        <button class="btn-close" (click)="hideForm()">
-          <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-            <path d="M18 6L6 18M6 6l12 12"/>
-          </svg>
-        </button>
-      </div>
-      
-      <form (ngSubmit)="submitForm()" class="module-form">
-        <div class="form-grid">
-          <div class="form-group">
-            <label for="name">Module Name</label>
-            <input 
-              type="text" 
-              id="name"
-              class="form-control" 
-              [(ngModel)]="moduleForm.name" 
-              name="name" 
-              placeholder="Enter module name"
-              required>
-          </div>
+	<!-- Content -->
+	<div class="content-area">
+		<div *ngIf="isLoading && isInitialLoad" class="loading-container">
+			<div class="loading-spinner"></div>
+			<div class="loading-text">Loading modules...</div>
+		</div>
 
-          <div class="form-group">
-            <label for="productId">Product</label>
-            <select 
-              id="productId"
-              class="form-control" 
-              [(ngModel)]="moduleForm.productId" 
-              name="productId" 
-              required>
-              <option value="0" disabled>Select a product</option>
-              <option *ngFor="let product of products" [value]="product.id">
-                {{ product.name }}
-              </option>
-            </select>
-          </div>
+		<div *ngIf="error" class="error-container">
+			<div class="error-icon">⚠️</div>
+			<h3>Error</h3>
+			<p>{{ error }}</p>
+			<button class="btn btn-primary" (click)="refreshModules()">Try Again</button>
+		</div>
 
-          <div class="form-group">
-            <label for="release">Release</label>
-            <input 
-              type="text" 
-              id="release"
-              class="form-control" 
-              [(ngModel)]="moduleForm.release" 
-              name="release" 
-              placeholder="Enter release version">
-          </div>
+		<ng-container *ngIf="!isLoading && !error">
+			<div class="table-container">
+				<table class="data-table">
+					<thead>
+						<tr>
+							<th>Module</th>
+							<th>Product</th>
+							<th>Status</th>
+							<th>Release</th>
+							<th>Version</th>
+							<th>Created</th>
+							<th class="actions-cell">Actions</th>
+						</tr>
+					</thead>
+					<tbody>
+						<tr *ngFor="let m of paginatedModules; trackBy: trackByModuleId">
+							<td class="product-name-cell">
+								<div class="product-info">
+									<div class="name">{{ m.name }}</div>
+									<div class="vision" *ngIf="m.vision">{{ m.vision }}</div>
+								</div>
+							</td>
+							<td class="owner-cell">{{ getProductName(m.productId) }}</td>
+							<td class="status-cell">
+								<span class="status-badge {{ getStatusBadgeClass(m.status) }}">{{ m.status }}</span>
+							</td>
+							<td class="release-cell">{{ m.currentRelease || '—' }}</td>
+							<td class="version-cell">{{ m.version || '—' }}</td>
+							<td class="created-cell">{{ formatDate(m.createdAt) }}</td>
+							<td>
+								<div class="actions-group">
+									<button class="action-btn btn-outline edit-btn" (click)="editModule(m)" title="Edit">
+										<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+											<path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25z"></path>
+										</svg>
+									</button>
+									<button class="action-btn btn-outline delete-btn" (click)="deleteModule(m)" title="Delete">
+										<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+											<path d="M3 6h18"></path>
+											<path d="M8 6V4h8v2"></path>
+											<path d="M6 6l1 14h10l1-14"></path>
+										</svg>
+									</button>
+								</div>
+							</td>
+						</tr>
 
-          <div class="form-group">
-            <label for="moduleStatus">Status</label>
-            <select 
-              id="moduleStatus"
-              class="form-control" 
-              [(ngModel)]="moduleForm.moduleStatus" 
-              name="moduleStatus">
-              <option value="Active">Active</option>
-              <option value="Inactive">Inactive</option>
-              <option value="Completed">Completed</option>
-              <option value="In-Progress">In Progress</option>
-            </select>
-          </div>
+						<tr *ngIf="paginatedModules.length === 0">
+							<td colspan="7" class="empty-cell">
+								<div class="empty-state">
+									<svg width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+										<path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5m-6 6v2.625a3.375 3.375 0 003.375 3.375h1.5m-6-6H4.875m10.5-6H19.5m-4.125 0V4.875m0 6.75V19.5" />
+									</svg>
+									<h3>No modules found</h3>
+									<p>Create the first module for a product.</p>
+									<button class="btn btn-primary" (click)="addModule()">
+										<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+											<path d="M12 5v14M5 12h14"></path>
+										</svg>
+										<span>New Module</span>
+									</button>
+								</div>
+							</td>
+						</tr>
+					</tbody>
+				</table>
 
-          <div class="form-group">
-            <label for="moduleOwnerId">Module Owner</label>
-            <select 
-              id="moduleOwnerId"
-              class="form-control" 
-              [(ngModel)]="moduleForm.moduleOwnerId" 
-              name="moduleOwnerId">
-              <option [value]="undefined">Select Owner</option>
-              <option *ngFor="let user of users" [value]="user.id">
-                {{ user.firstName }} {{ user.lastName }}
-              </option>
-            </select>
-          </div>
+				<div *ngIf="isLoading && !isInitialLoad" class="mini-loading">
+					<div class="mini-spinner"></div>
+					<span>Refreshing...</span>
+				</div>
+			</div>
 
-          <div class="form-group">
-            <label for="client">Client</label>
-            <input 
-              type="text" 
-              id="client"
-              class="form-control" 
-              [(ngModel)]="moduleForm.client" 
-              name="client" 
-              placeholder="Enter client name">
-          </div>
-        </div>
+			<!-- Pagination -->
+			<div class="pagination-container" *ngIf="!isLoading && filteredModules && filteredModules.length > 0">
+				<div class="pagination-info">
+					Showing {{ getStartIndex() }} to {{ getEndIndex() }} of {{ totalModules }} modules
+				</div>
+				<div class="pagination-controls">
+					<button 
+						class="pagination-btn" 
+						(click)="goToPage(currentPage - 1)" 
+						[disabled]="currentPage === 1 || isLoading"
+						title="Previous Page">
+						<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+							<polyline points="15,18 9,12 15,6"/>
+						</svg>
+					</button>
+					
+					<div class="page-numbers">
+						<button 
+							*ngFor="let page of getVisiblePages()" 
+							class="page-btn" 
+							[class.active]="page === currentPage"
+							(click)="goToPage(page)"
+							[disabled]="isLoading">
+							{{ page }}
+						</button>
+					</div>
+					
+					<button 
+						class="pagination-btn" 
+						(click)="goToPage(currentPage + 1)" 
+						[disabled]="currentPage === totalPages || isLoading"
+						title="Next Page">
+						<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+							<polyline points="9,18 15,12 9,6"/>
+						</svg>
+					</button>
+				</div>
+				<div class="page-size-selector">
+					<label>Show:</label>
+					<select class="form-control" [(ngModel)]="pageSize" (change)="onPageSizeChange()">
+						<option value="10">10</option>
+						<option value="25">25</option>
+						<option value="50">50</option>
+						<option value="100">100</option>
+					</select>
+					<span>per page</span>
+				</div>
+			</div>
+		</ng-container>
+	</div>
 
-        <div class="form-actions">
-          <button type="button" class="btn btn-secondary" (click)="hideForm()">Cancel</button>
-          <button type="submit" class="btn btn-primary">
-            {{ isEditMode ? 'Update Module' : 'Add Module' }}
-          </button>
-        </div>
-      </form>
-    </div>
-  </div>
+	<!-- Create/Edit Modal -->
+	<div class="modal-overlay" *ngIf="isModalOpen">
+		<div class="modal-container" role="dialog" aria-modal="true">
+			<div class="modal-header">
+				<h3>{{ isEditMode ? 'Edit Module' : 'Add New Module' }}</h3>
+				<button class="modal-close-btn" (click)="closeModal()" aria-label="Close">
+					<svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+						<path d="M18 6 6 18"></path>
+						<path d="m6 6 12 12"></path>
+					</svg>
+				</button>
+			</div>
+			<div class="modal-content">
+				<form [formGroup]="moduleForm" class="product-form" (ngSubmit)="saveModule()">
+					<div class="form-grid">
+						<div class="form-group">
+							<label>Module Name *</label>
+							<input type="text" class="form-input" placeholder="Enter module name" formControlName="name" />
+						</div>
+						<div class="form-group">
+							<label>Product *</label>
+							<select class="form-select" formControlName="productId">
+								<option value="" disabled>Select product</option>
+								<option *ngFor="let p of products" [value]="p.id">{{ p.name }}</option>
+							</select>
+						</div>
+						<div class="form-group">
+							<label>Status</label>
+							<select class="form-select" formControlName="status">
+								<option value="ACTIVE">Active</option>
+								<option value="INACTIVE">Inactive</option>
+								<option value="DEVELOPMENT">Development</option>
+								<option value="MAINTENANCE">Maintenance</option>
+							</select>
+						</div>
+						<div class="form-group">
+							<label>Current Release</label>
+							<input type="text" class="form-input" placeholder="Enter current release" formControlName="currentRelease" />
+						</div>
+						<div class="form-group">
+							<label>Version</label>
+							<input type="text" class="form-input" placeholder="Enter version" formControlName="version" />
+						</div>
+						<div class="form-group form-group-full">
+							<label>Vision</label>
+							<textarea class="form-textarea" placeholder="Describe the module vision" formControlName="vision"></textarea>
+						</div>
+					</div>
+				</form>
+			</div>
+			<div class="modal-footer">
+				<button class="btn btn-secondary" type="button" (click)="closeModal()">Cancel</button>
+				<button class="btn btn-primary" type="button" (click)="saveModule()" [disabled]="moduleForm.invalid">
+					{{ isEditMode ? 'Save Changes' : 'Create Module' }}
+				</button>
+			</div>
+		</div>
+	</div>
 
-  <!-- Delete Confirmation Modal -->
-  <div class="modal-overlay" *ngIf="showDeleteConfirm" (click)="cancelDelete()">
-    <div class="modal-content delete-modal" (click)="$event.stopPropagation()">
-      <div class="modal-header">
-        <h2>Confirm Delete</h2>
-      </div>
-      <div class="modal-body">
-        <p>Are you sure you want to delete the module <strong>{{ moduleToDelete?.name }}</strong>?</p>
-        <p class="warning-text">This action cannot be undone.</p>
-      </div>
-      <div class="form-actions">
-        <button type="button" class="btn btn-secondary" (click)="cancelDelete()">Cancel</button>
-        <button type="button" class="btn btn-danger" (click)="deleteModule()">Delete</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Loading State -->
-  <div class="loading-container" *ngIf="isLoading">
-    <div class="loading-spinner">
-      <svg class="animate-spin" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-        <path d="M12 2v4m0 12v4m8-10h-4M6 12H2m15.364-7.364l-2.828 2.828M7.464 16.536l-2.828 2.828m12.728 0l-2.828-2.828M7.464 7.464L4.636 4.636"/>
-      </svg>
-      Loading modules...
-    </div>
-  </div>
-
-  <!-- Modules Table -->
-  <div class="common-table-container" *ngIf="!isLoading && modules && modules.length > 0">
-    <table class="common-table">
-      <thead>
-        <tr>
-          <th>Module</th>
-          <th>Product</th>
-          <th>Status</th>
-          <th>Owner</th>
-          <th>Client</th>
-          <th>Actions</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr *ngFor="let module of modules; trackBy: trackByModuleId">
-          <td>
-            <div class="module-info">
-              <div class="module-avatar">
-                {{ module.name.charAt(0).toUpperCase() }}
-              </div>
-              <div class="module-details">
-                <div class="module-name">{{ module.name }}</div>
-                <div class="module-product">{{ module.productName || 'Unknown Product' }}</div>
-                <div class="module-release" *ngIf="module.release">{{ module.release }}</div>
-              </div>
-            </div>
-          </td>
-          <td class="product-name">{{ module.productName || 'Unknown Product' }}</td>
-          <td>
-            <span class="status-badge" [ngClass]="getStatusClass(module.moduleStatus)">
-              {{ module.moduleStatus }}
-            </span>
-          </td>
-          <td>{{ module.ownerName || 'No Owner' }}</td>
-          <td>{{ module.client || '-' }}</td>
-          <td>
-            <div class="action-buttons">
-              <button 
-                class="btn-icon btn-edit" 
-                (click)="editModule(module)"
-                title="Edit module">
-                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-                  <path d="m18.5 2.5 3 3L12 15l-4 1 1-4z"/>
-                </svg>
-              </button>
-              <button 
-                class="btn-icon btn-delete" 
-                (click)="confirmDelete(module)"
-                title="Delete module">
-                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                  <path d="m3 6 3 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2l3-12"/>
-                  <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
-                </svg>
-              </button>
-            </div>
-          </td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
-
-  <!-- Empty State -->
-  <div *ngIf="!isLoading && (!modules || modules.length === 0)" class="empty-state">
-    <div class="empty-icon">
-      <svg width="64" height="64" fill="none" stroke="currentColor" stroke-width="1" viewBox="0 0 24 24">
-        <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5.586a1 1 0 0 1 .707.293l5.414 5.414a1 1 0 0 1 .293.707V19a2 2 0 0 1-2 2z"/>
-      </svg>
-    </div>
-    <h3>No modules found</h3>
-    <p>Start by adding your first product module.</p>
-    <button class="btn btn-primary" (click)="showAddForm()">
-      Add First Module
-    </button>
-  </div>
+	<!-- Delete Modal -->
+	<div class="modal-overlay" *ngIf="isDeleteModalOpen">
+		<div class="modal-container modal-small" role="dialog" aria-modal="true">
+			<div class="modal-header">
+				<h3>Delete Module</h3>
+				<button class="modal-close-btn" (click)="closeDeleteModal()" aria-label="Close">
+					<svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+						<path d="M18 6 6 18"></path>
+						<path d="m6 6 12 12"></path>
+					</svg>
+				</button>
+			</div>
+			<div class="modal-content">
+				<div class="delete-confirmation">
+					<div class="delete-icon">🗑️</div>
+					<p>Are you sure you want to delete <strong>{{ selectedModule?.name }}</strong>?</p>
+					<div class="warning-text">This action cannot be undone.</div>
+				</div>
+			</div>
+			<div class="modal-footer">
+				<button class="btn btn-secondary" type="button" (click)="closeDeleteModal()">Cancel</button>
+				<button class="btn btn-danger" type="button" (click)="confirmDelete()">Delete</button>
+			</div>
+		</div>
+	</div>
 </div>
+
