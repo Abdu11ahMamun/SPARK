@@ -18,5 +18,4 @@ export const routes: Routes = [
   { path: 'tasks', component: TasksComponent },
   { path: 'backlog', component: BacklogComponent },
   { path: 'sprints', component: SprintsComponent },
-  // ...other routes
 ];
