@@ -117,6 +117,7 @@ public class TeamMembershipService {
         return TeamMemberDto.builder()
                 .id(user.getId().intValue())
                 .userId(user.getId().intValue())
+                .teamId(membership.getTeam().getId())
                 .userName(fullName)
                 .userEmail(user.getEmail())
                 .role(membership.getTeamRole())

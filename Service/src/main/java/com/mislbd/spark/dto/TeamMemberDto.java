@@ -12,6 +12,7 @@ import lombok.Builder;
 public class TeamMemberDto {
     private Integer id;
     private Integer userId;
+    private Integer teamId;
     private String userName;
     private String userEmail;
     private String role;

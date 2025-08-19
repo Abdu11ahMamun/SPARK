@@ -1,217 +1,348 @@
 <div class="sprints-container">
-  <!-- Header -->
-  <div class="header-section">
-    <h1>Sprint Management</h1>
-    <button (click)="openSprintModal()" class="btn btn-primary">
-      Create New Sprint
-    </button>
+  <!-- Sprints Header -->
+  <div class="sprints-header">
+    <h1 class="sprints-title">Sprint Management</h1>
+    <div class="sprints-actions">
+      <button class="action-btn search-btn" (click)="toggleSearchPanel()" title="Advanced Search" [class.active]="showSearchPanel">
+        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <circle cx="11" cy="11" r="8"/>
+          <path d="m21 21-4.35-4.35"/>
+        </svg>
+      </button>
+      <button class="action-btn refresh-btn" (click)="refreshSprints()" title="Refresh Sprints" [disabled]="isLoading">
+        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" [class.spinning]="isLoading">
+          <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/>
+          <path d="M21 3v5h-5"/>
+          <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/>
+          <path d="M3 21v-5h5"/>
+        </svg>
+      </button>
+      <button class="btn btn-success" (click)="addSprintWithCapacity()" [disabled]="isLoading" title="Create sprint with capacity planning">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+          <line x1="16" y1="2" x2="16" y2="6"/>
+          <line x1="8" y1="2" x2="8" y2="6"/>
+          <line x1="3" y1="10" x2="21" y2="10"/>
+          <path d="M8 14h8M8 18h8"/>
+        </svg>
+        Sprint + Capacity
+      </button>
+    </div>
   </div>
 
-  <!-- Sprint Information Modal -->
-  <div *ngIf="showSprintModal" class="modal-backdrop">
-    <div class="modal-dialog">
-      <div class="modal-content">
-        <!-- Modal Header -->
-        <div class="modal-header">
-          <h4 class="modal-title">Sprint Information</h4>
-          <button type="button" class="close" (click)="closeSprintModal()">×</button>
+  <!-- Advanced Search Panel -->
+  <div *ngIf="showSearchPanel" class="search-panel">
+    <div class="search-panel-header">
+      <h3>Advanced Search</h3>
+      <button class="close-btn" (click)="toggleSearchPanel()">
+        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path d="M18 6 6 18"/>
+          <path d="m6 6 12 12"/>
+        </svg>
+      </button>
+    </div>
+    <div class="search-panel-content">
+      <div class="search-filters">
+        <div class="filter-item">
+          <label>Search by Sprint Name:</label>
+          <input
+            type="text"
+            class="form-control"
+            placeholder="Enter sprint name..."
+            [(ngModel)]="searchTerm"
+            (input)="onSearchChange()"
+          />
+        </div>
+        
+        <div class="filter-item">
+          <label>Status:</label>
+          <select class="form-control" [(ngModel)]="statusFilter" (change)="onStatusFilterChange()">
+            <option value="">All Statuses</option>
+            <option value="1">Active</option>
+            <option value="0">Inactive</option>
+            <option value="2">Completed</option>
+          </select>
         </div>
 
-        <!-- Tab Navigation -->
-        <div class="tab-navigation">
-          <ul class="nav nav-tabs">
-            <li class="nav-item">
-              <a 
-                class="nav-link" 
-                [class.active]="activeTab === 'Sprint Declare'"
-                (click)="setActiveTab('Sprint Declare')">
-                Sprint Declare
-              </a>
-            </li>
-            <li class="nav-item">
-              <a 
-                class="nav-link" 
-                [class.active]="activeTab === 'Sprint Task Info'"
-                (click)="setActiveTab('Sprint Task Info')">
-                Sprint Task Info
-              </a>
-            </li>
-          </ul>
+        <div class="filter-item">
+          <label>From Date:</label>
+          <input
+            type="date"
+            class="form-control"
+            [(ngModel)]="dateFromFilter"
+            (change)="onDateFilterChange()"
+          />
         </div>
 
-        <!-- Tab Content -->
-        <div class="tab-content">
-          <!-- Sprint Declare Tab -->
-          <div *ngIf="activeTab === 'Sprint Declare'" class="tab-pane">
-            <div class="sprint-declare-section">
-              <h5 class="section-title">Sprint Declare</h5>
-              
-              <div class="form-container">
-                <div class="form-row">
-                  <div class="form-group">
-                    <label>Team Name</label>
-                    <select [(ngModel)]="selectedTeam" class="form-control">
-                      <option *ngFor="let team of teams" [value]="team.name">
-                        {{ team.name }}
-                      </option>
-                    </select>
-                  </div>
-                </div>
-
-                <div class="form-row">
-                  <div class="form-group">
-                    <label>Sprint Name</label>
-                    <input 
-                      type="text" 
-                      [(ngModel)]="sprintName" 
-                      class="form-control"
-                      placeholder="Enter sprint name">
-                  </div>
-                </div>
-
-                <div class="form-row two-columns">
-                  <div class="form-group">
-                    <label>From Date</label>
-                    <div class="input-group">
-                      <input 
-                        type="date" 
-                        [(ngModel)]="fromDate" 
-                        (change)="onDateChange()"
-                        class="form-control">
-                      <span class="input-group-addon">📅</span>
-                    </div>
-                  </div>
-                  <div class="form-group">
-                    <label>To Date</label>
-                    <div class="input-group">
-                      <input 
-                        type="date" 
-                        [(ngModel)]="toDate" 
-                        (change)="onDateChange()"
-                        class="form-control">
-                      <span class="input-group-addon">📅</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div class="sprint-summary">
-                  <span class="summary-text">Total Sprint: {{ totalSprintDays }} Days</span>
-                </div>
-
-                <div class="form-row two-columns">
-                  <div class="form-group">
-                    <label>No Of Holidays</label>
-                    <input 
-                      type="number" 
-                      [(ngModel)]="noOfHolidays" 
-                      class="form-control"
-                      placeholder="Enter number of holidays">
-                  </div>
-                  <div class="form-group">
-                    <label>Sprint Point</label>
-                    <input 
-                      type="text" 
-                      [(ngModel)]="sprintPoint" 
-                      class="form-control"
-                      placeholder="Enter sprint points">
-                  </div>
-                </div>
-
-                <div class="form-row">
-                  <div class="form-group">
-                    <label>Details Remark</label>
-                    <textarea 
-                      [(ngModel)]="detailsRemark" 
-                      class="form-control"
-                      rows="4"
-                      placeholder="Enter details and remarks">
-                    </textarea>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Sprint Task Info Tab -->
-          <div *ngIf="activeTab === 'Sprint Task Info'" class="tab-pane">
-            <div class="sprint-task-info-section">
-              <h5 class="section-title">No Of Users</h5>
-              
-              <div class="users-table-container">
-                <table class="table table-bordered users-table">
-                  <thead>
-                    <tr>
-                      <th>Sl</th>
-                      <th>User Name</th>
-                      <th>User Capacity</th>
-                      <th>Leave Days</th>
-                      <th>Total Working Hour</th>
-                      <th>User Working Hour</th>
-                      <th>Remove</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr *ngFor="let user of sprintUsers; let i = index">
-                      <td>{{ i + 1 }}</td>
-                      <td>{{ user.name }}</td>
-                      <td>
-                        <input 
-                          type="number" 
-                          [(ngModel)]="user.userCapacity" 
-                          class="form-control form-control-sm"
-                          style="width: 80px;">
-                      </td>
-                      <td>
-                        <input 
-                          type="number" 
-                          [(ngModel)]="user.leaveDays" 
-                          class="form-control form-control-sm"
-                          style="width: 80px;">
-                      </td>
-                      <td>
-                        <input 
-                          type="number" 
-                          [(ngModel)]="user.totalWorkingHour" 
-                          class="form-control form-control-sm"
-                          style="width: 80px;">
-                      </td>
-                      <td>
-                        <input 
-                          type="number" 
-                          [(ngModel)]="user.userWorkingHour" 
-                          class="form-control form-control-sm"
-                          style="width: 80px;">
-                      </td>
-                      <td>
-                        <button 
-                          type="button" 
-                          (click)="removeUser(i)"
-                          class="btn btn-danger btn-sm">
-                          🗑️
-                        </button>
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
+        <div class="filter-item">
+          <label>Created Date To:</label>
+          <input
+            type="date"
+            class="form-control"
+            [(ngModel)]="dateToFilter"
+            (change)="onDateFilterChange()"
+          />
         </div>
-
-        <!-- Modal Footer -->
-        <div class="modal-footer">
-          <button type="button" class="btn btn-success" (click)="createSprint()">Create</button>
-          <button type="button" class="btn btn-secondary" (click)="cancelSprint()">Cancel</button>
-        </div>
+      </div>
+      
+      <div class="search-actions">
+        <button class="btn btn-secondary" (click)="clearFilters()">Clear All</button>
+        <button class="btn btn-primary" (click)="applyFilters()">Apply Filters</button>
       </div>
     </div>
   </div>
 
-  <!-- Main Content When No Modal -->
-  <div *ngIf="!showSprintModal" class="main-content">
-    <div class="empty-state">
-      <h3>No sprints created yet</h3>
-      <p>Click "Create New Sprint" to get started</p>
+  <!-- Error Message -->
+  <div *ngIf="error" class="alert alert-error">
+    {{ error }}
+    <button class="alert-close" (click)="error = null">×</button>
+  </div>
+
+  <!-- Loading Spinner -->
+  <div *ngIf="isLoading" class="loading-spinner">
+    <div class="spinner"></div>
+    <p>Loading...</p>
+  </div>
+
+  <!-- Sprint Form (Add/Edit) -->
+  <div *ngIf="isAdd || isEdit" class="sprint-form-container">
+    <div class="sprint-form-header">
+      <h2>Sprint Declare</h2>
+      <div class="form-actions">
+  <button class="btn btn-success" (click)="saveSprint()" [disabled]="isLoading">{{ isAdd ? 'Create' : 'Update' }}</button>
+        <button class="btn btn-secondary" (click)="cancel()">Cancel</button>
+      </div>
+    </div>
+
+    <form class="sprint-form" (ngSubmit)="saveSprint()">
+      <div class="form-group">
+        <label class="form-label">Team Name:</label>
+        <select class="form-control" [(ngModel)]="sprintForm.tramId" name="tramId" required>
+          <option value="">--Select One--</option>
+          <option *ngFor="let team of teams" [value]="team.id">{{ team.teamName }}</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Sprint Name:</label>
+        <input 
+          type="text"
+          class="form-control" 
+          [(ngModel)]="sprintForm.sprintName" 
+          name="sprintName" 
+          required 
+          placeholder="Enter sprint name"
+        />
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">From Date:</label>
+          <input 
+            type="date"
+            class="form-control" 
+            [(ngModel)]="sprintForm.fromDate" 
+            name="fromDate" 
+            required
+          />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">To Date:</label>
+          <input 
+            type="date"
+            class="form-control" 
+            [(ngModel)]="sprintForm.toDate" 
+            name="toDate" 
+            required
+          />
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Total Sprint:</label>
+        <input 
+          type="text"
+          class="form-control" 
+          [value]="calculateSprintDuration(sprintForm.fromDate, sprintForm.toDate) + ' Days'"
+          readonly
+        />
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">No Of Holidays:</label>
+          <input 
+            type="number"
+            class="form-control" 
+            [(ngModel)]="sprintForm.noOfHolidays" 
+            name="noOfHolidays" 
+            min="0"
+          />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Sprint Point:</label>
+          <input 
+            type="number"
+            class="form-control" 
+            [(ngModel)]="sprintForm.sprintPoint" 
+            name="sprintPoint" 
+            placeholder="Enter sprint points"
+            min="0"
+          />
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Details Remark:</label>
+        <textarea 
+          class="form-control" 
+          [(ngModel)]="sprintForm.detailsRemark" 
+          name="detailsRemark" 
+          rows="4"
+          placeholder="Enter details and remarks"
+        ></textarea>
+      </div>
+    </form>
+  </div>
+
+  <!-- Sprint List -->
+  <div *ngIf="!isAdd && !isEdit" class="sprints-list">
+    <div class="data-table-container">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Sprint Name</th>
+            <th>Team</th>
+            <th>From Date</th>
+            <th>To Date</th>
+            <th>Progress</th>
+            <th>Duration</th>
+            <th>Holidays</th>
+            <th>Sprint Points</th>
+            <th>Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let sprint of filteredSprints; trackBy: trackBySprint">
+            <td>{{ sprint.sprintName }}</td>
+            <td>{{ getTeamName(sprint.tramId) }}</td>
+            <td>{{ sprint.fromDate | date:'shortDate' }}</td>
+            <td>{{ sprint.toDate | date:'shortDate' }}</td>
+            <td>
+              <div class="progress-cell">
+                <div class="progress-meta">
+                  <span class="progress-pct">{{ getSprintProgress(sprint) | number:'1.0-0' }}%</span>
+                  <span class="progress-days">{{ getElapsedDays(sprint) }}/{{ calculateSprintDuration(sprint.fromDate, sprint.toDate) }} days</span>
+                </div>
+                <div class="progress-bar" [class.complete]="getSprintProgress(sprint) >= 100" [class.not-started]="getSprintProgress(sprint) === 0">
+                  <div class="progress-fill" [style.width.%]="getSprintProgress(sprint)"></div>
+                </div>
+              </div>
+            </td>
+            <td>{{ calculateSprintDuration(sprint.fromDate, sprint.toDate) }} days</td>
+            <td>{{ sprint.noOfHolidays }}</td>
+            <td>{{ sprint.sprintPoint }}</td>
+            <td>
+              <span class="status-badge" [ngClass]="getStatusClass(sprint.status)">
+                {{ getStatusName(sprint.status) }}
+              </span>
+            </td>
+            <td class="actions-column">
+              <button class="btn-icon capacity-btn" (click)="editSprintCapacity(sprint)" title="Capacity Planning">
+                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+                  <circle cx="9" cy="7" r="4"/>
+                  <path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>
+                </svg>
+              </button>
+              <button class="btn-icon edit-btn" (click)="selectSprint(sprint)" title="Edit Sprint">
+                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                  <path d="m18.5 2.5 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                </svg>
+              </button>
+              <button class="btn-icon delete-btn" (click)="confirmDeleteSprint(sprint)" title="Delete Sprint">
+                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <polyline points="3,6 5,6 21,6"/>
+                  <path d="m19,6 v14 a2,2 0 0,1 -2,2 H7 a2,2 0 0,1 -2,-2 V6 M8,6 V4 a2,2 0 0,1 2,-2 h4 a2,2 0 0,1 2,2 v2"/>
+                </svg>
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <!-- Empty State -->
+      <div *ngIf="filteredSprints.length === 0 && !isLoading" class="empty-state">
+        <div class="empty-state-content">
+          <svg width="48" height="48" fill="none" stroke="currentColor" stroke-width="1" viewBox="0 0 24 24">
+            <circle cx="11" cy="11" r="8"/>
+            <path d="m21 21-4.35-4.35"/>
+          </svg>
+          <h3>No sprints found</h3>
+          <p>Try adjusting your search criteria or add a new sprint.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pagination -->
+    <div *ngIf="totalPages > 1" class="pagination-container">
+      <div class="pagination-info">
+        Showing {{ getStartIndex() }} to {{ getEndIndex() }} of {{ totalSprints }} sprints
+      </div>
+      <div class="pagination-controls">
+        <button class="btn-pagination" (click)="goToPage(1)" [disabled]="currentPage === 1">
+          First
+        </button>
+        <button class="btn-pagination" (click)="goToPage(currentPage - 1)" [disabled]="currentPage === 1">
+          Previous
+        </button>
+        <button
+          *ngFor="let page of getVisiblePages()"
+          class="btn-pagination"
+          [class.active]="page === currentPage"
+          (click)="goToPage(page)">
+          {{ page }}
+        </button>
+        <button class="btn-pagination" (click)="goToPage(currentPage + 1)" [disabled]="currentPage === totalPages">
+          Next
+        </button>
+        <button class="btn-pagination" (click)="goToPage(totalPages)" [disabled]="currentPage === totalPages">
+          Last
+        </button>
+      </div>
     </div>
   </div>
+
+  <!-- Delete Confirmation Modal -->
+  <div *ngIf="showDeleteConfirm" class="modal-overlay">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Confirm Delete</h3>
+      </div>
+      <div class="modal-body">
+        <p>Are you sure you want to delete the sprint "{{ sprintToDelete?.sprintName }}"?</p>
+        <p class="warning-text">This action cannot be undone.</p>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-danger" (click)="deleteSprint()" [disabled]="isLoading">
+          Delete
+        </button>
+        <button class="btn btn-secondary" (click)="cancel()">
+          Cancel
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sprint Capacity Planning Dialog -->
+  <app-sprint-capacity-dialog
+    [isVisible]="showCapacityDialog"
+    [data]="capacityDialogData"
+    (closeDialog)="closeCapacityDialog()"
+    (saveComplete)="onCapacitySaveComplete($event)">
+  </app-sprint-capacity-dialog>
 </div>

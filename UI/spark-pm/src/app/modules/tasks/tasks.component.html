@@ -146,10 +146,10 @@
       <thead>
         <tr>
           <th>MITS No</th>
-          <th>Task Type</th>
+          <th>Title</th>
           <th>Product</th>
           <th>Module</th>
-          <th>Title</th>
+          <th>Task Type</th>
           <th>Assignee</th>
           <th>Status</th>
           <th>Priority</th>
@@ -161,10 +161,10 @@
       <tbody>
         <tr *ngFor="let t of paginated">
           <td>{{ t.mitsNo }}</td>
-          <td>{{ t.taskType }}</td>
+          <td>{{ t.title }}</td>
           <td>{{ getProductName(t.productId) }}</td>
           <td>{{ getModuleName(t.productModuleId) }}</td>
-          <td>{{ t.title }}</td>
+          <td>{{ t.taskType }}</td>
           <td>{{ getAssigneeName(t.assigneeUserId) }}</td>
           <td>{{ t.status }}</td>
           <td>{{ t.priority }}</td>

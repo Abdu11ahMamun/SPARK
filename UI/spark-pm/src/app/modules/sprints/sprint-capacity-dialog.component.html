@@ -1,0 +1,459 @@
+<!-- Sprint Capacity Planning Dialog -->
+<div class="capacity-dialog-overlay" *ngIf="isVisible" (click)="onCancel()">
+  <div class="capacity-dialog" (click)="$event.stopPropagation()">
+    
+    <!-- Dialog Header -->
+    <div class="dialog-header">
+      <h2 class="dialog-title">
+        <svg class="title-icon" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+          <line x1="16" y1="2" x2="16" y2="6"/>
+          <line x1="8" y1="2" x2="8" y2="6"/>
+          <line x1="3" y1="10" x2="21" y2="10"/>
+        </svg>
+        {{ data.mode === 'create' ? 'Create Sprint with Capacity Planning' : 'Edit Sprint Capacity' }}
+      </h2>
+      <button type="button" class="close-btn" (click)="onCancel()" title="Close">
+        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <line x1="18" y1="6" x2="6" y2="18"/>
+          <line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Dialog Content -->
+    <div class="dialog-content">
+      <form [formGroup]="sprintForm" class="capacity-form">
+        
+        <!-- Sprint Basic Information -->
+        <div class="form-section">
+          <h3 class="section-title">Sprint Information</h3>
+          
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label" for="sprintName">
+                Sprint Name <span class="required">*</span>
+              </label>
+              <input 
+                type="text" 
+                id="sprintName"
+                class="form-input"
+                formControlName="sprintName"
+                placeholder="Enter sprint name"
+                [class.error]="sprintForm.get('sprintName')?.touched && sprintForm.get('sprintName')?.errors">
+              <div class="field-error" *ngIf="sprintForm.get('sprintName')?.touched && sprintForm.get('sprintName')?.errors">
+                Sprint name is required
+              </div>
+            </div>
+            
+            <div class="form-group">
+              <label class="form-label" for="tramId">
+                Team <span class="required">*</span>
+              </label>
+              <select 
+                id="tramId"
+                class="form-select"
+                formControlName="tramId"
+                (change)="onTeamChange($any($event.target).value)"
+                [disabled]="isTeamsLoading"
+                [class.error]="sprintForm.get('tramId')?.touched && sprintForm.get('tramId')?.errors">
+                <option value="">{{ isTeamsLoading ? 'Loading teams...' : 'Select Team' }}</option>
+                <option *ngFor="let team of teams" [value]="team.id">{{ team.teamName }}</option>
+              </select>
+              <div class="field-error" *ngIf="sprintForm.get('tramId')?.touched && sprintForm.get('tramId')?.errors">
+                Team selection is required
+              </div>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label" for="fromDate">
+                Start Date <span class="required">*</span>
+              </label>
+              <input 
+                type="date" 
+                id="fromDate"
+                class="form-input"
+                formControlName="fromDate"
+                [class.error]="sprintForm.get('fromDate')?.touched && sprintForm.get('fromDate')?.errors">
+              <div class="field-error" *ngIf="sprintForm.get('fromDate')?.touched && sprintForm.get('fromDate')?.errors">
+                Start date is required
+              </div>
+            </div>
+            
+            <div class="form-group">
+              <label class="form-label" for="toDate">
+                End Date <span class="required">*</span>
+              </label>
+              <input 
+                type="date" 
+                id="toDate"
+                class="form-input"
+                formControlName="toDate"
+                [class.error]="sprintForm.get('toDate')?.touched && sprintForm.get('toDate')?.errors">
+              <div class="field-error" *ngIf="sprintForm.get('toDate')?.touched && sprintForm.get('toDate')?.errors">
+                <span *ngIf="sprintForm.get('toDate')?.errors?.['required']">End date is required</span>
+                <span *ngIf="sprintForm.get('toDate')?.errors?.['invalidDateRange']">End date must be after start date</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label" for="sprintPoint">
+                Sprint Points
+              </label>
+              <input 
+                type="number" 
+                id="sprintPoint"
+                class="form-input"
+                formControlName="sprintPoint"
+                placeholder="0"
+                min="0">
+            </div>
+            
+            <div class="form-group">
+              <label class="form-label" for="noOfHolidays">
+                Holidays
+              </label>
+              <input 
+                type="number" 
+                id="noOfHolidays"
+                class="form-input"
+                formControlName="noOfHolidays"
+                placeholder="0"
+                min="0">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="defaultDailyHours">
+                Daily Hours <span class="required">*</span>
+              </label>
+              <input 
+                type="number" 
+                id="defaultDailyHours"
+                class="form-input"
+                formControlName="defaultDailyHours"
+                placeholder="8"
+                min="1"
+                max="24">
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group full-width">
+              <label class="form-label" for="detailsRemark">
+                Description
+              </label>
+              <textarea 
+                id="detailsRemark"
+                class="form-textarea"
+                formControlName="detailsRemark"
+                placeholder="Enter sprint description..."
+                rows="3"></textarea>
+            </div>
+          </div>
+        </div>
+
+        <!-- User Capacity Management -->
+        <div class="form-section">
+          <div class="section-header">
+            <h3 class="section-title">Team Capacity Planning</h3>
+            <div class="capacity-controls" *ngIf="isTeamManagementEnabled()">
+              <button 
+                type="button" 
+                class="btn btn-outline" 
+                (click)="toggleUserSource()"
+                title="Toggle between team members and all users">
+                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                  <circle cx="9" cy="7" r="4"/>
+                  <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                  <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                </svg>
+                {{ showAllUsers ? 'Show Team Members' : 'Add External Users' }}
+              </button>
+              <button 
+                type="button" 
+                class="btn btn-secondary" 
+                (click)="addUser()"
+                [disabled]="getDisplayedUsers().length === 0"
+                *ngIf="showAllUsers">
+                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <line x1="12" y1="5" x2="12" y2="19"/>
+                  <line x1="5" y1="12" x2="19" y2="12"/>
+                </svg>
+                Add User
+              </button>
+            </div>
+          </div>
+
+          <!-- Team Selection Message -->
+          <div class="team-selection-message" *ngIf="!isTeamManagementEnabled()">
+            <div class="message-content">
+              <svg width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                <circle cx="9" cy="7" r="4"/>
+                <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+              </svg>
+              <h4>Select a Team First</h4>
+              <p>Please select a team from the dropdown above. All team members will be automatically added to the capacity planning table.</p>
+            </div>
+          </div>
+
+          <!-- Loading Team Members -->
+          <div class="team-selection-message" *ngIf="isTeamManagementEnabled() && isLoading">
+            <div class="message-content">
+              <div class="loading-spinner"></div>
+              <h4>Loading Team Members</h4>
+              <p>Loading team members and adding them to the capacity planning table...</p>
+            </div>
+          </div>
+
+          <!-- No Team Members Message -->
+          <div class="team-selection-message" *ngIf="isTeamManagementEnabled() && !isLoading && userCapacitiesFormArray.length === 0">
+            <div class="message-content">
+              <svg width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                <circle cx="9" cy="7" r="4"/>
+                <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+              </svg>
+              <h4>No Team Members Found</h4>
+              <p>The selected team has no members. Use the "Add External Users" option to add users manually.</p>
+            </div>
+          </div>
+
+          <!-- Capacity Table -->
+          <div class="capacity-table-container" *ngIf="isTeamManagementEnabled() && userCapacitiesFormArray.length > 0">
+            <table class="capacity-table">
+              <thead>
+                <tr>
+                  <th>User Name</th>
+                  <th>Capacity %</th>
+                  <th>Leave Days</th>
+                  <th>Daily Hours</th>
+                  <th>Allocated Hours</th>
+                  <th>Available Hours</th>
+                  <th>Utilization %</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody formArrayName="userCapacities">
+                <tr *ngFor="let capacityGroup of userCapacitiesFormArray.controls; let i = index; trackBy: trackByIndex" 
+                    [formGroupName]="i"
+                    [class]="getUtilizationClass(i)">
+                  
+                  <!-- User Name -->
+                  <td class="user-cell">
+                    <select 
+                      class="form-select compact"
+                      formControlName="userId"
+                      (change)="onUserSelect(i, getUserCapacityGroup(i).get('userId')?.value)"
+                      [compareWith]="compareById"
+                      [class.error]="getUserCapacityGroup(i).get('userId')?.touched && getUserCapacityGroup(i).get('userId')?.errors">
+                      <option [ngValue]="null">Select User</option>
+                      <option *ngFor="let user of getDisplayedUsers(); trackBy: trackByUser" [ngValue]="user.id">
+                        {{ user.firstName }} {{ user.lastName }}
+                      </option>
+                      <!-- Show currently selected user even if not in available list -->
+                      <option 
+                        *ngIf="getUserCapacityGroup(i).get('userId')?.value && isUserNotInAvailableList(i)"
+                        [ngValue]="getUserCapacityGroup(i).get('userId')?.value">
+                        {{ getUserCapacityGroup(i).get('userName')?.value }}
+                      </option>
+                    </select>
+                  </td>
+
+                  <!-- Capacity Percentage -->
+                  <td>
+                    <input 
+                      type="number" 
+                      class="form-input compact"
+                      formControlName="userCapacityPercentage"
+                      min="1"
+                      max="100"
+                      placeholder="100">
+                  </td>
+
+                  <!-- Leave Days -->
+                  <td>
+                    <input 
+                      type="number" 
+                      class="form-input compact"
+                      formControlName="leaveDays"
+                      min="0"
+                      placeholder="0">
+                  </td>
+
+                  <!-- Daily Working Hours -->
+                  <td>
+                    <input 
+                      type="number" 
+                      class="form-input compact"
+                      formControlName="dailyWorkingHours"
+                      min="0"
+                      max="24"
+                      step="0.5"
+                      placeholder="8">
+                  </td>
+
+                  <!-- Allocated Hours -->
+                  <td>
+                    <input 
+                      type="number" 
+                      class="form-input compact"
+                      formControlName="allocatedHours"
+                      min="0"
+                      step="0.5"
+                      placeholder="0">
+                  </td>
+
+                  <!-- Available Hours (Calculated) -->
+                  <td class="calculated-cell">
+                    <span class="calculated-value">
+                      {{ getUserCapacityGroup(i).get('availableWorkingHours')?.value | number:'1.1-1' }}h
+                    </span>
+                  </td>
+
+                  <!-- Utilization Percentage (Calculated) -->
+                  <td class="calculated-cell">
+                    <div class="utilization-cell">
+                      <span class="utilization-value" [class]="getUtilizationClass(i)">
+                        {{ getUserCapacityGroup(i).get('utilizationPercentage')?.value | number:'1.0-1' }}%
+                      </span>
+                      <div class="utilization-bar">
+                        <div 
+                          class="utilization-fill" 
+                          [class]="getUtilizationClass(i)"
+                          [style.width.%]="Math.min(100, getUserCapacityGroup(i).get('utilizationPercentage')?.value)">
+                        </div>
+                      </div>
+                      <svg 
+                        *ngIf="isOverAllocated(i)" 
+                        class="warning-icon" 
+                        width="16" 
+                        height="16" 
+                        fill="currentColor" 
+                        viewBox="0 0 24 24">
+                        <path d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z"/>
+                      </svg>
+                    </div>
+                  </td>
+
+                  <!-- Actions -->
+                  <td class="actions-cell">
+                    <button 
+                      type="button" 
+                      class="btn-icon btn-danger" 
+                      (click)="removeUser(i)"
+                      title="Remove user">
+                      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6h14z"/>
+                      </svg>
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Empty State -->
+          <div class="empty-state" *ngIf="userCapacitiesFormArray.length === 0">
+            <svg class="empty-icon" width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+              <path d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z"/>
+            </svg>
+            <h4>No team members added</h4>
+            <p>Add team members to start capacity planning for this sprint.</p>
+          </div>
+        </div>
+
+        <!-- Capacity Summary -->
+        <div class="form-section" *ngIf="capacitySummary">
+          <h3 class="section-title">Capacity Summary</h3>
+          
+          <div class="summary-grid">
+            <div class="summary-card">
+              <div class="summary-label">Team Members</div>
+              <div class="summary-value">{{ capacitySummary.totalTeamMembers }}</div>
+              <div class="summary-subtitle">{{ capacitySummary.activeMembers }} active</div>
+            </div>
+
+            <div class="summary-card">
+              <div class="summary-label">Total Capacity</div>
+              <div class="summary-value">{{ capacitySummary.totalCapacityHours | number:'1.0-1' }}h</div>
+              <div class="summary-subtitle">Available hours</div>
+            </div>
+
+            <div class="summary-card">
+              <div class="summary-label">Allocated Hours</div>
+              <div class="summary-value">{{ capacitySummary.totalAllocatedHours | number:'1.0-1' }}h</div>
+              <div class="summary-subtitle">{{ capacitySummary.totalRemainingHours | number:'1.0-1' }}h remaining</div>
+            </div>
+
+            <div class="summary-card" [class.warning]="capacitySummary.averageUtilization > 100">
+              <div class="summary-label">Team Utilization</div>
+              <div class="summary-value">{{ capacitySummary.averageUtilization | number:'1.0-1' }}%</div>
+              <div class="summary-subtitle" *ngIf="capacitySummary.overAllocatedMembers > 0">
+                {{ capacitySummary.overAllocatedMembers }} over-allocated
+              </div>
+            </div>
+
+            <div class="summary-card full-width" *ngIf="capacitySummary.hasCapacityRisks">
+              <div class="capacity-warning">
+                <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z"/>
+                </svg>
+                <span>Capacity risks detected - some team members are over-allocated</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </form>
+    </div>
+
+    <!-- Dialog Footer -->
+    <div class="dialog-footer">
+      <div class="footer-messages">
+        <div class="error-message" *ngIf="errorMessage">
+          <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z"/>
+          </svg>
+          {{ errorMessage }}
+          <button type="button" class="clear-message" (click)="clearMessages()">×</button>
+        </div>
+        
+        <div class="success-message" *ngIf="successMessage">
+          <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+          </svg>
+          {{ successMessage }}
+        </div>
+      </div>
+
+      <div class="footer-actions">
+        <button 
+          type="button" 
+          class="btn btn-secondary" 
+          (click)="onCancel()"
+          [disabled]="isLoading">
+          Cancel
+        </button>
+        <button 
+          type="button" 
+          class="btn btn-primary" 
+          (click)="onSave()"
+          [disabled]="isLoading || !sprintForm.valid">
+          <svg *ngIf="isLoading" class="loading-spinner" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+          </svg>
+          {{ data.mode === 'create' ? 'Create Sprint' : 'Update Sprint' }}
+        </button>
+      </div>
+    </div>
+
+  </div>
+</div>
