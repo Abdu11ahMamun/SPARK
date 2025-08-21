@@ -21,10 +21,6 @@ public class ProductModuleService {
         return productModuleRepository.findAll();
     }
 
-    public List<ProductModule> getModulesByProductId(Integer productId) {
-        return productModuleRepository.findByProductId(productId);
-    }
-
     public Optional<ProductModule> getProductModuleById(Integer id) {
         return productModuleRepository.findById(id);
     }

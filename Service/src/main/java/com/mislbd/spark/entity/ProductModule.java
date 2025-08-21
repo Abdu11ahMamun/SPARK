@@ -31,6 +31,6 @@ public class ProductModule {
     @Column(name = "module_owner_id")
     private Integer moduleOwnerId;
 
-    @Column(length = 255)
-    private String client;
+    @Column
+    private Integer client;
 }

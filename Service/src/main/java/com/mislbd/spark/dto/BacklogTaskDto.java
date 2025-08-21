@@ -33,12 +33,4 @@ public class BacklogTaskDto {
     private String updateBy;
     private Instant updatedate;
     private Integer teamId;
-    
-    // Frontend compatibility field for task type as string
-    private String type;
-    
-    // Frontend-friendly field names that map to the backend fields
-    private Integer assigneeId;
-    private Integer moduleId;
-    private Integer sprintId;
 }

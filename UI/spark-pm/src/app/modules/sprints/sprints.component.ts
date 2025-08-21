@@ -2,6 +2,7 @@
 import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
 import { SprintService } from './sprints.service';
 import { Sprint, SprintFormData } from './sprints.model';
 import { NotificationService } from '../../core/services/notification.service';
@@ -61,7 +62,8 @@ export class SprintsComponent implements OnInit {
     private sprintService: SprintService,
     private teamService: TeamService,
     private notificationService: NotificationService,
-    private cdr: ChangeDetectorRef
+  private cdr: ChangeDetectorRef,
+  private router: Router
   ) {}
 
   ngOnInit() {
@@ -456,5 +458,11 @@ export class SprintsComponent implements OnInit {
   // Enhanced edit sprint with capacity planning
   editSprintCapacity(sprint: Sprint): void {
     this.openCapacityDialog('edit', sprint);
+  }
+
+  // Navigate to details page
+  gotoDetails(sprint: Sprint): void {
+    if (!sprint?.id) return;
+    this.router.navigate(['/sprints', sprint.id]);
   }
 }

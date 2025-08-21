@@ -1,6 +1,5 @@
-import { CommonModule } from '@angular/common';
 import { Component } from '@angular/core';
-
+import { CommonModule } from '@angular/common';
 
 @Component({
   selector: 'app-backlog',
@@ -23,5 +22,5 @@ import { Component } from '@angular/core';
   `]
 })
 export class BacklogComponent {
-
+  
 }

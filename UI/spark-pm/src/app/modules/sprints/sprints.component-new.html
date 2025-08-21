@@ -1,0 +1,83 @@
+<div class="sprints-container">
+  <!-- Header Section -->
+  <div class="sprint-title-section">
+    <h1>Sprint Management</h1>
+    <div class="header-actions">
+      <button (click)="openSprintCreationModal()" class="btn btn-primary">
+        Create New Sprint
+      </button>
+    </div>
+  </div>
+
+  <!-- Error Display -->
+  <div *ngIf="error" class="alert alert-danger">
+    {{ error }}
+    <button type="button" class="btn-close" (click)="clearError()"></button>
+  </div>
+
+  <!-- Sprint Creation Modal -->
+  <div *ngIf="showSprintCreationModal" class="sprint-creation-modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Sprint Information</h2>
+        <button class="close-button" (click)="closeSprintCreationModal()">×</button>
+      </div>
+      <div class="tab-navigation">
+        <button class="tab-button" [class.active]="activeTab === 'sprint-declare'" (click)="setActiveTab('sprint-declare')" style="background-color: #22c55e; color: white; font-weight: bold; border: none; padding: 8px 24px; border-radius: 4px 4px 0 0;">Sprint Declare</button>
+        <button class="tab-button" [class.active]="activeTab === 'sprint-task-info'" (click)="setActiveTab('sprint-task-info')" style="background-color: #f3f4f6; color: #222; font-weight: bold; border: none; padding: 8px 24px; border-radius: 4px 4px 0 0;">Sprint Task Info</button>
+      </div>
+      <div class="modal-body">
+        <div *ngIf="activeTab === 'sprint-declare'" class="tab-content">
+          <form [formGroup]="sprintCreationForm" style="margin-top: 16px;">
+            <div class="form-group">
+              <label for="teamSelect">Team Name</label>
+              <select id="teamSelect" formControlName="teamId" style="width: 100%;">
+                <option value="">Select a team</option>
+                <option *ngFor="let team of teams" [value]="team.id">{{ team.name }}</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="sprintName">Sprint Name</label>
+              <input type="text" id="sprintName" formControlName="sprintName" style="width: 100%;" placeholder="Enter sprint name">
+            </div>
+            <div class="form-row" style="display: flex; gap: 16px;">
+              <div class="form-group" style="flex: 1;">
+                <label for="startDate">From Date</label>
+                <input type="date" id="startDate" formControlName="startDate" style="width: 100%;">
+              </div>
+              <div class="form-group" style="flex: 1;">
+                <label for="endDate">To Date</label>
+                <input type="date" id="endDate" formControlName="endDate" style="width: 100%;">
+              </div>
+            </div>
+            <div class="form-group">
+              <label>Total Sprint</label>
+              <input type="text" [value]="calculateTotalDays() + ' Days'" readonly style="width: 100%; background: #f3f4f6;">
+            </div>
+            <div class="form-row" style="display: flex; gap: 16px;">
+              <div class="form-group" style="flex: 1;">
+                <label for="holidays">No Of Holidays</label>
+                <input type="number" id="holidays" formControlName="holidays" style="width: 100%;">
+              </div>
+              <div class="form-group" style="flex: 1;">
+                <label for="sprintPoint">Sprint Point</label>
+                <input type="number" id="sprintPoint" formControlName="sprintPoint" style="width: 100%;" placeholder="Enter sprint points">
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="detailsRemark">Details Remark</label>
+              <textarea id="detailsRemark" formControlName="detailsRemark" style="width: 100%; min-height: 80px;" placeholder="Enter details and remarks"></textarea>
+            </div>
+          </form>
+        </div>
+        <div *ngIf="activeTab === 'sprint-task-info'" class="tab-content">
+          <p>Sprint Task Information will be added here...</p>
+        </div>
+      </div>
+      <div class="modal-footer" style="display: flex; justify-content: flex-end; gap: 8px;">
+        <button class="btn-secondary" (click)="closeSprintCreationModal()">Cancel</button>
+        <button class="btn-primary" (click)="createSprint()" [disabled]="!sprintCreationForm.valid" style="background-color: #22c55e; color: white; font-weight: bold;">Create</button>
+      </div>
+    </div>
+  </div>
+</div>
