@@ -2,6 +2,8 @@ import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
+import { tap, catchError } from 'rxjs/operators';
+import { of } from 'rxjs';
 
 // Local minimal interfaces to decouple from model file
 interface TaskItem {
@@ -21,6 +23,7 @@ interface TaskItem {
 interface ProductOption { id: number; name: string; }
 interface ModuleOption { id: number; name: string; productId: number; }
 interface UserOption { id: number; firstName?: string; lastName?: string; username: string; }
+interface JobTypeOption { id: number; type: string; description?: string; }
 
 @Component({
   selector: 'app-tasks',
@@ -38,12 +41,14 @@ export class TasksComponent implements OnInit {
   products: ProductOption[] = [];
   modules: ModuleOption[] = [];
   users: UserOption[] = [];
+  jobTypes: JobTypeOption[] = [];
+  jobTypeOptions: { value: number; label: string }[] = [];
 
   // UI state
   isLoading = false;
   isInitialLoad = true;
   error: string | null = null;
-  showSearchPanel = true;
+  showSearchPanel = false;
 
   // Pagination
   currentPage = 1;
@@ -59,6 +64,7 @@ export class TasksComponent implements OnInit {
   searchTerm = '';
   statusFilter = '';
   priorityFilter = '';
+  taskTypeFilter = '';
   productFilter = '';
   moduleFilter = '';
   assigneeFilter = '';
@@ -102,23 +108,58 @@ export class TasksComponent implements OnInit {
     this.isLoading = true; this.error = null;
     try {
       const base = (await import('../../../environments/environment')).environment.apiUrl;
-      const [tasks, products, modules, users] = await Promise.all([
+      const [tasks, products, modules, users, jobTypes] = await Promise.all([
         this.http.get<any[]>(`${base}/api/tasks`).toPromise(),
         this.http.get<any[]>(`${base}/api/products`).toPromise(),
         this.http.get<any[]>(`${base}/api/product-modules`).toPromise(),
-        this.http.get<any[]>(`${base}/api/users`).toPromise()
+        this.http.get<any[]>(`${base}/api/users`).toPromise(),
+        this.http.get<JobTypeOption[]>(`${base}/api/job-types`).toPromise()
       ]);
-      this.tasks = tasks || []; this.products = products || []; this.modules = modules || []; this.users = users || [];
+      
+      // Map backend field names to frontend interface
+      this.tasks = (tasks || []).map(task => ({
+        ...task,
+        assigneeUserId: task.assignedto,
+        mitsNo: task.mitsId || task.id?.toString() || ''
+      })); 
+      this.products = products || []; 
+      this.modules = modules || []; 
+      this.users = users || []; 
+      this.jobTypes = jobTypes || [];
+      
+      // Map job types to dropdown options
+      this.jobTypeOptions = this.jobTypes.map(type => ({ 
+        value: type.id, 
+        label: type.type 
+      }));
+      
+      console.log('Loaded job types:', this.jobTypeOptions);
+      console.log('Loaded users:', this.users);
+      console.log('Loaded tasks:', this.tasks);
       this.applyFilters();
-    } catch (e) { console.error(e); this.error = 'Failed to load tasks'; }
-    finally { this.isLoading = false; this.isInitialLoad = false; this.cdr.detectChanges(); }
+    } catch (e) { 
+      console.error('Error loading data:', e); 
+      this.error = 'Failed to load data. Please check if the backend is running.';
+      
+      // Fallback job types
+      this.jobTypeOptions = [
+        { value: 1, label: 'Development' },
+        { value: 2, label: 'Testing' },
+        { value: 3, label: 'Deployment' }
+      ];
+    }
+    finally { 
+      this.isLoading = false; 
+      this.isInitialLoad = false; 
+      this.cdr.detectChanges(); 
+    }
   }
 
   // Filters
   toggleSearchPanel() { this.showSearchPanel = !this.showSearchPanel; }
   onSearchChange() { setTimeout(() => this.applyFilters(), 250); }
   clearFilters() {
-    this.searchTerm = this.statusFilter = this.priorityFilter = this.productFilter = this.moduleFilter = this.assigneeFilter = this.mitsFilter = '';
+    this.searchTerm = this.statusFilter = this.priorityFilter = this.taskTypeFilter = this.productFilter = this.moduleFilter = this.assigneeFilter = this.mitsFilter = '';
     this.deadlineFrom = this.deadlineTo = '';
     this.applyFilters();
   }
@@ -136,6 +177,9 @@ export class TasksComponent implements OnInit {
     }
     if (this.statusFilter) list = list.filter(t => t.status === this.statusFilter);
     if (this.priorityFilter) list = list.filter(t => t.priority === this.priorityFilter);
+    if (this.taskTypeFilter) {
+      list = list.filter(t => this.getJobTypeName(t.taskType) === this.taskTypeFilter);
+    }
     if (this.productFilter) list = list.filter(t => t.productId === +this.productFilter);
     if (this.moduleFilter) list = list.filter(t => t.productModuleId === +this.moduleFilter);
     if (this.assigneeFilter) list = list.filter(t => t.assigneeUserId === +this.assigneeFilter);
@@ -164,6 +208,18 @@ export class TasksComponent implements OnInit {
     if (!moduleId) return '—';
     const m = this.modules.find(x => x.id === moduleId);
     return m?.name || '—';
+  }
+
+  getJobTypeName(taskType?: string | number): string {
+    if (!taskType) return '—';
+    // If taskType is already a string (type name), return it
+    if (typeof taskType === 'string' && isNaN(Number(taskType))) {
+      return taskType;
+    }
+    // If taskType is an ID, find the corresponding type name
+    const jobTypeId = typeof taskType === 'string' ? Number(taskType) : taskType;
+    const jobType = this.jobTypes.find(x => x.id === jobTypeId);
+    return jobType?.type || '—';
   }
 
   // Pagination helpers
@@ -215,14 +271,31 @@ export class TasksComponent implements OnInit {
   async saveTask() {
     if (this.form.invalid) { Object.values(this.form.controls).forEach(c => c.markAsTouched()); return; }
     const data: TaskItem = this.form.value;
+    
+    // Map frontend field names to backend field names
+    const backendData = {
+      ...data,
+      assignedto: data.assigneeUserId,
+      mitsId: data.mitsNo
+    };
+    
     try {
       const base = (await import('../../../environments/environment')).environment.apiUrl;
       if (this.isEditMode && this.selected?.id) {
-        const updated = { ...this.selected, ...data } as any;
+        const updated = { ...this.selected, ...backendData } as any;
         await this.http.put<void>(`${base}/api/tasks/${this.selected.id}`, updated).toPromise();
         Object.assign(this.selected, data);
       } else {
-        const created = await this.http.post<any>(`${base}/api/tasks`, data as any).toPromise(); if (created) this.tasks.unshift(created);
+        const created = await this.http.post<any>(`${base}/api/tasks`, backendData as any).toPromise(); 
+        if (created) {
+          // Map the response back to frontend format
+          const mappedTask = {
+            ...created,
+            assigneeUserId: created.assignedto,
+            mitsNo: created.mitsId || created.id?.toString() || ''
+          };
+          this.tasks.unshift(mappedTask);
+        }
       }
       this.applyFilters(); this.closeModal();
     } catch (e) { console.error(e); this.error = 'Failed to save task'; }
@@ -245,5 +318,28 @@ export class TasksComponent implements OnInit {
     const u = this.users.find(x => x.id === id); if (!u) return '—';
     const full = [u.firstName, u.lastName].filter(Boolean).join(' ').trim();
     return full || u.username;
+  }
+
+  getAssigneeInitials(id?: number): string {
+    const u = this.users.find(x => x.id === id);
+    if (!u) return '?';
+    
+    const fullName = [u.firstName, u.lastName].filter(Boolean).join(' ').trim();
+    if (fullName) {
+      const parts = fullName.split(' ');
+      if (parts.length >= 2) {
+        return (parts[0][0] + parts[1][0]).toUpperCase();
+      }
+      return parts[0][0].toUpperCase();
+    }
+    
+    return u.username ? u.username[0].toUpperCase() : '?';
+  }
+
+  isOverdue(deadline?: string): boolean {
+    if (!deadline) return false;
+    const today = new Date();
+    const deadlineDate = new Date(deadline);
+    return deadlineDate < today;
   }
 }

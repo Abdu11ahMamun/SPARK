@@ -1,13 +1,15 @@
 import { Component, OnInit, ViewChild, ElementRef, AfterViewInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators, FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
 import { SprintService, Sprint, SprintFormData } from './sprint.service';
-import { KanbanComponent } from './kanban.component';
+import { SprintCapacityDialogComponent, SprintCapacityDialogData } from './sprint-capacity-dialog.component';
 
 // Interfaces for professional sprint management
 export interface Team {
   id: number;
   name: string;
+  teamName?: string; // for template compatibility
   description?: string;
 }
 
@@ -80,7 +82,7 @@ export interface BurndownData {
 @Component({
   selector: 'app-sprint-mgmt',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, FormsModule, KanbanComponent],
+  imports: [CommonModule, ReactiveFormsModule, FormsModule, SprintCapacityDialogComponent],
   templateUrl: './sprints.component.html',
   styleUrls: ['./sprints.component.scss']
 })
@@ -89,7 +91,20 @@ export class SprintMgmtComponent implements OnInit, AfterViewInit {
   @ViewChild('burndownChart') burndownChartRef!: ElementRef;
 
   sprints: Sprint[] = [];
-  sprintForm: FormGroup;
+  // Template model object and reactive form separated
+  sprintForm: {
+    sprintName: string;
+    noOfHolidays: number;
+    fromDate: string;
+    toDate: string;
+    tramId: number;
+    sprintPoint: number;
+    detailsRemark: string;
+    status: number;
+    comments?: string;
+    sprintOutcome?: string;
+  };
+  reactiveSprintForm: FormGroup;
   sprintCreationForm: FormGroup;
   selectedSprint: Sprint | null = null;
   currentSprint: Sprint | null = null;
@@ -97,11 +112,28 @@ export class SprintMgmtComponent implements OnInit, AfterViewInit {
   showForm = false;
   showSprintCreationDialog = false;
   loading = false;
+  isLoading = false;
   error: string | null = null;
   
-  // Filter and search
+  // Template required properties
   searchTerm = '';
   statusFilter = '';
+  dateFromFilter = '';
+  dateToFilter = '';
+  currentPage = 1;
+  pageSize = 10;
+  totalPages = 0;
+  totalSprints = 0;
+  showDeleteConfirm = false;
+  sprintToDelete: Sprint | null = null;
+  showCapacityDialog = false;
+  capacityDialogData: SprintCapacityDialogData = { mode: 'create' };
+  // Advanced search panel
+  showSearchPanel = false;
+  
+  // Form properties for compatibility
+  isEdit = false;
+  isAdd = false;
   
   // Form properties needed by template
   selectedTeam = 'Investment Team';
@@ -140,16 +172,29 @@ export class SprintMgmtComponent implements OnInit, AfterViewInit {
 
   constructor(
     private sprintService: SprintService,
-    private fb: FormBuilder
+    private fb: FormBuilder,
+    private router: Router
   ) {
-    this.sprintForm = this.createSprintForm();
+    this.reactiveSprintForm = this.createSprintForm();
+    this.sprintForm = {
+      sprintName: '',
+      noOfHolidays: 0,
+      fromDate: '',
+      toDate: '',
+      tramId: 0,
+      sprintPoint: 0,
+      detailsRemark: '',
+      status: 1,
+      comments: '',
+      sprintOutcome: ''
+    };
     this.sprintCreationForm = this.createSprintCreationForm();
   }
 
   ngOnInit(): void {
     this.loadSprints();
-    this.loadMockData();
     this.loadTeams();
+    this.loadMockData();
   }
 
   ngAfterViewInit(): void {
@@ -159,6 +204,19 @@ export class SprintMgmtComponent implements OnInit, AfterViewInit {
   }
 
   // Methods needed by the shared template
+  toggleSearchPanel(): void {
+    this.showSearchPanel = !this.showSearchPanel;
+  }
+
+  refreshSprints(): void {
+    if (!this.isLoading) {
+      this.loadSprints();
+    }
+  }
+
+  addSprintWithCapacity(): void {
+    this.openCapacityDialog('create');
+  }
   openSprintModal(): void {
     this.showSprintModal = true;
   }
@@ -178,11 +236,6 @@ export class SprintMgmtComponent implements OnInit, AfterViewInit {
 
   cancelSprint(): void {
     this.closeSprintModal();
-  }
-
-  getTeamName(teamId?: number): string {
-    const team = this.availableTeams.find(t => t.id === teamId);
-    return team?.name || '—';
   }
 
   addTaskToSprint(task: any): void {
@@ -401,11 +454,6 @@ export class SprintMgmtComponent implements OnInit, AfterViewInit {
     return '0.01';
   }
 
-  selectSprint(sprint: Sprint): void {
-    this.selectedSprint = sprint;
-    this.showForm = false;
-  }
-
   getStatusClass(status: number): string {
     switch (status) {
       case 1: return 'active';
@@ -465,15 +513,17 @@ export class SprintMgmtComponent implements OnInit, AfterViewInit {
   showCreateForm(): void {
     this.isEditing = false;
     this.selectedSprint = null;
-    this.sprintForm.reset();
-    this.sprintForm.patchValue({ status: 1, noOfHolidays: 0, tramId: 0, sprintPoint: 0 });
+  this.reactiveSprintForm.reset();
+  this.reactiveSprintForm.patchValue({ status: 1, noOfHolidays: 0, tramId: 0, sprintPoint: 0 });
+  this.sprintForm = { sprintName: '', noOfHolidays: 0, fromDate: '', toDate: '', tramId: 0, sprintPoint: 0, detailsRemark: '', status: 1, comments: '', sprintOutcome: '' };
     this.showForm = true;
   }
 
   editSprint(sprint: Sprint): void {
     this.isEditing = true;
     this.selectedSprint = sprint;
-    this.sprintForm.patchValue(sprint);
+  this.reactiveSprintForm.patchValue(sprint as any);
+  this.sprintForm = { ...this.sprintForm, ...sprint } as any;
     this.showForm = true;
   }
 
@@ -481,12 +531,13 @@ export class SprintMgmtComponent implements OnInit, AfterViewInit {
     this.showForm = false;
     this.isEditing = false;
     this.selectedSprint = null;
-    this.sprintForm.reset();
+  this.reactiveSprintForm.reset();
   }
 
   onSubmit(): void {
-    if (this.sprintForm.valid) {
-      const formData: SprintFormData = this.sprintForm.value;
+    if (this.reactiveSprintForm.valid) {
+      // merge template model and reactive form values
+      const formData: SprintFormData = { ...this.reactiveSprintForm.value, ...this.sprintForm } as SprintFormData;
       
       if (this.isEditing && this.selectedSprint) {
         this.sprintService.updateSprint(this.selectedSprint.id!, formData).subscribe({
@@ -514,18 +565,238 @@ export class SprintMgmtComponent implements OnInit, AfterViewInit {
     }
   }
 
-  deleteSprint(sprint: Sprint): void {
-    if (confirm('Are you sure you want to delete sprint "' + sprint.sprintName + '"?')) {
-      this.sprintService.deleteSprint(sprint.id!).subscribe({
+  deleteSprint(sprint?: Sprint): void {
+    const target = sprint || this.sprintToDelete;
+    if (!target) return;
+    if (confirm('Are you sure you want to delete sprint "' + target.sprintName + '"?')) {
+      this.isLoading = true;
+      this.sprintService.deleteSprint(target.id!).subscribe({
         next: () => {
+          this.isLoading = false;
+          this.showDeleteConfirm = false;
+          this.sprintToDelete = null;
           this.loadSprints();
         },
         error: (error: any) => {
           this.error = 'Failed to delete sprint';
+          this.isLoading = false;
           console.error('Error deleting sprint:', error);
         }
       });
     }
+  }
+
+  // Additional template methods required by shared template
+  confirmDeleteSprint(sprint: Sprint) {
+    this.sprintToDelete = sprint;
+    this.showDeleteConfirm = true;
+  }
+
+  cancel() {
+    this.showDeleteConfirm = false;
+    this.sprintToDelete = null;
+    this.selectedSprint = null;
+    this.isEdit = false;
+    this.isAdd = false;
+    this.showForm = false;
+    this.isEditing = false;
+  }
+
+  addSprint() {
+    this.isAdd = true;
+    this.isEdit = false;
+    this.showForm = true;
+    this.isEditing = false;
+    this.selectedSprint = null;
+  this.reactiveSprintForm.reset();
+  this.sprintForm = { sprintName: '', noOfHolidays: 0, fromDate: '', toDate: '', tramId: 0, sprintPoint: 0, detailsRemark: '', status: 1, comments: '', sprintOutcome: '' };
+  }
+
+  saveSprint() {
+    this.onSubmit();
+  }
+
+  selectSprint(sprint: Sprint): void {
+    this.selectedSprint = sprint;
+    this.isEdit = true;
+    this.isAdd = false;
+    this.showForm = true;
+    this.isEditing = true;
+  this.reactiveSprintForm.patchValue(sprint as any);
+  this.sprintForm = { ...this.sprintForm, ...sprint } as any;
+  }
+
+  // Navigation
+  gotoDetails(sprint: Sprint): void {
+    if (!sprint?.id) return;
+    this.router.navigate(['/sprints', sprint.id]);
+  }
+
+  // Pagination methods
+  goToPage(page: number) {
+    if (page >= 1 && page <= this.totalPages) {
+      this.currentPage = page;
+      this.applyFilters();
+    }
+  }
+
+  getStartIndex(): number {
+    if (this.totalSprints === 0) return 0;
+    return Math.min((this.currentPage - 1) * this.pageSize + 1, this.totalSprints);
+  }
+
+  getEndIndex(): number {
+    return Math.min(this.currentPage * this.pageSize, this.totalSprints);
+  }
+
+  getVisiblePages(): number[] {
+    const pages: number[] = [];
+    const maxVisiblePages = 5;
+    
+    let startPage = Math.max(1, this.currentPage - Math.floor(maxVisiblePages / 2));
+    let endPage = Math.min(this.totalPages, startPage + maxVisiblePages - 1);
+    
+    if (endPage - startPage < maxVisiblePages - 1) {
+      startPage = Math.max(1, endPage - maxVisiblePages + 1);
+    }
+    
+    for (let i = startPage; i <= endPage; i++) {
+      pages.push(i);
+    }
+    
+    return pages;
+  }
+
+  // Status helpers
+  getStatusName(status: number): string {
+    switch (status) {
+      case 1: return 'Active';
+      case 0: return 'Inactive'; 
+      case 2: return 'Completed';
+      default: return 'Unknown';
+    }
+  }
+
+  // Filter methods
+  applyFilters() {
+    let filtered = this.sprints;
+
+    if (this.searchTerm) {
+      filtered = filtered.filter(sprint => 
+        sprint.sprintName?.toLowerCase().includes(this.searchTerm.toLowerCase())
+      );
+    }
+
+    if (this.statusFilter) {
+      const status = parseInt(this.statusFilter);
+      filtered = filtered.filter(sprint => sprint.status === status);
+    }
+
+    this.totalSprints = filtered.length;
+    this.totalPages = Math.ceil(this.totalSprints / this.pageSize);
+    
+    if (this.currentPage > this.totalPages && this.totalPages > 0) {
+      this.currentPage = 1;
+    }
+
+    const startIndex = (this.currentPage - 1) * this.pageSize;
+    const endIndex = startIndex + this.pageSize;
+    this.sprints = filtered.slice(startIndex, endIndex);
+  }
+
+  clearFilters() { 
+    this.searchTerm = '';
+    this.statusFilter = '';
+    this.dateFromFilter = '';
+    this.dateToFilter = '';
+    this.currentPage = 1;
+    this.applyFilters();
+  }
+  
+  onSearchChange() { 
+    this.currentPage = 1;
+    this.applyFilters();
+  }
+  
+  onStatusFilterChange() { 
+    this.currentPage = 1;
+    this.applyFilters();
+  }
+  
+  onDateFilterChange() { 
+    this.currentPage = 1;
+    this.applyFilters();
+  }
+
+  onPageSizeChange() {
+    this.currentPage = 1;
+    this.applyFilters();
+  }
+
+  trackBySprint(index: number, sprint: Sprint): number | undefined {
+    return sprint.id;
+  }
+
+  // Progress helpers
+  getSprintProgress(sprint: Sprint): number {
+    const start = new Date(sprint.fromDate);
+    const end = new Date(sprint.toDate);
+    const now = new Date();
+    if (isNaN(start.getTime()) || isNaN(end.getTime()) || end <= start) return 0;
+    if (now <= start) return 0;
+    if (now >= end) return 100;
+    const total = end.getTime() - start.getTime();
+    const elapsed = now.getTime() - start.getTime();
+    return Math.max(0, Math.min(100, (elapsed / total) * 100));
+  }
+
+  calculateSprintDuration(fromDate: string, toDate: string): number {
+    if (!fromDate || !toDate) return 0;
+    const start = new Date(fromDate);
+    const end = new Date(toDate);
+    const diffTime = Math.abs(end.getTime() - start.getTime());
+    return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  }
+
+  getElapsedDays(sprint: Sprint): number {
+    const start = new Date(sprint.fromDate);
+    const now = new Date();
+    if (isNaN(start.getTime()) || now < start) return 0;
+    const diff = now.getTime() - start.getTime();
+    return Math.min(this.calculateSprintDuration(sprint.fromDate, sprint.toDate), Math.ceil(diff / (1000 * 60 * 60 * 24)));
+  }
+  
+  // Unified getTeamName used by template (searches both loaded and available teams)
+  getTeamName(teamId?: number): string {
+    if (teamId == null) return '—';
+    const team = this.teams.find(t => t.id === teamId) || this.availableTeams.find(t => t.id === teamId);
+    return team?.name || 'Unknown Team';
+  }
+
+  // Capacity Dialog Methods
+  openCapacityDialog(mode: 'create' | 'edit' = 'create', sprint?: Sprint): void {
+    this.capacityDialogData = {
+      mode: mode,
+      sprint: sprint,
+      teamId: sprint?.tramId
+    };
+    this.showCapacityDialog = true;
+  }
+
+  closeCapacityDialog(): void {
+    this.showCapacityDialog = false;
+  }
+
+  onCapacitySaveComplete(result: any): void {
+    if (result) {
+      console.log('Sprint capacity save completed');
+      this.loadSprints(); // Refresh the sprint list
+    }
+    this.closeCapacityDialog();
+  }
+
+  editSprintCapacity(sprint: Sprint): void {
+    this.openCapacityDialog('edit', sprint);
   }
 
   getStatusText(status: number): string {
@@ -545,13 +816,13 @@ export class SprintMgmtComponent implements OnInit, AfterViewInit {
   loadTeams(): void {
     // Mock teams data - replace with actual API call
     this.availableTeams = [
-      { id: 1, name: 'Investment Team', description: 'Core investment and financial services team' },
-      { id: 2, name: 'Development Team', description: 'Software development team' },
-      { id: 3, name: 'QA Team', description: 'Quality assurance team' },
-      { id: 4, name: 'DevOps Team', description: 'Infrastructure and deployment team' }
+      { id: 1, name: 'Investment Team', teamName: 'Investment Team', description: 'Core investment and financial services team' },
+      { id: 2, name: 'Development Team', teamName: 'Development Team', description: 'Software development team' },
+      { id: 3, name: 'QA Team', teamName: 'QA Team', description: 'Quality assurance team' },
+      { id: 4, name: 'DevOps Team', teamName: 'DevOps Team', description: 'Infrastructure and deployment team' }
     ];
     // Also populate the teams array for template
-    this.teams = this.availableTeams;
+    this.teams = this.availableTeams.map(t => ({ ...t }));
   }
 
   createSprintCreationForm(): FormGroup {

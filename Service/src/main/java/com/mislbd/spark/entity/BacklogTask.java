@@ -1,5 +1,6 @@
 package com.mislbd.spark.entity;
 
+import com.mislbd.spark.entity.types.TaskType;
 import jakarta.persistence.*;
 import lombok.*;
 import java.time.Instant;

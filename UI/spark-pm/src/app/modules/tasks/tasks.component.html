@@ -74,6 +74,14 @@
         </div>
 
         <div class="filter-item">
+          <label>Task Type:</label>
+          <select class="form-control" [(ngModel)]="taskTypeFilter" (change)="applyFilters()">
+            <option value="">All Task Types</option>
+            <option *ngFor="let option of jobTypeOptions" [value]="option.label">{{ option.label }}</option>
+          </select>
+        </div>
+
+        <div class="filter-item">
           <label>Product:</label>
           <select class="form-control" [(ngModel)]="productFilter" (change)="onProductChangeForFilter(); applyFilters()">
             <option value="">All Products</option>
@@ -160,29 +168,74 @@
       </thead>
       <tbody>
         <tr *ngFor="let t of paginated">
-          <td>{{ t.mitsNo }}</td>
-          <td>{{ t.title }}</td>
+          <td>
+            <div class="mits-badge">{{ t.mitsNo || '—' }}</div>
+          </td>
+          <td>
+            <div class="task-title">{{ t.title }}</div>
+            <div class="task-description" *ngIf="t.description">{{ t.description | slice:0:100 }}{{ t.description && t.description.length > 100 ? '...' : '' }}</div>
+          </td>
           <td>{{ getProductName(t.productId) }}</td>
           <td>{{ getModuleName(t.productModuleId) }}</td>
-          <td>{{ t.taskType }}</td>
-          <td>{{ getAssigneeName(t.assigneeUserId) }}</td>
-          <td>{{ t.status }}</td>
-          <td>{{ t.priority }}</td>
-          <td>{{ t.deadline ? (t.deadline | date:'mediumDate') : '—' }}</td>
-          <td>{{ t.points ?? '—' }}</td>
+          <td>
+            <div class="type-badge">{{ getJobTypeName(t.taskType) }}</div>
+          </td>
+          <td>
+            <div class="assignee-info">
+              <div class="assignee-avatar">{{ getAssigneeInitials(t.assigneeUserId) }}</div>
+              <span>{{ getAssigneeName(t.assigneeUserId) || 'Unassigned' }}</span>
+            </div>
+          </td>
+          <td>
+            <span class="status-badge" [ngClass]="'status-' + ((t.status || 'OPEN').toLowerCase().replace('_', '-'))">
+              {{ t.status || 'OPEN' }}
+            </span>
+          </td>
+          <td>
+            <span class="priority-badge" [ngClass]="'priority-' + ((t.priority || 'MEDIUM').toLowerCase())">
+              {{ t.priority || 'MEDIUM' }}
+            </span>
+          </td>
+          <td>
+            <div class="deadline-info" [class.overdue]="isOverdue(t.deadline)">
+              {{ t.deadline ? (t.deadline | date:'MMM dd, yyyy') : '—' }}
+              <div *ngIf="isOverdue(t.deadline)" class="overdue-label">Overdue</div>
+            </div>
+          </td>
+          <td>
+            <div class="points-badge">{{ t.points ?? '—' }}</div>
+          </td>
           <td>
             <div class="actions-group">
-              <button class="action-btn btn-outline" (click)="editTask(t)">Edit</button>
-              <button class="action-btn btn-outline delete-btn" (click)="askDelete(t)">Delete</button>
+              <button class="btn-outline" (click)="editTask(t)" title="Edit Task">
+                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                  <path d="m18.5 2.5 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                </svg>
+                Edit
+              </button>
+              <button class="btn-outline delete-btn" (click)="askDelete(t)" title="Delete Task">
+                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <polyline points="3,6 5,6 21,6"/>
+                  <path d="m19,6v14a2,2 0 0,1 -2,2H7a2,2 0 0,1 -2,-2V6m3,0V4a2,2 0 0,1 2,-2h4a2,2 0 0,1 2,2v2"/>
+                </svg>
+                Delete
+              </button>
             </div>
           </td>
         </tr>
         <tr *ngIf="paginated.length === 0">
           <td colspan="11" class="empty-cell">
             <div class="empty-state">
+              <div class="empty-icon">📋</div>
               <h3>No tasks found</h3>
-              <p>Create the first task to get started.</p>
-              <button class="btn btn-primary" (click)="addTask()">Add Task</button>
+              <p>Create your first task to get started with project management.</p>
+              <button class="btn btn-primary" (click)="addTask()">
+                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <path d="M12 5v14M5 12h14"></path>
+                </svg>
+                Create First Task
+              </button>
             </div>
           </td>
         </tr>
@@ -270,13 +323,15 @@
             
             <div class="form-group">
               <label for="taskType">Task Type *</label>
-              <input 
+              <select 
                 id="taskType"
                 class="form-control" 
-                formControlName="taskType" 
-                placeholder="Bug/Feature/Improvement"
+                formControlName="taskType"
                 [class.error]="form.get('taskType')?.invalid && form.get('taskType')?.touched"
-              />
+              >
+                <option value="" disabled>Select task type</option>
+                <option *ngFor="let option of jobTypeOptions" [value]="option.value">{{ option.label }}</option>
+              </select>
               <div *ngIf="form.get('taskType')?.invalid && form.get('taskType')?.touched" class="error-message">
                 Task type is required
               </div>

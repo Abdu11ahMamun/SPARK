@@ -20,7 +20,7 @@ import java.util.stream.Collectors;
 public class TaskController {
     private final BacklogTaskService backlogTaskService;
     private final BacklogTaskMapper backlogTaskMapper;
-    
+
     // Map task type string to ID
     private static final Map<String, Integer> TASK_TYPE_TO_ID = new HashMap<>();
     static {
@@ -31,7 +31,7 @@ public class TaskController {
         TASK_TYPE_TO_ID.put("RESEARCH", 5);
         TASK_TYPE_TO_ID.put("TESTING", 6);
     }
-    
+
     // Map task type ID to string
     private static final Map<Integer, String> ID_TO_TASK_TYPE = new HashMap<>();
     static {
@@ -54,17 +54,17 @@ public class TaskController {
         List<BacklogTaskDto> tasks = backlogTaskService.getAllBacklogTasks().stream()
                 .map(backlogTaskMapper::toDto)
                 .collect(Collectors.toList());
-        
+
         // Map task type ID to string for frontend compatibility
         tasks.forEach(task -> {
             if (task.getTasktypeid() != null) {
                 String typeString = ID_TO_TASK_TYPE.get(task.getTasktypeid());
                 if (typeString != null) {
-                    task.setType(typeString);
+                    task.setTaskType(task.getTasktypeid());
                 }
             }
         });
-        
+
         return tasks;
     }
 
@@ -73,15 +73,14 @@ public class TaskController {
         return backlogTaskService.getBacklogTaskById(id)
                 .map(task -> {
                     BacklogTaskDto dto = backlogTaskMapper.toDto(task);
-                    
                     // Map task type ID to string
                     if (dto.getTasktypeid() != null) {
                         String typeString = ID_TO_TASK_TYPE.get(dto.getTasktypeid());
                         if (typeString != null) {
-                            dto.setType(typeString);
+                            dto.setTaskType(dto.getTasktypeid());
                         }
                     }
-                    
+
                     return ResponseEntity.ok(dto);
                 })
                 .orElse(ResponseEntity.notFound().build());
@@ -92,35 +91,31 @@ public class TaskController {
         // Set creation timestamp
         taskDto.setCreateddate(Instant.now());
         taskDto.setModifieddate(Instant.now());
-        
+
         // Map string type to taskType ID for backend compatibility
-        if (taskDto.getType() != null) {
-            Integer typeId = TASK_TYPE_TO_ID.get(taskDto.getType());
-            if (typeId != null) {
-                taskDto.setTasktypeid(typeId);
-            } else {
-                taskDto.setTasktypeid(1); // Default to FEATURE
-            }
+        if (taskDto.getTaskType() != null) {
+            Integer typeId = taskDto.getTaskType();
+            taskDto.setTasktypeid(typeId);
         } else {
             taskDto.setTasktypeid(1); // Default to FEATURE
         }
-        
+
         BacklogTask backlogTask = backlogTaskMapper.toEntity(taskDto);
         BacklogTask savedTask = backlogTaskService.saveBacklogTask(backlogTask);
         BacklogTaskDto result = backlogTaskMapper.toDto(savedTask);
-        
+
         // Map back to string for frontend compatibility
         if (result.getTasktypeid() != null) {
             String typeString = ID_TO_TASK_TYPE.get(result.getTasktypeid());
             if (typeString != null) {
-                result.setType(typeString);
+                result.setTaskType(result.getTasktypeid());
             } else {
-                result.setType("FEATURE");
+                result.setTaskType(1); // Default to FEATURE ID
             }
         } else {
-            result.setType("FEATURE");
+            result.setTaskType(1); // Default to FEATURE ID
         }
-        
+
         return result;
     }
 
@@ -132,34 +127,30 @@ public class TaskController {
                     taskDto.setModifieddate(Instant.now());
                     // Preserve creation date
                     taskDto.setCreateddate(existing.getCreateddate());
-                    
+
                     // Map string type to taskType ID for backend compatibility
-                    if (taskDto.getType() != null) {
-                        Integer typeId = TASK_TYPE_TO_ID.get(taskDto.getType());
-                        if (typeId != null) {
-                            taskDto.setTasktypeid(typeId);
-                        } else {
-                            taskDto.setTasktypeid(1); // Default to FEATURE
-                        }
+                    if (taskDto.getTaskType() != null) {
+                        Integer typeId = taskDto.getTaskType();
+                        taskDto.setTasktypeid(typeId);
                     } else {
                         taskDto.setTasktypeid(1); // Default to FEATURE
                     }
-                    
+
                     BacklogTask updated = backlogTaskService.saveBacklogTask(backlogTaskMapper.toEntity(taskDto));
                     BacklogTaskDto result = backlogTaskMapper.toDto(updated);
-                    
+
                     // Map back to string for frontend compatibility
                     if (result.getTasktypeid() != null) {
                         String typeString = ID_TO_TASK_TYPE.get(result.getTasktypeid());
                         if (typeString != null) {
-                            result.setType(typeString);
+                            result.setTaskType(result.getTasktypeid());
                         } else {
-                            result.setType("FEATURE");
+                            result.setTaskType(1); // Default to FEATURE ID
                         }
                     } else {
-                        result.setType("FEATURE");
+                        result.setTaskType(1); // Default to FEATURE ID
                     }
-                    
+
                     return ResponseEntity.ok(result);
                 })
                 .orElse(ResponseEntity.notFound().build());
@@ -174,7 +165,7 @@ public class TaskController {
             return ResponseEntity.notFound().build();
         }
     }
-    
+
     // Additional endpoints for task management with filtering
     @GetMapping("/by-module/{moduleId}")
     public List<BacklogTaskDto> getTasksByModule(@PathVariable Integer moduleId) {
@@ -182,63 +173,63 @@ public class TaskController {
                 .filter(task -> task.getProductModuleId() != null && task.getProductModuleId().equals(moduleId))
                 .map(backlogTaskMapper::toDto)
                 .collect(Collectors.toList());
-                
+
         // Map for frontend compatibility
         tasks.forEach(task -> {
             // Map task type
             if (task.getTasktypeid() != null) {
                 String typeString = ID_TO_TASK_TYPE.get(task.getTasktypeid());
                 if (typeString != null) {
-                    task.setType(typeString);
+                    task.setTaskType(task.getTasktypeid());
                 }
             }
         });
-        
+
         return tasks;
     }
-    
+
     @GetMapping("/by-sprint/{sprintId}")
     public List<BacklogTaskDto> getTasksBySprint(@PathVariable Integer sprintId) {
         List<BacklogTaskDto> tasks = backlogTaskService.getAllBacklogTasks().stream()
                 .filter(task -> task.getSprintid() != null && task.getSprintid().equals(sprintId))
                 .map(backlogTaskMapper::toDto)
                 .collect(Collectors.toList());
-                
+
         // Map for frontend compatibility
         tasks.forEach(task -> {
             // Map task type
             if (task.getTasktypeid() != null) {
                 String typeString = ID_TO_TASK_TYPE.get(task.getTasktypeid());
                 if (typeString != null) {
-                    task.setType(typeString);
+                    task.setTaskType(task.getTasktypeid());
                 }
             }
         });
-        
+
         return tasks;
     }
-    
+
     @GetMapping("/by-assignee/{assigneeId}")
     public List<BacklogTaskDto> getTasksByAssignee(@PathVariable Integer assigneeId) {
         List<BacklogTaskDto> tasks = backlogTaskService.getAllBacklogTasks().stream()
                 .filter(task -> task.getAssignedto() != null && task.getAssignedto().equals(assigneeId))
                 .map(backlogTaskMapper::toDto)
                 .collect(Collectors.toList());
-                
+
         // Map for frontend compatibility
         tasks.forEach(task -> {
             // Map task type
             if (task.getTasktypeid() != null) {
                 String typeString = ID_TO_TASK_TYPE.get(task.getTasktypeid());
                 if (typeString != null) {
-                    task.setType(typeString);
+                    task.setTaskType(task.getTasktypeid());
                 }
             }
         });
-        
+
         return tasks;
     }
-    
+
     @GetMapping("/search")
     public List<BacklogTaskDto> searchTasks(
             @RequestParam(required = false) String title,
@@ -247,7 +238,7 @@ public class TaskController {
             @RequestParam(required = false) Integer moduleId,
             @RequestParam(required = false) Integer sprintId,
             @RequestParam(required = false) Integer assigneeId) {
-        
+
         List<BacklogTaskDto> tasks = backlogTaskService.getAllBacklogTasks().stream()
                 .filter(task -> title == null || task.getTitle().toLowerCase().contains(title.toLowerCase()))
                 .filter(task -> status == null || status.equals(task.getStatus()))
@@ -257,18 +248,18 @@ public class TaskController {
                 .filter(task -> assigneeId == null || (task.getAssignedto() != null && task.getAssignedto().equals(assigneeId)))
                 .map(backlogTaskMapper::toDto)
                 .collect(Collectors.toList());
-                
+
         // Map for frontend compatibility
         tasks.forEach(task -> {
             // Map task type
             if (task.getTasktypeid() != null) {
                 String typeString = ID_TO_TASK_TYPE.get(task.getTasktypeid());
                 if (typeString != null) {
-                    task.setType(typeString);
+                    task.setTaskType(task.getTasktypeid());
                 }
             }
         });
-        
+
         return tasks;
     }
 }
