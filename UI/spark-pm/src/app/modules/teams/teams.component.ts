@@ -4,8 +4,9 @@ import { FormsModule } from '@angular/forms';
 import { Team, TeamMember, CreateTeamRequest, UpdateTeamRequest, TeamStatus } from './team.model';
 import { TeamService } from './team.service';
 import { UserService } from '../users/user.service';
-import { User } from '../users/user.model';
+import { User, UserRole } from '../users/user.model';
 import { NotificationService } from '../../core/services/notification.service';
+import { environment } from '../../../environments/environment';
 
 @Component({
   selector: 'app-teams',
@@ -67,6 +68,12 @@ export class TeamsComponent implements OnInit {
       next: (teams) => {
         console.log('Teams received:', teams);
         this.teams = teams;
+        // Normalize/ensure required fields
+        this.teams.forEach(t => {
+          if (!t.createdAt) {
+            (t as any).createdAt = new Date().toISOString();
+          }
+        });
         
         // Load member counts for each team
         this.teams.forEach(team => {
@@ -84,10 +91,124 @@ export class TeamsComponent implements OnInit {
         
         this.isLoading = false;
         console.log('Loading state set to false');
+        this.assignLeadNames();
         this.cdr.detectChanges(); // Force change detection
       },
       error: (error) => {
         console.error('Error loading teams:', error);
+        
+        // For development: Add mock data when API is not available
+        if (!environment.production) {
+          console.log('Loading mock teams data for development...');
+          this.teams = [
+            {
+              id: 1,
+              teamName: 'Frontend Development',
+              description: 'Responsible for UI/UX development and frontend architecture',
+              status: 1,
+              pOwner: 1,
+              sMaster: 2,
+              createdAt: '2024-01-15T10:30:00Z',
+              leadName: 'John Smith',
+              members: [
+                {
+                  id: 1,
+                  userId: 1,
+                  teamId: 1,
+                  userName: 'John Smith',
+                  userEmail: 'john.smith@company.com',
+                  role: 'lead',
+                  joinedDate: '2024-01-15T10:30:00Z'
+                },
+                {
+                  id: 2,
+                  userId: 2,
+                  teamId: 1,
+                  userName: 'Sarah Johnson',
+                  userEmail: 'sarah.johnson@company.com',
+                  role: 'member',
+                  joinedDate: '2024-01-20T09:15:00Z'
+                },
+                {
+                  id: 3,
+                  userId: 3,
+                  teamId: 1,
+                  userName: 'Mike Wilson',
+                  userEmail: 'mike.wilson@company.com',
+                  role: 'member',
+                  joinedDate: '2024-01-25T14:45:00Z'
+                }
+              ]
+            },
+            {
+              id: 2,
+              teamName: 'Backend API',
+              description: 'Server-side development and API design',
+              status: 1,
+              pOwner: 3,
+              sMaster: 4,
+              createdAt: '2024-01-10T08:00:00Z',
+              leadName: 'Emily Davis',
+              members: [
+                {
+                  id: 4,
+                  userId: 4,
+                  teamId: 2,
+                  userName: 'Emily Davis',
+                  userEmail: 'emily.davis@company.com',
+                  role: 'lead',
+                  joinedDate: '2024-01-10T08:00:00Z'
+                },
+                {
+                  id: 5,
+                  userId: 5,
+                  teamId: 2,
+                  userName: 'Alex Brown',
+                  userEmail: 'alex.brown@company.com',
+                  role: 'member',
+                  joinedDate: '2024-01-18T11:30:00Z'
+                }
+              ]
+            },
+            {
+              id: 3,
+              teamName: 'DevOps & Infrastructure',
+              description: 'Cloud infrastructure and deployment automation',
+              status: 1,
+              pOwner: 5,
+              sMaster: 6,
+              createdAt: '2024-01-05T16:20:00Z',
+              leadName: 'David Chen',
+              members: [
+                {
+                  id: 6,
+                  userId: 6,
+                  teamId: 3,
+                  userName: 'David Chen',
+                  userEmail: 'david.chen@company.com',
+                  role: 'lead',
+                  joinedDate: '2024-01-05T16:20:00Z'
+                }
+              ]
+            }
+          ];
+          
+          // Also load mock users
+          this.users = [
+            { id: 1, firstName: 'John', lastName: 'Smith', email: 'john.smith@company.com', username: 'jsmith', role: UserRole.DEVELOPER, activeStatus: undefined, createdate: '2024-01-01T00:00:00Z', employeeId: 'EMP001' },
+            { id: 2, firstName: 'Sarah', lastName: 'Johnson', email: 'sarah.johnson@company.com', username: 'sjohnson', role: UserRole.DEVELOPER, activeStatus: undefined, createdate: '2024-01-02T00:00:00Z', employeeId: 'EMP002' },
+            { id: 3, firstName: 'Mike', lastName: 'Wilson', email: 'mike.wilson@company.com', username: 'mwilson', role: UserRole.DEVELOPER, activeStatus: undefined, createdate: '2024-01-03T00:00:00Z', employeeId: 'EMP003' },
+            { id: 4, firstName: 'Emily', lastName: 'Davis', email: 'emily.davis@company.com', username: 'edavis', role: UserRole.MANAGER, activeStatus: undefined, createdate: '2024-01-04T00:00:00Z', employeeId: 'EMP004' },
+            { id: 5, firstName: 'Alex', lastName: 'Brown', email: 'alex.brown@company.com', username: 'abrown', role: UserRole.DEVELOPER, activeStatus: undefined, createdate: '2024-01-05T00:00:00Z', employeeId: 'EMP005' },
+            { id: 6, firstName: 'David', lastName: 'Chen', email: 'david.chen@company.com', username: 'dchen', role: UserRole.ADMIN, activeStatus: undefined, createdate: '2024-01-06T00:00:00Z', employeeId: 'EMP006' }
+          ];
+          
+          this.isLoading = false;
+          this.assignLeadNames();
+          this.cdr.detectChanges();
+          return;
+        }
+        
         this.error = 'Failed to load teams. Please try again.';
         this.isLoading = false;
         console.log('Loading state set to false due to error');
@@ -102,11 +223,30 @@ export class TeamsComponent implements OnInit {
         next: (users) => {
           this.users = users;
           console.log('Users loaded:', users.length);
+          this.assignLeadNames();
           this.cdr.detectChanges();
           resolve();
         },
         error: (error) => {
           console.error('Error loading users:', error);
+          
+          // For development: Add mock data when API is not available
+          if (!environment.production) {
+            console.log('Loading mock users data for development...');
+            this.users = [
+              { id: 1, firstName: 'John', lastName: 'Smith', email: 'john.smith@company.com', username: 'jsmith', role: UserRole.DEVELOPER, activeStatus: undefined, createdate: '2024-01-01T00:00:00Z', employeeId: 'EMP001' },
+              { id: 2, firstName: 'Sarah', lastName: 'Johnson', email: 'sarah.johnson@company.com', username: 'sjohnson', role: UserRole.DEVELOPER, activeStatus: undefined, createdate: '2024-01-02T00:00:00Z', employeeId: 'EMP002' },
+              { id: 3, firstName: 'Mike', lastName: 'Wilson', email: 'mike.wilson@company.com', username: 'mwilson', role: UserRole.DEVELOPER, activeStatus: undefined, createdate: '2024-01-03T00:00:00Z', employeeId: 'EMP003' },
+              { id: 4, firstName: 'Emily', lastName: 'Davis', email: 'emily.davis@company.com', username: 'edavis', role: UserRole.MANAGER, activeStatus: undefined, createdate: '2024-01-04T00:00:00Z', employeeId: 'EMP004' },
+              { id: 5, firstName: 'Alex', lastName: 'Brown', email: 'alex.brown@company.com', username: 'abrown', role: UserRole.DEVELOPER, activeStatus: undefined, createdate: '2024-01-05T00:00:00Z', employeeId: 'EMP005' },
+              { id: 6, firstName: 'David', lastName: 'Chen', email: 'david.chen@company.com', username: 'dchen', role: UserRole.ADMIN, activeStatus: undefined, createdate: '2024-01-06T00:00:00Z', employeeId: 'EMP006' }
+            ];
+            this.assignLeadNames();
+            this.cdr.detectChanges();
+            resolve();
+            return;
+          }
+          
           this.notificationService.error('Error', 'Failed to load users. Please refresh the page.');
           reject(error);
         }
@@ -115,8 +255,10 @@ export class TeamsComponent implements OnInit {
   }
 
   loadTeamMembers(teamId: number) {
+    console.log('Loading team members for team ID:', teamId);
     this.teamService.getTeamMembers(teamId).subscribe({
       next: (members) => {
+        console.log('Team members loaded:', members);
         this.teamMembers = members;
         
         // Update the team's member count in the main list
@@ -128,6 +270,37 @@ export class TeamsComponent implements OnInit {
       },
       error: (error) => {
         console.error('Error loading team members:', error);
+        
+        // For development: Add mock members if API fails - Using your actual API data format
+        if (!environment.production) {
+          console.log('Loading mock team members for development with your API data format...');
+          this.teamMembers = [
+            {
+              id: 2,
+              userId: 2,
+              teamId: teamId,
+              userName: "Bob A. Smith",
+              userEmail: "bob@example.com",
+              role: "member",
+              joinedDate: "2025-08-24"
+            },
+            {
+              id: 21,
+              userId: 21,
+              teamId: teamId,
+              userName: "Abdullah Al Mamun",
+              userEmail: "abdullah@mislbd.com",
+              role: "member",
+              joinedDate: "2025-08-24"
+            }
+          ];
+          
+          console.log('Mock team members set:', this.teamMembers);
+          console.log('showMemberModal state:', this.showMemberModal);
+          this.cdr.detectChanges();
+          return;
+        }
+        
         this.notificationService.error('Error', 'Failed to load team members.');
       }
     });
@@ -257,23 +430,18 @@ export class TeamsComponent implements OnInit {
 
   // Team Member Operations
   viewTeamMembers(team: Team) {
+    console.log('[Members] Button clicked for team', team.id);
     this.selectedTeam = team;
+    this.showMemberModal = true; // show first
+    this.teamMembers = []; // clear previous
+    this.cdr.detectChanges();
+    // Load real members
     this.loadTeamMembers(team.id);
-    
-    // Only show modal after users are loaded
-    if (this.users.length === 0) {
-      this.isLoading = true;
-      this.loadUsers().then(() => {
-        this.isLoading = false;
-        this.showMemberModal = true;
-        this.newMemberForm = { userId: 0, role: 'member' };
-      }).catch(() => {
-        this.isLoading = false;
-      });
-    } else {
-      this.showMemberModal = true;
-      this.newMemberForm = { userId: 0, role: 'member' };
+    // Ensure users loaded for dropdown
+    if (!this.users.length) {
+      this.loadUsers();
     }
+    this.newMemberForm = { userId: 0, role: 'member' };
   }
 
   addTeamMember() {
@@ -418,5 +586,25 @@ export class TeamsComponent implements OnInit {
       case 'member': return 'role-member';
       default: return 'role-member';
     }
+  }
+
+  // Derive lead names from pOwner if leadName missing
+  private assignLeadNames() {
+    if (!this.users?.length || !this.teams?.length) return;
+    this.teams.forEach(team => {
+      if (!team.leadName && team.pOwner) {
+        const u = this.users.find(x => x.id === team.pOwner);
+        if (u) team.leadName = `${u.firstName} ${u.lastName}`;
+      }
+    });
+  }
+
+  getLeadName(team: Team): string | undefined {
+    if (team.leadName) return team.leadName;
+    if (team.pOwner) {
+      const u = this.users.find(x => x.id === team.pOwner);
+      return u ? `${u.firstName} ${u.lastName}` : undefined;
+    }
+    return undefined;
   }
 }

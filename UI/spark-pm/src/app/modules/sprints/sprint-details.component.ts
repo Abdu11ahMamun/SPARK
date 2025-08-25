@@ -1,5 +1,6 @@
 import { Component, OnInit, AfterViewInit, OnDestroy, ElementRef, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { SprintService, Sprint } from './sprint.service';
 import { TaskService } from '../tasks/task.service';
@@ -9,7 +10,7 @@ import Chart from 'chart.js/auto';
 @Component({
   selector: 'app-sprint-details',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, FormsModule],
   templateUrl: './sprint-details.component.html',
   styleUrls: ['./sprint-details.component.scss']
 })
@@ -17,6 +18,8 @@ export class SprintDetailsComponent implements OnInit, AfterViewInit, OnDestroy 
   sprintId!: number;
   isLoading = true;
   isError = false;
+  hasNoData = false; // Track when sprint has no tasks
+  activeTab = 'overview'; // overview, tasks, kanban, burndown
 
   // Placeholders to be wired to services later
   sprint: Sprint | null = null;
@@ -30,6 +33,13 @@ export class SprintDetailsComponent implements OnInit, AfterViewInit, OnDestroy 
   burndown: { labels: string[]; actual: number[]; ideal: number[] } | null = null;
   private chart?: Chart;
 
+  // Task filters
+  taskFilter = {
+    title: '',
+    status: '',
+    assignee: ''
+  };
+
   @ViewChild('burndownCanvas') burndownCanvas?: ElementRef<HTMLCanvasElement>;
 
   constructor(
@@ -41,12 +51,16 @@ export class SprintDetailsComponent implements OnInit, AfterViewInit, OnDestroy 
 
   ngOnInit(): void {
     const id = Number(this.route.snapshot.paramMap.get('id'));
+    console.log('ngOnInit - Route id param:', this.route.snapshot.paramMap.get('id'), 'Parsed id:', id);
     if (!isNaN(id)) {
       this.sprintId = id;
+      console.log('SprintId set to:', this.sprintId);
+    } else {
+      console.error('Invalid sprint ID');
     }
 
-  // Load sprint and tasks
-  this.fetchAll();
+    // Load sprint and tasks
+    this.fetchAll();
   }
 
   back(): void {
@@ -68,22 +82,29 @@ export class SprintDetailsComponent implements OnInit, AfterViewInit, OnDestroy 
   }
 
   fetchAll(): void {
+    console.log('fetchAll called for sprintId:', this.sprintId);
     this.isLoading = true;
     this.isError = false;
+    this.hasNoData = false;
     forkJoin({
       sprint: this.sprintService.getSprintById(this.sprintId),
   tasks: this.taskService.getTasksBySprint(this.sprintId)
     }).subscribe({
       next: ({ sprint, tasks }) => {
+        console.log('Data received - Sprint:', sprint, 'Tasks:', tasks);
         this.sprint = sprint;
         this.tasks = tasks || [];
+        this.hasNoData = this.tasks.length === 0;
+        console.log('hasNoData:', this.hasNoData, 'tasks length:', this.tasks.length);
         this.groupTasksToKanban();
         this.buildBurndown();
         this.isLoading = false;
       },
-      error: () => {
+      error: (error) => {
+        console.error('Error fetching data:', error);
         this.isLoading = false;
         this.isError = true;
+        this.hasNoData = false;
       }
     });
   }
@@ -200,5 +221,122 @@ export class SprintDetailsComponent implements OnInit, AfterViewInit, OnDestroy 
 
   ngOnDestroy(): void {
     if (this.chart) { this.chart.destroy(); }
+  }
+
+  // Tab functionality
+  setActiveTab(tab: string): void {
+    this.activeTab = tab;
+    if (tab === 'burndown') {
+      // Re-render chart when burndown tab is activated
+      setTimeout(() => this.renderChart(), 100);
+    }
+  }
+
+  // Task filtering
+  get filteredTasks(): any[] {
+    return this.tasks.filter(task => {
+      const matchesTitle = !this.taskFilter.title || 
+        task.title?.toLowerCase().includes(this.taskFilter.title.toLowerCase());
+      const matchesStatus = !this.taskFilter.status || task.status === this.taskFilter.status;
+      const matchesAssignee = !this.taskFilter.assignee || 
+        task.assignee?.toLowerCase().includes(this.taskFilter.assignee.toLowerCase());
+      
+      return matchesTitle && matchesStatus && matchesAssignee;
+    });
+  }
+
+  clearFilters(): void {
+    this.taskFilter = {
+      title: '',
+      status: '',
+      assignee: ''
+    };
+  }
+
+  // Drag and drop for Kanban
+  onDragStart(event: DragEvent, task: any): void {
+    if (event.dataTransfer) {
+      event.dataTransfer.setData('text/plain', JSON.stringify(task));
+    }
+  }
+
+  onDragOver(event: DragEvent): void {
+    event.preventDefault();
+  }
+
+  onDrop(event: DragEvent, targetStatus: string): void {
+    event.preventDefault();
+    const taskData = event.dataTransfer?.getData('text/plain');
+    if (taskData) {
+      try {
+        const task = JSON.parse(taskData);
+        this.moveTask(task, targetStatus);
+      } catch (e) {
+        console.error('Error parsing task data:', e);
+      }
+    }
+  }
+
+  moveTask(task: any, newStatus: string): void {
+    // Remove from current column
+    this.kanbanColumns.forEach(col => {
+      col.tasks = col.tasks.filter(t => t.id !== task.id);
+    });
+
+    // Add to new column
+    const targetColumn = this.kanbanColumns.find(col => col.key === newStatus);
+    if (targetColumn) {
+      task.status = newStatus;
+      targetColumn.tasks.push(task);
+    }
+
+    // Update task in main tasks array
+    const taskIndex = this.tasks.findIndex(t => t.id === task.id);
+    if (taskIndex !== -1) {
+      this.tasks[taskIndex].status = newStatus;
+    }
+  }
+
+  // KPI calculations
+  getTaskCountByStatus(status: string): number {
+    return this.tasks.filter(task => task.status === status).length;
+  }
+
+  getTotalStoryPoints(): number {
+    return this.tasks.reduce((sum, task) => sum + (task.estimate || 0), 0);
+  }
+
+  getCompletedStoryPoints(): number {
+    return this.tasks
+      .filter(task => task.status === 'DONE')
+      .reduce((sum, task) => sum + (task.estimate || 0), 0);
+  }
+
+  getSprintProgress(): number {
+    const total = this.getTotalStoryPoints();
+    const completed = this.getCompletedStoryPoints();
+    return total > 0 ? Math.round((completed / total) * 100) : 0;
+  }
+
+  // User progress calculation
+  getUserProgressData(): any[] {
+    const users = [...new Set(this.tasks.map(task => task.assignee).filter(Boolean))];
+    return users.map(user => {
+      const userTasks = this.tasks.filter(task => task.assignee === user);
+      const completedTasks = userTasks.filter(task => task.status === 'DONE');
+      const progress = userTasks.length > 0 ? (completedTasks.length / userTasks.length) * 100 : 0;
+      
+      return {
+        name: user,
+        totalTasks: userTasks.length,
+        completedTasks: completedTasks.length,
+        progress: Math.round(progress)
+      };
+    });
+  }
+
+  // Track by function for task table performance
+  trackByTaskId(index: number, task: any): any {
+    return task.id || index;
   }
 }
