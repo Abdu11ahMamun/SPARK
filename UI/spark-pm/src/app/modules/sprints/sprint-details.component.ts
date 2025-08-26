@@ -3,6 +3,8 @@ import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { SprintService, Sprint } from './sprint.service';
 import { TaskService } from '../tasks/task.service';
+import { TeamService } from '../teams/team.service';
+import { Team } from '../teams/team.model';
 import { forkJoin } from 'rxjs';
 import Chart from 'chart.js/auto';
 
@@ -20,6 +22,7 @@ export class SprintDetailsComponent implements OnInit, AfterViewInit, OnDestroy 
 
   // Placeholders to be wired to services later
   sprint: Sprint | null = null;
+  team: Team | null = null;
   tasks: any[] = [];
   kanbanColumns: { key: string; title: string; tasks: any[] }[] = [
     { key: 'TODO', title: 'To-Do', tasks: [] },
@@ -28,7 +31,7 @@ export class SprintDetailsComponent implements OnInit, AfterViewInit, OnDestroy 
     { key: 'DONE', title: 'Done', tasks: [] },
   ];
   burndown: { labels: string[]; actual: number[]; ideal: number[] } | null = null;
-  private chart?: Chart;
+  private chart?: Chart<any, any, any>;
 
   @ViewChild('burndownCanvas') burndownCanvas?: ElementRef<HTMLCanvasElement>;
 
@@ -36,7 +39,8 @@ export class SprintDetailsComponent implements OnInit, AfterViewInit, OnDestroy 
     private route: ActivatedRoute,
     private router: Router,
     private sprintService: SprintService,
-    private taskService: TaskService
+    private taskService: TaskService,
+    private teamService: TeamService
   ) {}
 
   ngOnInit(): void {
@@ -147,13 +151,13 @@ export class SprintDetailsComponent implements OnInit, AfterViewInit, OnDestroy 
     // Ensure we have everything
     if (!this.burndownCanvas || !this.burndown || this.burndown.labels.length === 0) {
       // Destroy existing if any
-      if (this.chart) { this.chart.destroy(); this.chart = undefined; }
+      if (this.chart) { (this.chart as any).destroy(); this.chart = undefined; }
       return;
     }
     const ctx = this.burndownCanvas.nativeElement.getContext('2d');
     if (!ctx) return;
     // Recreate chart
-    if (this.chart) { this.chart.destroy(); }
+    if (this.chart) { (this.chart as any).destroy(); }
     this.chart = new Chart(ctx, {
       type: 'line',
       data: {
@@ -199,6 +203,6 @@ export class SprintDetailsComponent implements OnInit, AfterViewInit, OnDestroy 
   }
 
   ngOnDestroy(): void {
-    if (this.chart) { this.chart.destroy(); }
+    if (this.chart) { (this.chart as any).destroy(); }
   }
 }

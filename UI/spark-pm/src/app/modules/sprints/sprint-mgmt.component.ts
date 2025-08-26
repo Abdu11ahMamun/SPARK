@@ -628,8 +628,15 @@ export class SprintMgmtComponent implements OnInit, AfterViewInit {
 
   // Navigation
   gotoDetails(sprint: Sprint): void {
+    console.log('SprintMgmtComponent - gotoDetails called with sprint:', sprint);
     if (!sprint?.id) return;
-    this.router.navigate(['/sprints', sprint.id]);
+    
+    console.log('SprintMgmtComponent - About to navigate to:', ['/sprints', sprint.id]);
+    this.router.navigate(['/sprints', sprint.id]).then(success => {
+      console.log('SprintMgmtComponent - Navigation result:', success);
+    }).catch(error => {
+      console.error('SprintMgmtComponent - Navigation error:', error);
+    });
   }
 
   // Pagination methods

@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { TeamMember } from '../teams/team.model';
+import { environment } from '../../core/config/api.config';
 
 // Inline interfaces to avoid module resolution issues
 export interface Sprint {
@@ -97,8 +98,8 @@ export interface SprintCreation {
   providedIn: 'root'
 })
 export class SprintService {
-  private baseUrl = 'http://localhost:8080/api/sprints';
-  private capacityUrl = 'http://localhost:8080/api/sprint-capacity';
+  private baseUrl = environment.apiBaseUrl + '/sprints';
+  private capacityUrl = environment.apiBaseUrl + '/sprint-capacity';
 
   constructor(private http: HttpClient) {}
 
@@ -107,7 +108,10 @@ export class SprintService {
   }
 
   getSprintById(id: number): Observable<Sprint> {
-    return this.http.get<Sprint>(`${this.baseUrl}/${id}`);
+    const url = `${this.baseUrl}/${id}`;
+    console.log('SprintService.getSprintById calling URL:', url);
+    console.log('baseUrl is:', this.baseUrl);
+    return this.http.get<Sprint>(url);
   }
 
   createSprint(sprint: SprintFormData): Observable<Sprint> {
@@ -124,7 +128,7 @@ export class SprintService {
 
   // Capacity Management Methods
   getTeamMembers(teamId: number): Observable<TeamMember[]> {
-    return this.http.get<TeamMember[]>(`${this.capacityUrl}/team/${teamId}/members`);
+    return this.http.get<TeamMember[]>(`${environment.apiBaseUrl}/teams/${teamId}/members`);
   }
 
   getSprintUserCapacities(sprintId: number): Observable<SprintUserCapacity[]> {

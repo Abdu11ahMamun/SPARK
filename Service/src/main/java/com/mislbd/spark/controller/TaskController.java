@@ -16,7 +16,6 @@ import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/tasks")
-@CrossOrigin(origins = "*", allowCredentials = "false")
 public class TaskController {
     private final BacklogTaskService backlogTaskService;
     private final BacklogTaskMapper backlogTaskMapper;

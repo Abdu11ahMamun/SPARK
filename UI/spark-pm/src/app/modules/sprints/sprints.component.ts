@@ -462,7 +462,32 @@ export class SprintsComponent implements OnInit {
 
   // Navigate to details page
   gotoDetails(sprint: Sprint): void {
-    if (!sprint?.id) return;
-    this.router.navigate(['/sprints', sprint.id]);
+    console.log('SprintsComponent - gotoDetails called with sprint:', sprint);
+    if (!sprint?.id) {
+      console.log('Sprint ID is missing, returning');
+      return;
+    }
+    
+    const targetUrl = `/sprints/${sprint.id}`;
+    console.log('About to navigate to URL:', targetUrl);
+    
+    // Try both approaches
+    this.router.navigateByUrl(targetUrl).then(success => {
+      console.log('navigateByUrl result:', success);
+      if (!success) {
+        console.log('navigateByUrl failed, trying router.navigate');
+        return this.router.navigate(['/sprints', sprint.id]);
+      }
+      return Promise.resolve(success);
+    }).then(success => {
+      console.log('Final navigation result:', success);
+      if (success) {
+        console.log('Navigation successful');
+      } else {
+        console.log('Navigation failed');
+      }
+    }).catch(error => {
+      console.error('Navigation error:', error);
+    });
   }
 }

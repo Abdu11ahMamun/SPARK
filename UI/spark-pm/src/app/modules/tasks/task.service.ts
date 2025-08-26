@@ -46,7 +46,10 @@ export class TaskService {
   }
 
   getTasksBySprint(sprintId: number): Observable<Task[]> {
-    return this.http.get<Task[]>(`${this.apiUrl}/sprint/${sprintId}`);
+    const url = `${this.apiUrl}/by-sprint/${sprintId}`;
+    console.log('TaskService.getTasksBySprint calling URL:', url);
+    console.log('apiUrl is:', this.apiUrl);
+    return this.http.get<Task[]>(url);
   }
 
   // Task status updates

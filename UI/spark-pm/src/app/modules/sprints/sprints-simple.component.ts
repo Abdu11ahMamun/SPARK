@@ -230,8 +230,15 @@ export class SprintsSimpleComponent implements OnInit {
 
   // Navigation
   gotoDetails(sprint: Sprint): void {
+    console.log('SprintsSimpleComponent - gotoDetails called with sprint:', sprint);
     if (!sprint?.id) return;
-    this.router.navigate(['/sprints', sprint.id]);
+    
+    console.log('SprintsSimpleComponent - About to navigate to:', ['/sprints', sprint.id]);
+    this.router.navigate(['/sprints', sprint.id]).then(success => {
+      console.log('SprintsSimpleComponent - Navigation result:', success);
+    }).catch(error => {
+      console.error('SprintsSimpleComponent - Navigation error:', error);
+    });
   }
 
   // Capacity Dialog Methods
