@@ -136,20 +136,34 @@
         </div>
       </div>
       
-      <div class="search-actions">
-        <button class="btn btn-secondary" (click)="clearFilters()">Clear All</button>
-        <button class="btn btn-primary" (click)="applyFilters()">Apply Filters</button>
+      <div style="display: flex; gap: 0.75rem; justify-content: flex-end; margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid #e5e7eb;">
+        <button class="clear-filters-btn" (click)="clearFilters()">
+          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path d="M3 6h18M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6m3 0V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>
+          </svg>
+          Clear All Filters
+        </button>
       </div>
     </div>
   </div>
 
   <!-- Error -->
-  <div *ngIf="error" class="alert alert-error">
-    {{ error }}
+  <div *ngIf="error" class="error-container">
+    <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+      <path d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"/>
+    </svg>
+    <h3>Error Loading Data</h3>
+    <p>{{ error }}</p>
+  </div>
+
+  <!-- Loading State -->
+  <div *ngIf="isLoading" class="loading-container">
+    <div class="loading-spinner"></div>
+    <p>Loading tasks...</p>
   </div>
 
   <!-- Table -->
-  <div class="table-container">
+  <div *ngIf="!isLoading" class="table-container">
     <table class="data-table">
       <thead>
         <tr>

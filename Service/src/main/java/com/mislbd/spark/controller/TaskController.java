@@ -59,7 +59,8 @@ public class TaskController {
             if (task.getTasktypeid() != null) {
                 String typeString = ID_TO_TASK_TYPE.get(task.getTasktypeid());
                 if (typeString != null) {
-                    task.setTaskType(task.getTasktypeid());
+                        // Use setTaskType(Integer) instead of setType(String)
+                        task.setTaskType(task.getTasktypeid());
                 }
             }
         });
@@ -206,6 +207,16 @@ public class TaskController {
         });
 
         return tasks;
+    }
+
+    /**
+     * Compatibility alias for frontend calling /api/tasks/sprint/{sprintId}
+     * (original endpoint was /api/tasks/by-sprint/{sprintId}).
+     * Consider deprecating once frontend adjusted.
+     */
+    @GetMapping("/sprint/{sprintId}")
+    public List<BacklogTaskDto> getTasksBySprintAlias(@PathVariable Integer sprintId) {
+        return getTasksBySprint(sprintId);
     }
 
     @GetMapping("/by-assignee/{assigneeId}")

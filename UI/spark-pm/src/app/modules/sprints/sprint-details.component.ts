@@ -20,7 +20,7 @@ export class SprintDetailsComponent implements OnInit, AfterViewInit, OnDestroy 
   isLoading = true;
   isError = false;
 
-  // Placeholders to be wired to services later
+  // Data
   sprint: Sprint | null = null;
   team: Team | null = null;
   tasks: any[] = [];
@@ -31,7 +31,7 @@ export class SprintDetailsComponent implements OnInit, AfterViewInit, OnDestroy 
     { key: 'DONE', title: 'Done', tasks: [] },
   ];
   burndown: { labels: string[]; actual: number[]; ideal: number[] } | null = null;
-  private chart?: Chart<any, any, any>;
+  private chart?: Chart;
 
   @ViewChild('burndownCanvas') burndownCanvas?: ElementRef<HTMLCanvasElement>;
 
@@ -44,25 +44,63 @@ export class SprintDetailsComponent implements OnInit, AfterViewInit, OnDestroy 
   ) {}
 
   ngOnInit(): void {
+    console.log('SprintDetailsComponent ngOnInit called');
     const id = Number(this.route.snapshot.paramMap.get('id'));
+    console.log('Extracted sprint ID:', id);
     if (!isNaN(id)) {
       this.sprintId = id;
     }
 
-  // Load sprint and tasks
-  this.fetchAll();
+    // Load sprint and tasks - using mock data for now
+    this.loadMockData();
+    // this.fetchAll(); // Uncomment when backend is ready
   }
 
   back(): void {
     this.router.navigate(['/sprints']);
   }
 
+  // Format date for display
+  formatDate(dateStr: string): string {
+    if (!dateStr) return '-';
+    try {
+      const date = new Date(dateStr);
+      return date.toLocaleDateString('en-US', { 
+        year: 'numeric', 
+        month: 'short', 
+        day: 'numeric' 
+      });
+    } catch {
+      return dateStr;
+    }
+  }
+
+  // Get status display text
+  getStatusText(status: number): string {
+    switch (status) {
+      case 1: return 'Active';
+      case 2: return 'Completed';
+      case 0: return 'Planned';
+      default: return 'Unknown';
+    }
+  }
+
+  // Get status CSS class
+  getStatusClass(status: number): string {
+    switch (status) {
+      case 1: return 'status-active';
+      case 2: return 'status-completed';
+      case 0: return 'status-planned';
+      default: return 'status-unknown';
+    }
+  }
+
   // Helpers used by template (avoid inline lambdas in bindings)
   taskCount(status: string): number {
-  if (!Array.isArray(this.tasks)) return 0;
-  const norm = (s: any) => String(s || '').toUpperCase().replace(/\s+/g, '_');
-  const want = norm(status);
-  return this.tasks.filter(t => t && norm(t.status) === want).length;
+    if (!Array.isArray(this.tasks)) return 0;
+    const norm = (s: any) => String(s || '').toUpperCase().replace(/\s+/g, '_');
+    const want = norm(status);
+    return this.tasks.filter(t => t && norm(t.status) === want).length;
   }
 
   burndownRemaining(): number {
@@ -72,24 +110,136 @@ export class SprintDetailsComponent implements OnInit, AfterViewInit, OnDestroy 
   }
 
   fetchAll(): void {
+    console.log('fetchAll() called with sprintId:', this.sprintId);
     this.isLoading = true;
     this.isError = false;
+    console.log('Making API calls to:', `${this.sprintService.getAllSprints}`, `${this.taskService}`);
     forkJoin({
       sprint: this.sprintService.getSprintById(this.sprintId),
-  tasks: this.taskService.getTasksBySprint(this.sprintId)
+      tasks: this.taskService.getTasksBySprint(this.sprintId)
     }).subscribe({
       next: ({ sprint, tasks }) => {
+        console.log('API calls successful:', { sprint, tasks });
         this.sprint = sprint;
         this.tasks = tasks || [];
+        
+        // Fetch team data if sprint has team ID
+        if (sprint && sprint.tramId) {
+          console.log('Fetching team data for tramId:', sprint.tramId);
+          this.teamService.getTeam(sprint.tramId).subscribe({
+            next: (team) => {
+              console.log('Team data received:', team);
+              this.team = team;
+            },
+            error: (teamError) => {
+              console.error('Team fetch error:', teamError);
+              this.team = null; // Continue without team data
+            }
+          });
+        }
+        
         this.groupTasksToKanban();
         this.buildBurndown();
         this.isLoading = false;
+        console.log('Component state after API success:', {
+          sprint: this.sprint,
+          tasks: this.tasks,
+          team: this.team,
+          isLoading: this.isLoading,
+          isError: this.isError
+        });
       },
-      error: () => {
+      error: (error) => {
+        console.error('API calls failed:', error);
         this.isLoading = false;
         this.isError = true;
+        console.log('Component state after API error:', {
+          isLoading: this.isLoading,
+          isError: this.isError,
+          error: error
+        });
       }
     });
+  }
+
+  loadMockData(): void {
+    this.isLoading = true;
+    
+    // Mock sprint data
+    this.sprint = {
+      id: this.sprintId,
+      sprintName: `Sprint ${this.sprintId} - Q3 Development`,
+      fromDate: '2025-08-01',
+      toDate: '2025-08-14',
+      noOfHolidays: 2,
+      sprintPoint: 55,
+      tramId: 1,
+      status: 1,
+      detailsRemark: 'Focus on core features and bug fixes'
+    };
+
+    // Mock team data
+    this.team = {
+      id: 1,
+      teamName: 'Alpha Development Team',
+      description: 'Core development team',
+      status: 1,
+      pOwner: 1,
+      sMaster: 2,
+      createdAt: '2025-01-01'
+    };
+
+    // Mock tasks data
+    this.tasks = [
+      {
+        id: 1,
+        key: 'SPARK-101',
+        title: 'Implement user authentication system',
+        assignee: 'John Doe',
+        status: 'TODO',
+        estimate: 8,
+        storyPoints: 5,
+        priority: 'High'
+      },
+      {
+        id: 2,
+        key: 'SPARK-102',
+        title: 'Create responsive dashboard layout',
+        assignee: 'Jane Smith',
+        status: 'IN_PROGRESS',
+        estimate: 13,
+        storyPoints: 8,
+        priority: 'Medium'
+      },
+      {
+        id: 3,
+        key: 'SPARK-103',
+        title: 'Setup database migration scripts',
+        assignee: 'Bob Wilson',
+        status: 'REVIEW',
+        estimate: 5,
+        storyPoints: 3,
+        priority: 'High'
+      },
+      {
+        id: 4,
+        key: 'SPARK-104',
+        title: 'Write comprehensive unit tests',
+        assignee: 'Alice Johnson',
+        status: 'DONE',
+        estimate: 8,
+        storyPoints: 5,
+        priority: 'Low',
+        completedAt: '2025-08-10'
+      }
+    ];
+
+    // Simulate loading delay
+    setTimeout(() => {
+      this.groupTasksToKanban();
+      this.buildBurndown();
+      this.isLoading = false;
+    }, 800);
   }
 
   private groupTasksToKanban(): void {
@@ -151,13 +301,13 @@ export class SprintDetailsComponent implements OnInit, AfterViewInit, OnDestroy 
     // Ensure we have everything
     if (!this.burndownCanvas || !this.burndown || this.burndown.labels.length === 0) {
       // Destroy existing if any
-      if (this.chart) { (this.chart as any).destroy(); this.chart = undefined; }
+      if (this.chart) { this.chart.destroy(); this.chart = undefined; }
       return;
     }
     const ctx = this.burndownCanvas.nativeElement.getContext('2d');
     if (!ctx) return;
     // Recreate chart
-    if (this.chart) { (this.chart as any).destroy(); }
+    if (this.chart) { this.chart.destroy(); }
     this.chart = new Chart(ctx, {
       type: 'line',
       data: {
@@ -203,6 +353,6 @@ export class SprintDetailsComponent implements OnInit, AfterViewInit, OnDestroy 
   }
 
   ngOnDestroy(): void {
-    if (this.chart) { (this.chart as any).destroy(); }
+    if (this.chart) { this.chart.destroy(); }
   }
 }

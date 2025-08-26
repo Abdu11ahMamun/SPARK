@@ -5,6 +5,8 @@ import jakarta.persistence.*;
 import lombok.*;
 import java.time.Instant;
 import com.mislbd.spark.repository.schema.SchemaConstant;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = SchemaConstant.BACKLOG_TASK_TABLE_NAME)
@@ -30,9 +32,9 @@ public class BacklogTask {
     @Column(length = 10)
     private String priority;
 
-    private Instant deadline;
-    private Instant createddate;
-    private Instant modifieddate;
+    private LocalDate deadline;
+    private LocalDateTime createddate;
+    private LocalDateTime modifieddate;
 
     private Integer assignedto;
     private Integer sprintid;
@@ -49,6 +51,6 @@ public class BacklogTask {
     private Integer taskType;
     private String createBy;
     private String updateBy;
-    private Instant updatedate;
+    private LocalDateTime updatedate;
     private Integer teamId;
 }

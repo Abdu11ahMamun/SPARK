@@ -158,11 +158,21 @@ export class TasksComponent implements OnInit {
   // Filters
   toggleSearchPanel() { this.showSearchPanel = !this.showSearchPanel; }
   onSearchChange() { setTimeout(() => this.applyFilters(), 250); }
+  
   clearFilters() {
-    this.searchTerm = this.statusFilter = this.priorityFilter = this.taskTypeFilter = this.productFilter = this.moduleFilter = this.assigneeFilter = this.mitsFilter = '';
-    this.deadlineFrom = this.deadlineTo = '';
+    this.searchTerm = '';
+    this.statusFilter = '';
+    this.priorityFilter = '';
+    this.taskTypeFilter = '';
+    this.productFilter = '';
+    this.moduleFilter = '';
+    this.assigneeFilter = '';
+    this.mitsFilter = '';
+    this.deadlineFrom = '';
+    this.deadlineTo = '';
     this.applyFilters();
   }
+
   applyFilters() {
     let list = [...this.tasks]; const term = this.searchTerm.toLowerCase();
     if (term) {
