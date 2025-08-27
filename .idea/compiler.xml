@@ -12,7 +12,6 @@
       </profile>
     </annotationProcessing>
     <bytecodeTargetLevel>
-      <module name="com.mislbd.spark" target="17" />
       <module name="spark" target="17" />
     </bytecodeTargetLevel>
   </component>
