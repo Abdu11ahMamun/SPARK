@@ -12,11 +12,13 @@
       </profile>
     </annotationProcessing>
     <bytecodeTargetLevel>
+      <module name="com.mislbd.spark" target="17" />
       <module name="spark" target="17" />
     </bytecodeTargetLevel>
   </component>
   <component name="JavacSettings">
     <option name="ADDITIONAL_OPTIONS_OVERRIDE">
+      <module name="com.mislbd.spark" options="-parameters" />
       <module name="spark" options="-parameters" />
       <module name="spark.main" options="-parameters" />
       <module name="spark.test" options="-parameters" />

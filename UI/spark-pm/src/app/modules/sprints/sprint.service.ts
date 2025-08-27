@@ -94,6 +94,24 @@ export interface SprintCreation {
   capacitySummary?: SprintCapacitySummary;
 }
 
+export interface SprintUserProgress {
+  userId: number;
+  userName: string;
+  totalWorkingHours: number;
+  availableWorkingHours: number;
+  allocatedHours: number;
+  remainingHours: number;
+  utilizationPercentage: number;
+  overAllocated: boolean;
+  tasksTotal: number;
+  tasksDone: number;
+  pointsTotal: number;
+  pointsDone: number;
+  completionPercentage: number;
+  pointsCompletionPercentage: number;
+  velocityPointsPerDay: number;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -162,5 +180,9 @@ export class SprintService {
 
   updateUserAllocation(sprintId: number, userId: number, allocatedHours: number): Observable<SprintUserCapacity> {
     return this.http.put<SprintUserCapacity>(`${this.capacityUrl}/sprint/${sprintId}/user/${userId}/allocation?allocatedHours=${allocatedHours}`, {});
+  }
+
+  getSprintUserProgress(sprintId: number) {
+    return this.http.get<SprintUserProgress[]>(`${this.capacityUrl}/sprint/${sprintId}/user-progress`);
   }
 }

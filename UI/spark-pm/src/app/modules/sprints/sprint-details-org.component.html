@@ -47,10 +47,12 @@
     <!-- Summary Panel -->
     <section id="panel-summary" class="tab-panel" role="tabpanel" *ngIf="activeTab==='summary'">
       <div class="grid-col-2 stack-mobile gap-lg">
-        <div class="card kpi-card">
+        <div class="card kpi-card kpi-modern">
           <div class="card-header"><h2 class="card-title">KPI Infograph</h2></div>
           <div class="card-body">
-            <canvas #kpiChart height="220" aria-label="KPI pie chart" role="img"></canvas>
+            <div class="chart-shell">
+              <canvas #kpiChart height="350" width="300" aria-label="KPI pie chart" role="img"></canvas>
+            </div>
           </div>
         </div>
         <div class="card">
@@ -76,7 +78,7 @@
         <div class="card-body">
           <div class="filters">
             <input class="form-control" placeholder="Search title or ref…" />
-            <select class="form-control"><option>All Status</option><option>TODO</option><option>IN_PROGRESS</option><option>REVIEW</option><option>DONE</option></select>
+            <select class="form-control"><option>All Status</option><option>OPEN</option><option>IN_PROGRESS</option><option>BLOCKED</option><option>DONE</option><option>CANCELLED</option></select>
             <select class="form-control"><option>All Priority</option><option>LOW</option><option>MEDIUM</option><option>HIGH</option><option>CRITICAL</option></select>
             <div class="flex-spacer"></div>
             <span class="muted small">{{ tasksData.length }} items</span>
@@ -85,12 +87,22 @@
             <table class="table" aria-label="Tasks table">
               <thead>
               <tr>
-                <th>ID</th><th>#REF</th><th>Task</th><th>Type</th><th>Product</th><th>Client</th><th>Sprint</th><th>Priority</th><th>Category</th><th>Person</th><th>Status</th><th>Size</th><th>Est. Hrs</th><th>Points</th>
+                <th>ID</th><th>MITS</th><th>Title</th><th>Type</th><th>Priority</th><th>Status</th><th>Points</th><th>Assignee</th><th>Product</th><th>Module</th><th>Deadline</th>
               </tr>
               </thead>
               <tbody>
               <tr *ngFor="let t of tasksData">
-                <td>{{ t.id }}</td><td>{{ t.ref }}</td><td>{{ t.title }}</td><td>{{ t.type }}</td><td>{{ t.product }}</td><td>{{ t.client }}</td><td>{{ t.sprint }}</td><td>{{ t.priority }}</td><td>{{ t.category }}</td><td>{{ t.person }}</td><td>{{ t.status }}</td><td>{{ t.size }}</td><td>{{ t.est }}</td><td>{{ t.pts }}</td>
+                <td>{{ t.id }}</td>
+                <td>{{ t.mitsNo }}</td>
+                <td>{{ t.title }}</td>
+                <td>{{ t.taskType }}</td>
+                <td>{{ t.priority }}</td>
+                <td>{{ t.status }}</td>
+                <td>{{ t.points || 0 }}</td>
+                <td>{{ t.assigneeUserId || '—' }}</td>
+                <td>{{ t.productId || '—' }}</td>
+                <td>{{ t.productModuleId || '—' }}</td>
+                <td>{{ t.deadline | date:'yyyy-MM-dd' }}</td>
               </tr>
               </tbody>
             </table>
@@ -126,7 +138,6 @@
   </div>
 
 
-  <div *ngIf="error" class="alert alert-error mt-4">{{ error }}</div>
   <div *ngIf="error" class="alert alert-error mt-4">{{ error }}</div>
 </div>
 </ng-container>
