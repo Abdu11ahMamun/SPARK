@@ -90,4 +90,4 @@ COMMIT;
 SELECT 'SPRINT_INFO_SCHEMA_CHECK' as CHECK_TYPE, COUNT(*) as RECORD_COUNT FROM SPARK_SPRINT_INFO;
 SELECT 'STATUS_VALUES_CHECK' as CHECK_TYPE, STATUS, COUNT(*) as COUNT FROM SPARK_SPRINT_INFO GROUP BY STATUS;
 
-PRINT 'Database migration completed successfully!';
+-- Migration complete marker (removed SQL*Plus specific PRINT statement to stay JDBC/Flyway compatible)

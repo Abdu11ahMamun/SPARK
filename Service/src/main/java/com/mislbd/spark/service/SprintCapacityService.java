@@ -1,6 +1,7 @@
 package com.mislbd.spark.service;
 
 import com.mislbd.spark.dto.*;
+import com.mislbd.spark.entity.BacklogTask;
 import com.mislbd.spark.entity.SprintInfo;
 import com.mislbd.spark.entity.SprintUserCapacity;
 import com.mislbd.spark.entity.User;
@@ -34,6 +35,7 @@ public class SprintCapacityService {
     private final SprintInfoRepository sprintInfoRepository;
     private final UserRepository userRepository;
     private final TeamMembershipService teamMembershipService;
+    private final BacklogTaskService backlogTaskService;
 
     /**
      * Create sprint with capacity planning
@@ -159,6 +161,83 @@ public class SprintCapacityService {
             log.error("Error getting team members for team {}: {}", teamId, e.getMessage());
             throw new RuntimeException("Failed to get team members for team: " + teamId, e);
         }
+    }
+
+    /**
+     * Get sprint user progress
+     */
+    public List<SprintUserProgressDto> getSprintUserProgress(Integer sprintId) {
+        // Load sprint & capacities
+        SprintInfo sprint = sprintInfoRepository.findById(sprintId)
+                .orElseThrow(() -> new RuntimeException("Sprint not found with ID: " + sprintId));
+        List<SprintUserCapacity> capacities = capacityRepository.findBySprintIdAndStatus(sprintId, 1);
+        int sprintDuration = calculateSprintDurationFromLocalDate(sprint.getFromDate(), sprint.getToDate());
+
+        // Map capacity by userId
+        java.util.Map<Long, SprintUserCapacity> capMap = capacities.stream()
+                .collect(java.util.stream.Collectors.toMap(SprintUserCapacity::getUserId, c -> c, (a,b)->a));
+
+    // Gather tasks for this sprint (use entity directly to avoid generic inference mismatch)
+    List<BacklogTask> tasks = backlogTaskService.getAllBacklogTasks().stream()
+        .filter(t -> t.getSprintid() != null && t.getSprintid().equals(sprintId))
+        .collect(java.util.stream.Collectors.toList());
+
+        // Aggregate tasks by user
+        class Agg { int tasksTotal=0; int tasksDone=0; int pointsTotal=0; int pointsDone=0; }
+        java.util.Map<Long, Agg> taskAgg = new java.util.HashMap<>();
+    for (BacklogTask t : tasks) {
+            Long uid = t.getAssignedto() == null ? -1L : t.getAssignedto().longValue();
+            Agg a = taskAgg.computeIfAbsent(uid, k-> new Agg());
+            a.tasksTotal++;
+            if (t.getPoints()!=null) a.pointsTotal += t.getPoints();
+            if ("DONE".equalsIgnoreCase(t.getStatus())) {
+                a.tasksDone++;
+                if (t.getPoints()!=null) a.pointsDone += t.getPoints();
+            }
+        }
+
+        java.util.Set<Long> allUserIds = new java.util.HashSet<>();
+        allUserIds.addAll(capMap.keySet());
+        allUserIds.addAll(taskAgg.keySet());
+        allUserIds.remove(-1L); // exclude unassigned pseudo user
+
+        java.util.List<SprintUserProgressDto> result = new java.util.ArrayList<>();
+        for (Long uid : allUserIds) {
+            SprintUserCapacity cap = capMap.get(uid);
+            Agg a = taskAgg.getOrDefault(uid, new Agg());
+            java.math.BigDecimal totalWorking = cap != null ? cap.getTotalWorkingHours() : java.math.BigDecimal.ZERO;
+            java.math.BigDecimal available = cap != null ? cap.getAvailableWorkingHours() : java.math.BigDecimal.ZERO;
+            java.math.BigDecimal allocated = cap != null && cap.getAllocatedHours()!=null ? cap.getAllocatedHours() : java.math.BigDecimal.ZERO;
+            java.math.BigDecimal remaining = available.subtract(allocated);
+            java.math.BigDecimal utilization = available.compareTo(java.math.BigDecimal.ZERO)>0 ?
+                    allocated.multiply(java.math.BigDecimal.valueOf(100)).divide(available,2, java.math.RoundingMode.HALF_UP)
+                    : java.math.BigDecimal.ZERO;
+            int completionPct = a.tasksTotal>0 ? (int) Math.round((a.tasksDone*100.0)/a.tasksTotal) : 0;
+            int pointsCompletionPct = a.pointsTotal>0 ? (int) Math.round((a.pointsDone*100.0)/a.pointsTotal) : 0;
+            java.math.BigDecimal velocity = sprintDuration>0 ?
+                    java.math.BigDecimal.valueOf(a.pointsDone).divide(java.math.BigDecimal.valueOf(sprintDuration),2, java.math.RoundingMode.HALF_UP)
+                    : java.math.BigDecimal.ZERO;
+            result.add(SprintUserProgressDto.builder()
+                    .userId(uid)
+                    .userName(cap != null ? cap.getUserName() : ("User "+uid))
+                    .totalWorkingHours(totalWorking)
+                    .availableWorkingHours(available)
+                    .allocatedHours(allocated)
+                    .remainingHours(remaining)
+                    .utilizationPercentage(utilization)
+                    .overAllocated(cap != null && cap.isOverAllocated())
+                    .tasksTotal(a.tasksTotal)
+                    .tasksDone(a.tasksDone)
+                    .pointsTotal(a.pointsTotal)
+                    .pointsDone(a.pointsDone)
+                    .completionPercentage(completionPct)
+                    .pointsCompletionPercentage(pointsCompletionPct)
+                    .velocityPointsPerDay(velocity)
+                    .build());
+        }
+        // Sort by user name
+        result.sort(java.util.Comparator.comparing(SprintUserProgressDto::getUserName, java.text.Collator.getInstance()));
+        return result;
     }
 
     // Private helper methods
