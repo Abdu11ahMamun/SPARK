@@ -1,4 +1,136 @@
-<div>
-  <h1>Hello World</h1>
-  <p>Sprint ID: {{ sprintId }}</p>
+<ng-container *ngIf="!loading; else loadingTpl">
+<div class="sprint-details page-wrapper">
+  <div class="page-header" *ngIf="sprintSummary as s">
+    <div>
+      <h1 class="page-title">Sprint {{ sprintId }} Capacity Overview</h1>
+      <p class="page-subtitle">Team Members: {{ s.totalTeamMembers }} • Working Days: {{ s.workingDays }} • Holidays: {{ s.holidays }}</p>
+    </div>
+    <div class="actions">
+      <button class="btn btn-secondary" type="button">Export</button>
+      <button class="btn btn-primary" type="button">Add Task</button>
+    </div>
+  </div>
+
+  <!-- Key Metrics -->
+  <div class="metrics-grid" *ngIf="sprintSummary as summary">
+    <div class="metric-card" aria-label="Average Utilization">
+      <div class="metric-label">Avg Utilization</div>
+      <div class="metric-value">{{ summary.averageUtilization }}%</div>
+      <div class="metric-bar"><span [style.width.%]="summary.averageUtilization"></span></div>
+    </div>
+    <div class="metric-card" aria-label="Efficiency">
+      <div class="metric-label">Efficiency</div>
+      <div class="metric-value">{{ summary.teamEfficiency }}%</div>
+      <div class="metric-sub">Over / Under Util: {{ summary.overAllocatedMembers }}/{{ summary.underUtilizedMembers }}</div>
+    </div>
+    <div class="metric-card" aria-label="Capacity Hours">
+      <div class="metric-label">Capacity (hrs)</div>
+      <div class="metric-value">{{ summary.totalAllocatedHours }}/{{ summary.totalCapacityHours }}</div>
+      <div class="metric-bar alt"><span [style.width.%]="(summary.totalAllocatedHours / (summary.totalCapacityHours || 1))*100"></span></div>
+    </div>
+    <div class="metric-card" aria-label="Remaining Hours">
+      <div class="metric-label">Remaining (hrs)</div>
+      <div class="metric-value">{{ summary.totalRemainingHours }}</div>
+      <div class="metric-sub" [class.text-danger]="summary.hasCapacityRisks">{{ summary.hasCapacityRisks ? 'Risk Detected' : 'Stable' }}</div>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="tabs-wrapper">
+    <div class="tabs" role="tablist" aria-label="Sprint detail sections">
+  <button class="tab" [class.active]="activeTab==='summary'" role="tab" (click)="onTabChange('summary')" aria-controls="panel-summary" [attr.aria-selected]="activeTab==='summary'">Summary</button>
+  <button class="tab" [class.active]="activeTab==='tasks'" role="tab" (click)="onTabChange('tasks')" aria-controls="panel-tasks" [attr.aria-selected]="activeTab==='tasks'">Tasks</button>
+  <button class="tab" [class.active]="activeTab==='kanban'" role="tab" (click)="onTabChange('kanban')" aria-controls="panel-kanban" [attr.aria-selected]="activeTab==='kanban'">Kanban</button>
+  <button class="tab" [class.active]="activeTab==='burndown'" role="tab" (click)="onTabChange('burndown')" aria-controls="panel-burndown" [attr.aria-selected]="activeTab==='burndown'">Burndown</button>
+    </div>
+
+    <!-- Summary Panel -->
+    <section id="panel-summary" class="tab-panel" role="tabpanel" *ngIf="activeTab==='summary'">
+      <div class="grid-col-2 stack-mobile gap-lg">
+        <div class="card kpi-card">
+          <div class="card-header"><h2 class="card-title">KPI Infograph</h2></div>
+          <div class="card-body">
+            <canvas #kpiChart height="220" aria-label="KPI pie chart" role="img"></canvas>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><h2 class="card-title">User Progress</h2></div>
+          <div class="card-body user-progress-list">
+            <div class="user-row" *ngFor="let u of userProgress">
+              <div class="avatar" [attr.aria-label]="u.name">{{ u.initials }}</div>
+              <div class="user-info">
+                <div class="user-top"><span class="user-name">{{ u.name }}</span><span class="muted small">{{ u.tasksDone }}/{{ u.tasksTotal }} tasks • {{ u.ptsDone }}/{{ u.ptsTotal }} pts</span></div>
+                <div class="progress-line"><span [style.width.%]="u.pct"></span></div>
+              </div>
+              <div class="pct">{{ u.pct }}%</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Tasks Panel -->
+    <section id="panel-tasks" class="tab-panel" role="tabpanel" *ngIf="activeTab==='tasks'">
+      <div class="card">
+        <div class="card-header"><h2 class="card-title">Tasks</h2></div>
+        <div class="card-body">
+          <div class="filters">
+            <input class="form-control" placeholder="Search title or ref…" />
+            <select class="form-control"><option>All Status</option><option>TODO</option><option>IN_PROGRESS</option><option>REVIEW</option><option>DONE</option></select>
+            <select class="form-control"><option>All Priority</option><option>LOW</option><option>MEDIUM</option><option>HIGH</option><option>CRITICAL</option></select>
+            <div class="flex-spacer"></div>
+            <span class="muted small">{{ tasksData.length }} items</span>
+          </div>
+          <div class="table-responsive">
+            <table class="table" aria-label="Tasks table">
+              <thead>
+              <tr>
+                <th>ID</th><th>#REF</th><th>Task</th><th>Type</th><th>Product</th><th>Client</th><th>Sprint</th><th>Priority</th><th>Category</th><th>Person</th><th>Status</th><th>Size</th><th>Est. Hrs</th><th>Points</th>
+              </tr>
+              </thead>
+              <tbody>
+              <tr *ngFor="let t of tasksData">
+                <td>{{ t.id }}</td><td>{{ t.ref }}</td><td>{{ t.title }}</td><td>{{ t.type }}</td><td>{{ t.product }}</td><td>{{ t.client }}</td><td>{{ t.sprint }}</td><td>{{ t.priority }}</td><td>{{ t.category }}</td><td>{{ t.person }}</td><td>{{ t.status }}</td><td>{{ t.size }}</td><td>{{ t.est }}</td><td>{{ t.pts }}</td>
+              </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Kanban Panel -->
+    <section id="panel-kanban" class="tab-panel" role="tabpanel" *ngIf="activeTab==='kanban'">
+      <div class="kanban-grid">
+        <div class="kanban-col" *ngFor="let col of kanbanColumns">
+          <header class="kanban-col-header" [ngClass]="col.class">{{ col.title }}</header>
+          <div class="kanban-items">
+            <div class="kanban-card" *ngFor="let item of col.items">
+              <div class="kc-title">{{ item.ref }} {{ item.title }}</div>
+              <div class="kc-meta"><span class="badge" [ngClass]="'prio-'+item.priority.toLowerCase()">{{ item.priority }}</span><span class="dot"></span>{{ item.owner }}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Burndown Panel -->
+    <section id="panel-burndown" class="tab-panel" role="tabpanel" *ngIf="activeTab==='burndown'">
+      <div class="card">
+        <div class="card-header"><h2 class="card-title">Burndown</h2></div>
+        <div class="card-body">
+          <div class="placeholder-chart" role="img" aria-label="Burndown chart placeholder">Burndown Chart (Ideal vs Actual)</div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+
+  <div *ngIf="error" class="alert alert-error mt-4">{{ error }}</div>
+  <div *ngIf="error" class="alert alert-error mt-4">{{ error }}</div>
 </div>
+</ng-container>
+
+<ng-template #loadingTpl>
+  <div class="card"><div class="card-body text-center">Loading sprint summary...</div></div>
+</ng-template>

@@ -13,6 +13,7 @@ import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/sprints")
+@CrossOrigin(origins = "*", allowCredentials = "false")
 public class SprintController {
     private final SprintInfoService sprintInfoService;
     private final SprintInfoMapper sprintInfoMapper;

@@ -95,7 +95,7 @@ export class SprintService {
    * Get team members for sprint planning
    */
   getTeamMembers(teamId: number): Observable<TeamMember[]> {
-    return this.http.get<TeamMember[]>(`${environment.apiBaseUrl}/teams/${teamId}/members`);
+    return this.http.get<TeamMember[]>(`${this.capacityApiUrl}/team/${teamId}/members`);
   }
 
   /**

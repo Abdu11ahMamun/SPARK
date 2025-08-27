@@ -9,6 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
@@ -89,8 +90,8 @@ public class TaskController {
     @PostMapping
     public BacklogTaskDto createTask(@RequestBody BacklogTaskDto taskDto) {
         // Set creation timestamp
-        taskDto.setCreateddate(Instant.now());
-        taskDto.setModifieddate(Instant.now());
+        taskDto.setCreateddate(LocalDateTime.now());
+        taskDto.setModifieddate(LocalDateTime.now());
 
         // Map string type to taskType ID for backend compatibility
         if (taskDto.getTaskType() != null) {
@@ -124,7 +125,7 @@ public class TaskController {
         return backlogTaskService.getBacklogTaskById(id)
                 .map(existing -> {
                     taskDto.setId(id);
-                    taskDto.setModifieddate(Instant.now());
+                    taskDto.setModifieddate(LocalDateTime.now());
                     // Preserve creation date
                     taskDto.setCreateddate(existing.getCreateddate());
 

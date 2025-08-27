@@ -1,8 +1,8 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { tap } from 'rxjs/operators';
 import { TeamMember } from '../teams/team.model';
-import { environment } from '../../core/config/api.config';
 
 // Inline interfaces to avoid module resolution issues
 export interface Sprint {
@@ -98,8 +98,8 @@ export interface SprintCreation {
   providedIn: 'root'
 })
 export class SprintService {
-  private baseUrl = environment.apiBaseUrl + '/sprints';
-  private capacityUrl = environment.apiBaseUrl + '/sprint-capacity';
+  private baseUrl = 'http://localhost:8080/api/sprints';
+  private capacityUrl = 'http://localhost:8080/api/sprint-capacity';
 
   constructor(private http: HttpClient) {}
 
@@ -108,10 +108,7 @@ export class SprintService {
   }
 
   getSprintById(id: number): Observable<Sprint> {
-    const url = `${this.baseUrl}/${id}`;
-    console.log('SprintService.getSprintById calling URL:', url);
-    console.log('baseUrl is:', this.baseUrl);
-    return this.http.get<Sprint>(url);
+    return this.http.get<Sprint>(`${this.baseUrl}/${id}`);
   }
 
   createSprint(sprint: SprintFormData): Observable<Sprint> {
@@ -128,7 +125,7 @@ export class SprintService {
 
   // Capacity Management Methods
   getTeamMembers(teamId: number): Observable<TeamMember[]> {
-    return this.http.get<TeamMember[]>(`${environment.apiBaseUrl}/teams/${teamId}/members`);
+    return this.http.get<TeamMember[]>(`${this.capacityUrl}/team/${teamId}/members`);
   }
 
   getSprintUserCapacities(sprintId: number): Observable<SprintUserCapacity[]> {
@@ -136,7 +133,19 @@ export class SprintService {
   }
 
   getSprintCapacitySummary(sprintId: number): Observable<SprintCapacitySummary> {
-    return this.http.get<SprintCapacitySummary>(`${this.capacityUrl}/sprint/${sprintId}/summary`);
+    const url = `${this.capacityUrl}/sprint/${sprintId}/summary`;
+    console.log('SprintService: Making HTTP request to:', url);
+    console.log('SprintService: Base capacity URL:', this.capacityUrl);
+    
+    return this.http.get<SprintCapacitySummary>(url).pipe(
+      tap(response => {
+        console.log('SprintService: HTTP response received:', response);
+      }),
+      tap(
+        response => console.log('SprintService: Success tap:', response),
+        error => console.error('SprintService: Error tap:', error)
+      )
+    );
   }
 
   createSprintWithCapacity(sprintData: any): Observable<Sprint> {

@@ -20,6 +20,7 @@ import java.util.List;
 @RequestMapping("/api/sprint-capacity")
 @RequiredArgsConstructor
 @Slf4j
+@CrossOrigin(origins = "http://localhost:4200", allowCredentials = "true")
 public class SprintCapacityController {
 
     private final SprintCapacityService sprintCapacityService;
