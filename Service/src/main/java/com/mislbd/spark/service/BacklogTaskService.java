@@ -34,9 +34,9 @@ public class BacklogTaskService {
         backlogTaskRepository.deleteById(id);
     }
 
-    public List<BacklogTask> getUndoneTasksByTeam(Integer teamId, Integer sprintId) {
-        return backlogTaskRepository.findUndoneTasksByTeamExcludingSprint(teamId, sprintId);
-    }
+//    public List<BacklogTask> getUndoneTasksByTeam(Integer teamId, Integer sprintId) {
+//        return backlogTaskRepository.findUndoneTasksByTeamExcludingSprint(teamId, sprintId);
+//    }
 
     public List<BacklogTask> assignTasksToSprint(Integer sprintId, List<Integer> taskIds) {
         List<BacklogTask> tasks = backlogTaskRepository.findAllById(taskIds);

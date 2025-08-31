@@ -17,6 +17,89 @@
   color: #1f2937;
 }
 
+/* Compact adjustments for better data density */
+.tasks-container {
+  --compact-scale: 0.85;
+}
+
+.tasks-header {
+  padding: 1rem 1.5rem;
+}
+
+.tasks-title { font-size: 1.5rem; }
+
+.table-container { margin: 0 1.25rem 1.25rem; border-radius: 12px; }
+
+.data-table th { padding: 0.6rem 0.75rem; font-size: 0.65rem; }
+.data-table td { padding: 0.55rem 0.75rem; font-size: 0.75rem; }
+
+.mits-badge { padding: 0.25rem 0.5rem; font-size: 0.65rem; }
+.type-badge, .status-badge, .priority-badge { font-size: 0.55rem; padding: 0.25rem 0.4rem; }
+
+.actions-group .btn-outline { padding: 0.35rem 0.6rem; font-size: 0.65rem; }
+
+/* Team badge & action menu */
+.task-title-row { display:flex; align-items:center; gap:.4rem; }
+.team-badge { background:#eef2ff; color:#4338ca; padding:0.15rem 0.45rem; border-radius:999px; font-size:.55rem; font-weight:600; letter-spacing:.5px; text-transform:uppercase; }
+.action-menu-wrapper { position:relative; display:inline-block; }
+.icon-menu-btn { background:transparent; border:1px solid #e2e8f0; width:32px; height:32px; border-radius:8px; display:flex; align-items:center; justify-content:center; cursor:pointer; transition:all .2s; }
+.icon-menu-btn:hover { background:#f1f5f9; }
+.action-menu { position:absolute; top:100%; right:0; margin-top:4px; background:white; border:1px solid #e2e8f0; box-shadow:0 4px 12px rgba(0,0,0,.08); border-radius:8px; padding:0.35rem 0; width:140px; z-index:20; animation:fadeIn .12s ease-out; }
+.action-menu button { width:100%; background:none; border:none; text-align:left; padding:.45rem .75rem; font-size:.7rem; display:flex; align-items:center; gap:.4rem; cursor:pointer; color:#334155; transition:background .15s,color .15s; }
+.action-menu button:hover { background:#f1f5f9; color:#111827; }
+.action-menu button.danger { color:#dc2626; }
+.action-menu button.danger:hover { background:#fee2e2; color:#b91c1c; }
+@keyframes fadeIn { from { opacity:0; transform:translateY(-4px);} to { opacity:1; transform:translateY(0);} }
+
+.pagination-container { padding: 0.5rem 1.25rem; }
+.page-size-selector .form-control { padding: 0.4rem 0.6rem; }
+
+/* Modal compaction */
+.modal-content { font-size: 0.85rem; }
+.form-group label { font-size: 0.65rem; }
+.form-control { padding: 0.55rem 0.65rem; font-size: 0.75rem; }
+.modal-header { padding: 0.75rem 1rem; }
+.modal-footer { padding: 0.75rem 1rem 1rem; }
+.modal-header h3 { font-size: 1rem; }
+
+/* Hide long description overflow gracefully */
+.task-description { max-width: 380px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* Prevent table layout jump */
+.data-table { table-layout: fixed; }
+.data-table th:nth-child(1){width:70px}   /* MITS */
+.data-table th:nth-child(2){width:220px}  /* Title */
+.data-table th:nth-child(3){width:120px}  /* Team */
+.data-table th:nth-child(4){width:120px}  /* Module */
+.data-table th:nth-child(5){width:90px}   /* Task Type */
+.data-table th:nth-child(6){width:130px}  /* Assignee */
+.data-table th:nth-child(7){width:85px}   /* Status */
+.data-table th:nth-child(8){width:85px}   /* Priority */
+.data-table th:nth-child(9){width:105px}  /* Deadline */
+.data-table th:nth-child(10){width:65px}  /* Points */
+.data-table th:nth-child(11){width:140px} /* Actions */
+
+@media (max-width: 1400px) {
+  .data-table th:nth-child(2){width:200px}
+  .task-description { display:none; }
+}
+
+@media (max-width: 1100px) {
+  .data-table th:nth-child(3),
+  .data-table th:nth-child(4),
+  .data-table th:nth-child(5) { display:none; }
+  .data-table td:nth-child(3),
+  .data-table td:nth-child(4),
+  .data-table td:nth-child(5) { display:none; }
+}
+
+@media (max-width: 900px) {
+  .data-table th:nth-child(9),
+  .data-table td:nth-child(9) { display:none; }
+  .tasks-header { flex-direction: column; align-items: flex-start; gap: .75rem; }
+  .tasks-actions { align-self: stretch; }
+}
+
 // Professional Header Design
 .tasks-header {
   display: flex;

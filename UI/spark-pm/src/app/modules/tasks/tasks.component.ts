@@ -1,4 +1,4 @@
-import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
@@ -93,6 +93,7 @@ export class TasksComponent implements OnInit {
     private cdr: ChangeDetectorRef,
     private teamService: TeamService
   ) { this.initForm(); }
+    actionMenuOpenId: number | null = null;
 
   ngOnInit(): void { 
     // Fetch teams early so modal has data quickly, then load full dataset
@@ -138,8 +139,8 @@ export class TasksComponent implements OnInit {
         this.teamService.getTeams().toPromise()
       ]);
       
-      // Map backend field names to frontend interface
-      this.tasks = (tasks || []).map(task => ({
+  // Map backend field names to frontend interface
+  this.tasks = (tasks || []).map(task => ({
         id: task.id,
         title: task.title,
         description: task.description,
@@ -155,6 +156,8 @@ export class TasksComponent implements OnInit {
         mitsNo: task.mitsId ? String(task.mitsId) : (task.id?.toString() || ''),
         teamId: task.teamId
       } as TaskItem)); 
+  // Sort newest first (assuming higher id == newer)
+  this.tasks.sort((a,b) => (b.id || 0) - (a.id || 0));
       this.products = products || []; 
       this.modules = modules || []; 
       this.users = users || []; 
@@ -356,6 +359,8 @@ export class TasksComponent implements OnInit {
           assigneeUserId: data.assigneeUserId,
           points: data.points
         });
+        // Move updated task to top (treat as recently modified)
+        this.tasks = [this.selected!, ...this.tasks.filter(t => t.id !== this.selected!.id)];
       } else {
         const created = await this.http.post<any>(`${base}/api/tasks`, backendData as any).toPromise();
         if (created) {
@@ -447,6 +452,20 @@ export class TasksComponent implements OnInit {
     const team = this.teams.find(t => t.id === Number(this.selectedTeamId));
     return team?.teamName || '';
   }
+  
+  getTeamName(teamId?: number): string {
+    if (!teamId) return '—';
+    const t = this.teams.find(x => x.id === teamId);
+    return t?.teamName || '—';
+  }
+  
+  toggleActionMenu(taskId: number | undefined, event: Event) {
+    event.stopPropagation();
+    if (!taskId) return;
+    this.actionMenuOpenId = this.actionMenuOpenId === taskId ? null : taskId;
+  }
+  
+  @HostListener('document:click') onDocClick() { this.actionMenuOpenId = null; }
 
   private ensureTeamsLoaded(): Promise<void> {
     if (this.teams && this.teams.length) return Promise.resolve();
