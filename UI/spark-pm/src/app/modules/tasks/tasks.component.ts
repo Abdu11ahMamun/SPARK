@@ -4,13 +4,15 @@ import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } 
 import { HttpClient } from '@angular/common/http';
 import { tap, catchError } from 'rxjs/operators';
 import { of } from 'rxjs';
+import { TeamService } from '../teams/team.service';
+import { Team, TeamMember } from '../teams/team.model';
 
 // Local minimal interfaces to decouple from model file
 interface TaskItem {
   id?: number;
   mitsNo: string;
   taskType: string;
-  productId?: number;
+  productId?: number; // maps backend productid
   productModuleId?: number;
   title: string;
   description?: string;
@@ -19,6 +21,7 @@ interface TaskItem {
   priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
   deadline?: string;
   points?: number;
+  teamId?: number;
 }
 interface ProductOption { id: number; name: string; }
 interface ModuleOption { id: number; name: string; productId: number; }
@@ -43,6 +46,9 @@ export class TasksComponent implements OnInit {
   users: UserOption[] = [];
   jobTypes: JobTypeOption[] = [];
   jobTypeOptions: { value: number; label: string }[] = [];
+  teams: Team[] = [];
+  teamMembers: TeamMember[] = [];
+  filteredAssignees: UserOption[] = [];
 
   // UI state
   isLoading = false;
@@ -76,6 +82,7 @@ export class TasksComponent implements OnInit {
   isModalOpen = false;
   isDeleteModalOpen = false;
   isEditMode = false;
+  isSaving = false;
   selected: TaskItem | null = null;
   form!: FormGroup;
   Math = Math;
@@ -83,7 +90,8 @@ export class TasksComponent implements OnInit {
   constructor(
     private http: HttpClient,
     private fb: FormBuilder,
-    private cdr: ChangeDetectorRef
+    private cdr: ChangeDetectorRef,
+    private teamService: TeamService
   ) { this.initForm(); }
 
   ngOnInit(): void { this.load(); }
@@ -100,7 +108,8 @@ export class TasksComponent implements OnInit {
       status: ['OPEN', Validators.required],
       priority: ['MEDIUM', Validators.required],
       deadline: [''],
-      points: [0, [Validators.min(0)]]
+  points: [0, [Validators.min(0)]],
+  teamId: ['']
     });
   }
 
@@ -108,24 +117,38 @@ export class TasksComponent implements OnInit {
     this.isLoading = true; this.error = null;
     try {
       const base = (await import('../../../environments/environment')).environment.apiUrl;
-      const [tasks, products, modules, users, jobTypes] = await Promise.all([
+      const [tasks, products, modules, users, jobTypes, teams] = await Promise.all([
         this.http.get<any[]>(`${base}/api/tasks`).toPromise(),
         this.http.get<any[]>(`${base}/api/products`).toPromise(),
         this.http.get<any[]>(`${base}/api/product-modules`).toPromise(),
         this.http.get<any[]>(`${base}/api/users`).toPromise(),
-        this.http.get<JobTypeOption[]>(`${base}/api/job-types`).toPromise()
+        this.http.get<JobTypeOption[]>(`${base}/api/job-types`).toPromise(),
+        this.teamService.getTeams().toPromise()
       ]);
       
       // Map backend field names to frontend interface
       this.tasks = (tasks || []).map(task => ({
-        ...task,
+        id: task.id,
+        title: task.title,
+        description: task.description,
+        status: (task.status || 'OPEN').toUpperCase(),
+        priority: (task.priority || 'MEDIUM').toUpperCase(),
+        deadline: task.deadline || null,
         assigneeUserId: task.assignedto,
-        mitsNo: task.mitsId || task.id?.toString() || ''
-      })); 
+        sprintId: task.sprintid,
+        productId: task.productid,
+        productModuleId: task.productModuleId,
+        points: task.points,
+        taskType: String(task.taskType || task.tasktypeid || ''),
+        mitsNo: task.mitsId ? String(task.mitsId) : (task.id?.toString() || ''),
+        teamId: task.teamId
+      } as TaskItem)); 
       this.products = products || []; 
       this.modules = modules || []; 
       this.users = users || []; 
       this.jobTypes = jobTypes || [];
+      this.teams = teams || [];
+      this.filteredAssignees = [...this.users];
       
       // Map job types to dropdown options
       this.jobTypeOptions = this.jobTypes.map(type => ({ 
@@ -202,6 +225,18 @@ export class TasksComponent implements OnInit {
 
   onProductChangeForFilter() { this.moduleFilter = ''; }
   onProductChangeInForm() { this.form.patchValue({ productModuleId: '' }); }
+  onTeamChangeInForm() { const teamId = this.form.value.teamId; this.loadTeamMembers(teamId); }
+
+  private loadTeamMembers(teamId: number) {
+    if (!teamId) { this.teamMembers = []; this.filteredAssignees = [...this.users]; return; }
+    this.teamService.getTeamMembers(+teamId).subscribe({
+      next: members => {
+        this.teamMembers = members || [];
+        this.filteredAssignees = this.teamMembers.map(m => ({ id: m.userId, username: m.userName, firstName: m.userName.split(' ')[0], lastName: m.userName.split(' ').slice(1).join(' ') }));
+      },
+      error: () => { this.teamMembers = []; this.filteredAssignees = [...this.users]; }
+    });
+  }
 
   // Template helpers
   getModulesForProduct(productId: string | number | undefined) {
@@ -218,6 +253,11 @@ export class TasksComponent implements OnInit {
     if (!moduleId) return '—';
     const m = this.modules.find(x => x.id === moduleId);
     return m?.name || '—';
+  }
+  getTeamName(teamId?: number): string {
+    if (!teamId) return '—';
+    const t = this.teams.find(x => x.id === teamId);
+    return t?.teamName || '—';
   }
 
   getJobTypeName(taskType?: string | number): string {
@@ -279,36 +319,65 @@ export class TasksComponent implements OnInit {
     this.isEditMode = true; this.selected = t; this.form.patchValue(t); this.isModalOpen = true;
   }
   async saveTask() {
+    if (this.isSaving) return; // prevent double submissions
     if (this.form.invalid) { Object.values(this.form.controls).forEach(c => c.markAsTouched()); return; }
     const data: TaskItem = this.form.value;
     
     // Map frontend field names to backend field names
-    const backendData = {
-      ...data,
-      assignedto: data.assigneeUserId,
-      mitsId: data.mitsNo
+    const backendData: any = {
+      id: this.isEditMode ? this.selected?.id : undefined,
+      title: data.title,
+      description: data.description,
+      status: data.status,
+      priority: data.priority,
+      deadline: data.deadline || null,
+      assignedto: data.assigneeUserId || null,
+      productid: data.productId ? Number(data.productId) : null,
+      productModuleId: data.productModuleId ? Number(data.productModuleId) : null,
+      points: data.points || 0,
+      taskType: typeof data.taskType === 'string' ? Number(data.taskType) : data.taskType,
+      tasktypeid: typeof data.taskType === 'string' ? Number(data.taskType) : data.taskType,
+      mitsId: data.mitsNo ? Number(data.mitsNo) : null,
+      teamId: data.teamId ? Number(data.teamId) : null
     };
     
     try {
+      this.isSaving = true;
       const base = (await import('../../../environments/environment')).environment.apiUrl;
       if (this.isEditMode && this.selected?.id) {
-        const updated = { ...this.selected, ...backendData } as any;
-        await this.http.put<void>(`${base}/api/tasks/${this.selected.id}`, updated).toPromise();
-        Object.assign(this.selected, data);
+        const updated = { ...backendData };
+        await this.http.put<any>(`${base}/api/tasks/${this.selected.id}`, updated).toPromise();
+        Object.assign(this.selected!, {
+          ...data,
+          productId: data.productId,
+          productModuleId: data.productModuleId,
+          assigneeUserId: data.assigneeUserId,
+          points: data.points
+        });
       } else {
-        const created = await this.http.post<any>(`${base}/api/tasks`, backendData as any).toPromise(); 
+        const created = await this.http.post<any>(`${base}/api/tasks`, backendData as any).toPromise();
         if (created) {
-          // Map the response back to frontend format
-          const mappedTask = {
-            ...created,
+          const mappedTask: TaskItem = {
+            id: created.id,
+            title: created.title,
+            description: created.description,
+            status: (created.status || 'OPEN').toUpperCase(),
+            priority: (created.priority || 'MEDIUM').toUpperCase(),
+            deadline: created.deadline || null,
             assigneeUserId: created.assignedto,
-            mitsNo: created.mitsId || created.id?.toString() || ''
+            productId: created.productid,
+            productModuleId: created.productModuleId,
+            points: created.points,
+            taskType: String(created.taskType || created.tasktypeid || ''),
+            mitsNo: created.mitsId ? String(created.mitsId) : (created.id?.toString() || ''),
+            teamId: created.teamId
           };
           this.tasks.unshift(mappedTask);
         }
       }
       this.applyFilters(); this.closeModal();
     } catch (e) { console.error(e); this.error = 'Failed to save task'; }
+    finally { this.isSaving = false; }
   }
   askDelete(t: TaskItem) { this.selected = t; this.isDeleteModalOpen = true; }
   async confirmDelete() {
@@ -325,13 +394,15 @@ export class TasksComponent implements OnInit {
 
   // View helpers
   getAssigneeName(id?: number): string {
-    const u = this.users.find(x => x.id === id); if (!u) return '—';
+    const pool = this.filteredAssignees.length ? this.filteredAssignees : this.users;
+    const u = pool.find(x => x.id === id); if (!u) return '—';
     const full = [u.firstName, u.lastName].filter(Boolean).join(' ').trim();
     return full || u.username;
   }
 
   getAssigneeInitials(id?: number): string {
-    const u = this.users.find(x => x.id === id);
+    const pool = this.filteredAssignees.length ? this.filteredAssignees : this.users;
+    const u = pool.find(x => x.id === id);
     if (!u) return '?';
     
     const fullName = [u.firstName, u.lastName].filter(Boolean).join(' ').trim();

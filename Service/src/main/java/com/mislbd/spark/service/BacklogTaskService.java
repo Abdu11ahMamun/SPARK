@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 public class BacklogTaskService {
@@ -31,5 +32,15 @@ public class BacklogTaskService {
 
     public void deleteBacklogTask(Integer id) {
         backlogTaskRepository.deleteById(id);
+    }
+
+    public List<BacklogTask> getUndoneTasksByTeam(Integer teamId, Integer sprintId) {
+        return backlogTaskRepository.findUndoneTasksByTeamExcludingSprint(teamId, sprintId);
+    }
+
+    public List<BacklogTask> assignTasksToSprint(Integer sprintId, List<Integer> taskIds) {
+        List<BacklogTask> tasks = backlogTaskRepository.findAllById(taskIds);
+        tasks.forEach(t -> t.setSprintid(sprintId));
+        return backlogTaskRepository.saveAll(tasks);
     }
 }
