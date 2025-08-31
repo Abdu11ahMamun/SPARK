@@ -48,7 +48,8 @@ export class TasksComponent implements OnInit {
   jobTypeOptions: { value: number; label: string }[] = [];
   teams: Team[] = [];
   teamMembers: TeamMember[] = [];
-  filteredAssignees: UserOption[] = [];
+  selectedTeamId: number | '' = '';
+  isTeamsLoading = false;
 
   // UI state
   isLoading = false;
@@ -82,7 +83,6 @@ export class TasksComponent implements OnInit {
   isModalOpen = false;
   isDeleteModalOpen = false;
   isEditMode = false;
-  isSaving = false;
   selected: TaskItem | null = null;
   form!: FormGroup;
   Math = Math;
@@ -94,7 +94,20 @@ export class TasksComponent implements OnInit {
     private teamService: TeamService
   ) { this.initForm(); }
 
-  ngOnInit(): void { this.load(); }
+  ngOnInit(): void { 
+    // Fetch teams early so modal has data quickly, then load full dataset
+    this.fetchTeamsQuick();
+    this.load(); 
+  }
+
+  private fetchTeamsQuick() {
+    // Lightweight early fetch; ignores errors silently
+    this.isTeamsLoading = true;
+    this.teamService.getTeams().subscribe({
+      next: ts => { if (!this.teams.length) { this.teams = ts || []; this.cdr.markForCheck(); } this.isTeamsLoading = false; },
+      error: () => { this.isTeamsLoading = false; }
+    });
+  }
 
   private initForm() {
     this.form = this.fb.group({
@@ -108,8 +121,7 @@ export class TasksComponent implements OnInit {
       status: ['OPEN', Validators.required],
       priority: ['MEDIUM', Validators.required],
       deadline: [''],
-  points: [0, [Validators.min(0)]],
-  teamId: ['']
+      points: [0, [Validators.min(0)]]
     });
   }
 
@@ -117,7 +129,7 @@ export class TasksComponent implements OnInit {
     this.isLoading = true; this.error = null;
     try {
       const base = (await import('../../../environments/environment')).environment.apiUrl;
-      const [tasks, products, modules, users, jobTypes, teams] = await Promise.all([
+  const [tasks, products, modules, users, jobTypes, teams] = await Promise.all([
         this.http.get<any[]>(`${base}/api/tasks`).toPromise(),
         this.http.get<any[]>(`${base}/api/products`).toPromise(),
         this.http.get<any[]>(`${base}/api/product-modules`).toPromise(),
@@ -148,7 +160,6 @@ export class TasksComponent implements OnInit {
       this.users = users || []; 
       this.jobTypes = jobTypes || [];
       this.teams = teams || [];
-      this.filteredAssignees = [...this.users];
       
       // Map job types to dropdown options
       this.jobTypeOptions = this.jobTypes.map(type => ({ 
@@ -225,18 +236,6 @@ export class TasksComponent implements OnInit {
 
   onProductChangeForFilter() { this.moduleFilter = ''; }
   onProductChangeInForm() { this.form.patchValue({ productModuleId: '' }); }
-  onTeamChangeInForm() { const teamId = this.form.value.teamId; this.loadTeamMembers(teamId); }
-
-  private loadTeamMembers(teamId: number) {
-    if (!teamId) { this.teamMembers = []; this.filteredAssignees = [...this.users]; return; }
-    this.teamService.getTeamMembers(+teamId).subscribe({
-      next: members => {
-        this.teamMembers = members || [];
-        this.filteredAssignees = this.teamMembers.map(m => ({ id: m.userId, username: m.userName, firstName: m.userName.split(' ')[0], lastName: m.userName.split(' ').slice(1).join(' ') }));
-      },
-      error: () => { this.teamMembers = []; this.filteredAssignees = [...this.users]; }
-    });
-  }
 
   // Template helpers
   getModulesForProduct(productId: string | number | undefined) {
@@ -253,11 +252,6 @@ export class TasksComponent implements OnInit {
     if (!moduleId) return '—';
     const m = this.modules.find(x => x.id === moduleId);
     return m?.name || '—';
-  }
-  getTeamName(teamId?: number): string {
-    if (!teamId) return '—';
-    const t = this.teams.find(x => x.id === teamId);
-    return t?.teamName || '—';
   }
 
   getJobTypeName(taskType?: string | number): string {
@@ -314,12 +308,21 @@ export class TasksComponent implements OnInit {
   }
 
   // CRUD
-  addTask() { this.isEditMode = false; this.selected = null; this.form.reset({ status: 'OPEN', priority: 'MEDIUM', points: 0 }); this.isModalOpen = true; }
+  async addTask() { 
+    this.isEditMode = false; this.selected = null; 
+    this.form.reset({ status: 'OPEN', priority: 'MEDIUM', points: 0 }); 
+    this.selectedTeamId=''; this.teamMembers=[]; 
+    await this.ensureTeamsLoaded();
+    this.isModalOpen = true; 
+    // Force immediate render of team options
+    this.cdr.detectChanges();
+  }
   editTask(t: TaskItem) {
-    this.isEditMode = true; this.selected = t; this.form.patchValue(t); this.isModalOpen = true;
+    this.isEditMode = true; this.selected = t; this.form.patchValue(t); 
+    this.ensureTeamsLoaded();
+    this.isModalOpen = true;
   }
   async saveTask() {
-    if (this.isSaving) return; // prevent double submissions
     if (this.form.invalid) { Object.values(this.form.controls).forEach(c => c.markAsTouched()); return; }
     const data: TaskItem = this.form.value;
     
@@ -338,11 +341,10 @@ export class TasksComponent implements OnInit {
       taskType: typeof data.taskType === 'string' ? Number(data.taskType) : data.taskType,
       tasktypeid: typeof data.taskType === 'string' ? Number(data.taskType) : data.taskType,
       mitsId: data.mitsNo ? Number(data.mitsNo) : null,
-      teamId: data.teamId ? Number(data.teamId) : null
+      teamId: this.selectedTeamId || null
     };
     
     try {
-      this.isSaving = true;
       const base = (await import('../../../environments/environment')).environment.apiUrl;
       if (this.isEditMode && this.selected?.id) {
         const updated = { ...backendData };
@@ -377,7 +379,6 @@ export class TasksComponent implements OnInit {
       }
       this.applyFilters(); this.closeModal();
     } catch (e) { console.error(e); this.error = 'Failed to save task'; }
-    finally { this.isSaving = false; }
   }
   askDelete(t: TaskItem) { this.selected = t; this.isDeleteModalOpen = true; }
   async confirmDelete() {
@@ -394,15 +395,17 @@ export class TasksComponent implements OnInit {
 
   // View helpers
   getAssigneeName(id?: number): string {
-    const pool = this.filteredAssignees.length ? this.filteredAssignees : this.users;
-    const u = pool.find(x => x.id === id); if (!u) return '—';
+    if (this.selectedTeamId && this.teamMembers.length) {
+      const tm = this.teamMembers.find(m => m.userId === id);
+      if (tm) return tm.userName;
+    }
+    const u = this.users.find(x => x.id === id); if (!u) return '—';
     const full = [u.firstName, u.lastName].filter(Boolean).join(' ').trim();
     return full || u.username;
   }
 
   getAssigneeInitials(id?: number): string {
-    const pool = this.filteredAssignees.length ? this.filteredAssignees : this.users;
-    const u = pool.find(x => x.id === id);
+    const u = this.users.find(x => x.id === id);
     if (!u) return '?';
     
     const fullName = [u.firstName, u.lastName].filter(Boolean).join(' ').trim();
@@ -422,5 +425,43 @@ export class TasksComponent implements OnInit {
     const today = new Date();
     const deadlineDate = new Date(deadline);
     return deadlineDate < today;
+  }
+
+  onTeamChange() {
+    if (!this.selectedTeamId) { this.teamMembers = []; this.form.patchValue({ assigneeUserId: '' }); return; }
+    this.teamService.getTeamMembers(Number(this.selectedTeamId)).subscribe({
+      next: members => { this.teamMembers = members || []; this.form.patchValue({ assigneeUserId: '' }); },
+      error: () => { this.teamMembers = []; }
+    });
+  }
+
+  getAssignableUsers(): { id: number; name: string }[] {
+    if (this.selectedTeamId && this.teamMembers.length) {
+      return this.teamMembers.map(m => ({ id: m.userId, name: m.userName }));
+    }
+    return this.users.map(u => ({ id: u.id, name: this.getAssigneeName(u.id) }));
+  }
+
+  getSelectedTeamName(): string {
+    if (!this.selectedTeamId) return '';
+    const team = this.teams.find(t => t.id === Number(this.selectedTeamId));
+    return team?.teamName || '';
+  }
+
+  private ensureTeamsLoaded(): Promise<void> {
+    if (this.teams && this.teams.length) return Promise.resolve();
+    this.isTeamsLoading = true;
+    return new Promise(resolve => {
+      this.teamService.getTeams().subscribe({
+        next: ts => { 
+          this.teams = ts || []; 
+          this.isTeamsLoading = false; 
+          // Trigger change detection immediately for modal select
+          this.cdr.detectChanges(); 
+          resolve(); 
+        },
+        error: () => { this.isTeamsLoading = false; resolve(); }
+      });
+    });
   }
 }

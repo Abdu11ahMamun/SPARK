@@ -1,5 +1,4 @@
 <div class="tasks-container">
-  <div class="content-wrapper">
   <!-- Header -->
   <div class="tasks-header">
     <h1 class="tasks-title">Task Management</h1>
@@ -173,7 +172,6 @@
           <th>Product</th>
           <th>Module</th>
           <th>Task Type</th>
-          <th>Team</th>
           <th>Assignee</th>
           <th>Status</th>
           <th>Priority</th>
@@ -196,7 +194,6 @@
           <td>
             <div class="type-badge">{{ getJobTypeName(t.taskType) }}</div>
           </td>
-          <td>{{ getTeamName(t.teamId) }}</td>
           <td>
             <div class="assignee-info">
               <div class="assignee-avatar">{{ getAssigneeInitials(t.assigneeUserId) }}</div>
@@ -313,7 +310,8 @@
   <div class="modal-overlay" *ngIf="isModalOpen">
     <div class="modal-container" role="dialog" aria-modal="true">
       <div class="modal-header">
-        <h3>{{ isEditMode ? 'Edit Task' : 'Add New Task' }}</h3>
+  <h3>{{ isEditMode ? 'Edit Task' : 'Add New Task' }}</h3>
+  <div class="team-context" *ngIf="selectedTeamId">Team: <strong>{{ getSelectedTeamName() }}</strong></div>
         <button class="modal-close-btn" (click)="closeModal()" aria-label="Close">
           <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
             <path d="M18 6 6 18"/>
@@ -324,6 +322,14 @@
       <div class="modal-content">
         <form [formGroup]="form" class="task-form" (ngSubmit)="saveTask()">
           <div class="form-grid">
+            <div class="form-group">
+              <label for="teamSelect">Team</label>
+              <select id="teamSelect" class="form-control" [(ngModel)]="selectedTeamId" name="teamSelect" (change)="onTeamChange()" [disabled]="isTeamsLoading">
+                <option value="" *ngIf="!isTeamsLoading">-- Select Team --</option>
+                <option value="" disabled *ngIf="isTeamsLoading">Loading teams...</option>
+                <option *ngFor="let t of teams" [value]="t.id">{{ t.teamName }}</option>
+              </select>
+            </div>
             <div class="form-group">
               <label for="mitsNo">MITS No *</label>
               <input 
@@ -414,18 +420,10 @@
             </div>
             
             <div class="form-group">
-              <label for="teamId">Team</label>
-              <select id="teamId" class="form-control" formControlName="teamId" (change)="onTeamChangeInForm()">
-                <option value="">Unassigned / None</option>
-                <option *ngFor="let t of teams" [value]="t.id">{{ t.teamName }}</option>
-              </select>
-            </div>
-
-            <div class="form-group">
               <label for="assigneeUserId">Assign To</label>
               <select id="assigneeUserId" class="form-control" formControlName="assigneeUserId">
                 <option value="">Unassigned</option>
-                <option *ngFor="let u of (filteredAssignees.length ? filteredAssignees : users)" [value]="u.id">{{ getAssigneeName(u.id) }}</option>
+                <option *ngFor="let u of getAssignableUsers()" [value]="u.id">{{ u.name }}</option>
               </select>
             </div>
             
@@ -482,14 +480,11 @@
               />
             </div>
           </div>
-          <div class="modal-footer">
-            <button class="btn btn-secondary" type="button" (click)="closeModal()" [disabled]="isSaving">Cancel</button>
-            <button class="btn btn-primary" type="submit" [disabled]="form.invalid || isSaving">
-              <span *ngIf="!isSaving">{{ isEditMode ? 'Save Changes' : 'Create Task' }}</span>
-              <span *ngIf="isSaving" style="display:inline-flex;align-items:center;gap:6px;">Saving <span class="loading-spinner" style="width:16px;height:16px;border-width:2px;"></span></span>
-            </button>
-          </div>
         </form>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" type="button" (click)="closeModal()">Cancel</button>
+        <button class="btn btn-primary" type="button" (click)="saveTask()" [disabled]="form.invalid">{{ isEditMode ? 'Save Changes' : 'Create Task' }}</button>
       </div>
     </div>
   </div>
@@ -519,5 +514,4 @@
       </div>
     </div>
   </div>
-  </div> <!-- end content-wrapper -->
 </div>
