@@ -124,6 +124,10 @@ body{margin:0; font:14px/1.45 system-ui, -apple-system, Segoe UI, Roboto, "Helve
 .avatar{width:44px;height:44px;border-radius:50%;background:var(--color-brand-50);display:flex;align-items:center;justify-content:center;font-weight:600;color:var(--color-brand-600);font-size:.9rem}
 .user-info{display:flex;flex-direction:column;gap:.4rem}
 .user-top{display:flex;flex-direction:column;gap:.15rem}
+.user-metrics{display:flex;flex-wrap:wrap;gap:.5rem;margin-top:.25rem}
+.metric-item{display:inline-flex;align-items:center;gap:.25rem;font-size:.65rem;color:var(--color-gray-600);background:var(--color-gray-50);padding:.15rem .4rem;border-radius:.35rem;border:1px solid var(--color-gray-200)}
+.metric-label{font-weight:600;color:var(--color-gray-500)}
+.text-danger{color:var(--color-error-500)!important;background:#fef3f2!important;border-color:#fed7d7!important}
 .user-name{font-weight:600;color:var(--color-gray-800);font-size:.8rem}
 .small{font-size:.7rem}
 .progress-line{height:6px;background:var(--color-gray-100);border-radius:4px;overflow:hidden;position:relative}

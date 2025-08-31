@@ -26,7 +26,20 @@ export class SprintDetailsOrgComponent implements OnInit, AfterViewInit, OnDestr
 
   tasksData: Task[] = [];
   kanbanColumns: { key: string; title: string; class: string; items: any[] }[] = [];
-  userProgress: { initials: string; name: string; tasksDone: number; tasksTotal: number; ptsDone: number; ptsTotal: number; pct: number; utilization?: number; velocity?: number }[] = [];
+  userProgress: { 
+    initials: string; 
+    name: string; 
+    tasksDone: number; 
+    tasksTotal: number; 
+    ptsDone: number; 
+    ptsTotal: number; 
+    pct: number; 
+    utilization?: number; 
+    velocity?: number;
+    utilizationPercentage?: number;
+    velocityPointsPerDay?: number;
+    overAllocated?: boolean;
+  }[] = [];
   dummyUsers: any[] = [];
 
   private kpiChart?: Chart;
@@ -140,7 +153,10 @@ export class SprintDetailsOrgComponent implements OnInit, AfterViewInit, OnDestr
             ptsTotal: r.pointsTotal,
             pct,
             utilization: r.utilizationPercentage,
-            velocity: r.velocityPointsPerDay
+            velocity: r.velocityPointsPerDay,
+            utilizationPercentage: r.utilizationPercentage,
+            velocityPointsPerDay: r.velocityPointsPerDay,
+            overAllocated: r.overAllocated
           };
         });
         this.dummyUsers = this.userProgress;

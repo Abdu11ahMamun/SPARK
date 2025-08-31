@@ -56,12 +56,26 @@
           </div>
         </div>
         <div class="card">
-          <div class="card-header"><h2 class="card-title">User Progress</h2></div>
+          <div class="card-header"><h2 class="card-title">User Progress & Utilization</h2></div>
           <div class="card-body user-progress-list">
             <div class="user-row" *ngFor="let u of userProgress">
               <div class="avatar" [attr.aria-label]="u.name">{{ u.initials }}</div>
               <div class="user-info">
-                <div class="user-top"><span class="user-name">{{ u.name }}</span><span class="muted small">{{ u.tasksDone }}/{{ u.tasksTotal }} tasks • {{ u.ptsDone }}/{{ u.ptsTotal }} pts</span></div>
+                <div class="user-top">
+                  <span class="user-name">{{ u.name }}</span>
+                  <span class="muted small">{{ u.tasksDone }}/{{ u.tasksTotal }} tasks • {{ u.ptsDone }}/{{ u.ptsTotal }} pts</span>
+                </div>
+                <div class="user-metrics">
+                  <span class="metric-item" *ngIf="u.utilizationPercentage !== undefined">
+                    <span class="metric-label">Util:</span> {{ u.utilizationPercentage | number:'1.0-1' }}%
+                  </span>
+                  <span class="metric-item" *ngIf="u.velocityPointsPerDay !== undefined">
+                    <span class="metric-label">Velocity:</span> {{ u.velocityPointsPerDay | number:'1.0-2' }} pts/day
+                  </span>
+                  <span class="metric-item" *ngIf="u.overAllocated">
+                    <span class="text-danger">Over-allocated</span>
+                  </span>
+                </div>
                 <div class="progress-line"><span [style.width.%]="u.pct"></span></div>
               </div>
               <div class="pct">{{ u.pct }}%</div>
