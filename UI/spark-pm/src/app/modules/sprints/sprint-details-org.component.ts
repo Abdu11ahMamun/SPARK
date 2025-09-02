@@ -5,26 +5,31 @@ import { CommonModule } from '@angular/common';
 import { ActivatedRoute } from '@angular/router';
 import Chart from 'chart.js/auto';
 import { SprintService, SprintCapacitySummary, SprintUserProgress } from './sprint.service';
-import { TaskService, Task } from '../tasks/task.service';
+import { SprintAddTasksDialogComponent } from './sprint-add-tasks-dialog.component';
+import { TaskService } from '../tasks/task.service';
+import { TaskItem } from '../tasks/task.model';
 import { UserService } from '../users/user.service';
 import { User } from '../users/user.model';
+import { NotificationService } from '../../core/services/notification.service';
 
 @Component({
   selector: 'app-sprint-details-org',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, SprintAddTasksDialogComponent],
   templateUrl: './sprint-details-org.component.html',
   styleUrls: ['./sprint-details-org.component.scss']
 })
 export class SprintDetailsOrgComponent implements OnInit, AfterViewInit, OnDestroy {
   activeTab = 'summary';
+  showAddTasksDialog = false;
+  teamId: number | null = null; // TODO derive real team id
   sprintId: number | null = null;
   sprintSummary: SprintCapacitySummary | null = null;
   summary: SprintCapacitySummary | null = null; // legacy alias
   loading = false;
   error: string | null = null;
 
-  tasksData: Task[] = [];
+  tasksData: TaskItem[] = [];
   kanbanColumns: { key: string; title: string; class: string; items: any[] }[] = [];
   userProgress: { 
     initials: string; 
@@ -54,19 +59,22 @@ export class SprintDetailsOrgComponent implements OnInit, AfterViewInit, OnDestr
     private sprintService: SprintService,
     private taskService: TaskService,
     private userService: UserService,
+    private notification: NotificationService,
     private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit(): void {
     const idParam = this.route.snapshot.paramMap.get('id');
-    if (idParam) {
-      this.sprintId = parseInt(idParam, 10);
-      this.loadUsers();
-      this.loadSprintSummary();
-      this.loadSprintTasks();
-    } else {
-      this.error = 'Missing sprint id in route';
-    }
+    if (!idParam) { this.error = 'Missing sprint id in route'; return; }
+    this.sprintId = parseInt(idParam, 10);
+    // Derive team id from sprint details (tramId field) so dialog can query undone tasks
+    this.sprintService.getSprintById(this.sprintId).subscribe({
+      next: s => { this.teamId = (s as any).tramId ?? null; },
+      error: () => { /* non-fatal */ }
+    });
+    this.loadUsers();
+    this.loadSprintSummary();
+    this.loadSprintTasks();
   }
 
   ngAfterViewInit(): void { if (this.sprintSummary) this.initKpiChart(); }
@@ -77,6 +85,28 @@ export class SprintDetailsOrgComponent implements OnInit, AfterViewInit, OnDestr
     if (this.activeTab === 'summary' && tab !== 'summary' && this.kpiChart) { try { this.kpiChart.destroy(); } catch {}; this.kpiChart = undefined; }
     this.activeTab = tab;
     if (tab === 'summary') setTimeout(()=>this.initKpiChart(),0);
+  }
+
+  // UI action handlers
+  addTask(): void { this.openAddTasksDialog(); }
+  refreshData(): void { this.loadSprintSummary(); this.loadSprintTasks(); }
+  exportData(): void { /* placeholder */ }
+
+  openAddTasksDialog(): void {
+  this.showAddTasksDialog = true;
+  // Under zoneless change detection we need to manually flush the state change
+  this.cdr.detectChanges();
+  }
+
+  onTasksAdded(ids: number[]): void {
+    if (ids?.length) this.notification.success('Tasks Added', `${ids.length} task(s) added to sprint.`);
+    this.loadSprintTasks();
+    this.loadSprintSummary();
+  }
+
+  closeDialog(): void { 
+    this.showAddTasksDialog = false; 
+    this.cdr.detectChanges();
   }
 
   private loadUsers(): void {

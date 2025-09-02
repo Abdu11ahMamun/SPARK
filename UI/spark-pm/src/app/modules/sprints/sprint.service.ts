@@ -185,4 +185,14 @@ export class SprintService {
   getSprintUserProgress(sprintId: number) {
     return this.http.get<SprintUserProgress[]>(`${this.capacityUrl}/sprint/${sprintId}/user-progress`);
   }
+
+  // Backlog undone tasks (team scoped, excluding already in sprint)
+  getUndoneTasksByTeam(teamId: number) {
+    return this.http.get<any[]>(`http://localhost:8080/api/tasks/team/${teamId}/undone`);
+  }
+
+  // Assign selected tasks to sprint
+  assignTasksToSprint(sprintId: number, taskIds: number[]) {
+    return this.http.post<any[]>(`http://localhost:8080/api/tasks/assign-to-sprint?sprintId=${sprintId}`, taskIds);
+  }
 }

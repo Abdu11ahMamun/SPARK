@@ -1,1 +1,124 @@
+<div class="details-container">
+  <div class="details-header">
+    <button class="btn btn-secondary" (click)="back()">← Back</button>
+    <h1>Sprint Details</h1>
+    <div class="spacer"></div>
+  <!-- Add Tasks button removed (use Org component version) -->
+  </div>
 
+  <!-- Loading state -->
+  <div class="loading" *ngIf="isLoading">
+    <div class="skeleton kpi"></div>
+    <div class="skeleton grid"></div>
+  </div>
+
+  <!-- Error state -->
+  <div class="error-banner" *ngIf="isError && !isLoading">
+    <div>Failed to load sprint details.</div>
+    <button class="btn" (click)="fetchAll()">Retry</button>
+  </div>
+
+  <!-- Content -->
+  <div *ngIf="!isLoading" class="details-grid">
+
+    <!-- 1) Sprint Summary -->
+  <section class="card full">
+      <h2>Sprint Summary</h2>
+      <div class="summary-grid">
+        <div class="summary-card kpi-card">
+          <h3>KPI Infograph</h3>
+          <div class="kpis">
+            <div class="kpi"><div class="kpi-label">Total Tasks</div><div class="kpi-value">{{ tasks.length }}</div></div>
+            <div class="kpi"><div class="kpi-label">In Progress</div><div class="kpi-value">{{ taskCount('IN PROGRESS') }}</div></div>
+            <div class="kpi"><div class="kpi-label">Done</div><div class="kpi-value">{{ taskCount('DONE') }}</div></div>
+            <div class="kpi"><div class="kpi-label">Remaining</div><div class="kpi-value">{{ burndownRemaining() }}</div></div>
+          </div>
+        </div>
+        <div class="summary-card progress-card">
+          <h3>User Progress Bars</h3>
+          <div class="user-progress">
+            <div class="user-progress-item" *ngFor="let col of kanbanColumns">
+              <div class="up-title">{{ col.title }}</div>
+              <div class="up-bar"><div class="up-fill" [style.width.%]="(col.tasks.length || 0) * 10"></div></div>
+              <div class="up-meta">{{ col.tasks.length }} tasks</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 2) Tasks Table -->
+  <section class="card full">
+      <h2>Tasks Table</h2>
+      <div class="filters-row">
+        <input type="text" class="input" placeholder="Filter by title"/>
+        <select class="input">
+          <option value="">All Status</option>
+          <option>TODO</option>
+          <option>IN PROGRESS</option>
+          <option>REVIEW</option>
+          <option>DONE</option>
+        </select>
+        <button class="btn btn-secondary" disabled>Apply</button>
+      </div>
+  <div class="table-wrap">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Key</th>
+              <th>Title</th>
+              <th>Assignee</th>
+              <th>Status</th>
+              <th>Estimate</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let t of tasks">
+              <td>{{ t.key }}</td>
+              <td>{{ t.title }}</td>
+              <td>{{ t.assignee }}</td>
+              <td>{{ t.status }}</td>
+              <td>{{ t.estimate || '-' }}</td>
+              <td><button class="btn btn-small" disabled>Edit</button></td>
+            </tr>
+            <tr *ngIf="tasks.length === 0">
+              <td colspan="6" class="empty">No tasks yet</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 3) Kanban Board -->
+  <section class="card full">
+      <h2>Kanban Board</h2>
+      <div class="kanban">
+  <div class="column" *ngFor="let col of kanbanColumns">
+          <div class="col-header">{{ col.title }}</div>
+          <div class="col-body">
+            <div class="card-item" *ngFor="let t of col.tasks">
+              <div class="ci-title">{{ t.title }}</div>
+              <div class="ci-meta">{{ t.assignee }} • {{ t.estimate || '-' }}</div>
+            </div>
+            <div class="column-empty" *ngIf="col.tasks.length === 0">No cards</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 4) Burndown Chart -->
+    <section class="card full">
+      <h2>Burndown Chart</h2>
+      <div class="burndown">
+        <div class="axis x"></div>
+        <div class="axis y"></div>
+        <canvas #burndownCanvas aria-label="Burndown chart" role="img"></canvas>
+        <div class="placeholder" *ngIf="!burndown || burndown.labels.length===0">Ideal vs Actual progress</div>
+      </div>
+    </section>
+
+  </div>
+</div>
+
+<!-- Dialog removed from this legacy component -->
