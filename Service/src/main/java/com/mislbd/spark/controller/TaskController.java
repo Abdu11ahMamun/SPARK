@@ -70,7 +70,7 @@ public class TaskController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<BacklogTaskDto> getTaskById(@PathVariable Integer id) {
+    public ResponseEntity<BacklogTaskDto> getTaskById(@PathVariable("id") Integer id) {
         return backlogTaskService.getBacklogTaskById(id)
                 .map(task -> {
                     BacklogTaskDto dto = backlogTaskMapper.toDto(task);
@@ -189,6 +189,7 @@ public class TaskController {
         return tasks;
     }
 
+
     @GetMapping("/by-sprint/{sprintId}")
     public List<BacklogTaskDto> getTasksBySprint(@PathVariable Integer sprintId) {
         List<BacklogTaskDto> tasks = backlogTaskService.getAllBacklogTasks().stream()
@@ -208,16 +209,6 @@ public class TaskController {
         });
 
         return tasks;
-    }
-
-    /**
-     * Compatibility alias for frontend calling /api/tasks/sprint/{sprintId}
-     * (original endpoint was /api/tasks/by-sprint/{sprintId}).
-     * Consider deprecating once frontend adjusted.
-     */
-    @GetMapping("/sprint/{sprintId}")
-    public List<BacklogTaskDto> getTasksBySprintAlias(@PathVariable Integer sprintId) {
-        return getTasksBySprint(sprintId);
     }
 
     @GetMapping("/by-assignee/{assigneeId}")
@@ -272,5 +263,37 @@ public class TaskController {
         });
 
         return tasks;
+    }
+    // Get undone tasks for a team excluding those already in a sprint
+    @GetMapping("/team/{teamId}/undone")
+    public List<BacklogTaskDto> getUndoneTasksForTeam(
+            @PathVariable Integer teamId) {
+
+        return backlogTaskService
+                .getUndoneTasksByTeam(teamId)
+                .stream()
+                .map(backlogTaskMapper::toDto)
+                .peek(dto -> {
+                    if (dto.getTasktypeid() != null) {
+                        dto.setTaskType(dto.getTasktypeid());
+                    }
+                })
+                .collect(Collectors.toList());
+    }
+
+    // Bulk assign tasks to a sprint
+    @PostMapping("/assign-to-sprint")
+    public List<BacklogTaskDto> assignTasksToSprint(@RequestParam Integer sprintId, @RequestBody List<Integer> taskIds) {
+        return backlogTaskService.assignTasksToSprint(sprintId, taskIds).stream()
+                .map(backlogTaskMapper::toDto)
+                .peek(task -> {
+                    if (task.getTasktypeid() != null) {
+                        String typeString = ID_TO_TASK_TYPE.get(task.getTasktypeid());
+                        if (typeString != null) {
+                            task.setTaskType(task.getTasktypeid());
+                        }
+                    }
+                })
+                .collect(Collectors.toList());
     }
 }
