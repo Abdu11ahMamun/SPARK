@@ -88,7 +88,8 @@ public class SprintCapacityService {
                 .orElseThrow(() -> new RuntimeException("User not found with ID: " + capacityDto.getUserId()));
 
         // Calculate sprint duration
-        int sprintDurationDays = calculateSprintDurationFromLocalDate(sprint.getFromDate(), sprint.getToDate());
+      //  int sprintDurationDays = calculateSprintDurationFromLocalDate(sprint.getFromDate(), sprint.getToDate());
+        int sprintDurationDays = calculateSprintDuration(sprint.getFromDate(), sprint.getToDate());
 
         // Find existing capacity or create new
         SprintUserCapacity capacity = capacityRepository.findBySprintIdAndUserId(sprintId, capacityDto.getUserId())
@@ -335,7 +336,9 @@ public class SprintCapacityService {
 
     private SprintCapacitySummaryDto createEmptySummary(SprintInfo sprint) {
         int sprintDuration = calculateSprintDurationFromLocalDate(sprint.getFromDate(), sprint.getToDate());
+        //int sprintDuration = calculateSprintDuration(sprint.getFromDate(), sprint.getToDate());
         
+
         return SprintCapacitySummaryDto.builder()
                 .totalTeamMembers(0)
                 .activeMembers(0)
@@ -359,8 +362,11 @@ public class SprintCapacityService {
     }
 
     private SprintCapacitySummaryDto calculateCapacitySummary(SprintInfo sprint, List<SprintUserCapacity> capacities) {
+
         int sprintDuration = calculateSprintDurationFromLocalDate(sprint.getFromDate(), sprint.getToDate());
+        //int sprintDuration = calculateSprintDuration(sprint.getFromDate(), sprint.getToDate());
         
+
         // Basic counts
         int totalMembers = capacities.size();
         int membersWithLeave = (int) capacities.stream().filter(c -> c.getLeaveDays() > 0).count();

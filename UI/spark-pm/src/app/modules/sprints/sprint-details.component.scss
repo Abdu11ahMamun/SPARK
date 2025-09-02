@@ -149,3 +149,155 @@
   .kpi-card, .progress-card { grid-column: 1 / -1; }
   .kanban { grid-template-columns: 1fr; }
 }
+
+/* Additional UI Fixes */
+/* Ensure proper box-sizing for all elements */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+/* Fix potential overflow issues */
+.sprint-details-container {
+  overflow-x: hidden;
+}
+
+/* Improve tab pane visibility */
+.tab-pane {
+  &.active {
+    display: block !important;
+    opacity: 1;
+    visibility: visible;
+  }
+}
+
+/* Enhanced table responsiveness */
+.tasks-table-container {
+  overflow-x: auto;
+  max-width: 100%;
+  
+  .tasks-table {
+    min-width: 800px;
+    width: 100%;
+  }
+}
+
+/* Better kanban board layout */
+.kanban-board {
+  min-height: 500px;
+  
+  .kanban-column {
+    min-width: 280px;
+    
+    .column-body {
+      max-height: 400px;
+      overflow-y: auto;
+    }
+  }
+}
+
+/* Improved chart container */
+.chart-container {
+  position: relative;
+  width: 100%;
+  
+  canvas {
+    position: relative !important;
+    max-width: 100% !important;
+    height: auto !important;
+  }
+}
+
+/* Fix panel spacing */
+.panel {
+  min-height: 300px;
+  
+  .kpi-grid {
+    gap: 12px;
+  }
+  
+  .user-progress-list {
+    max-height: 350px;
+    overflow-y: auto;
+  }
+}
+
+/* Loading state improvements */
+.loading-state {
+  min-height: 400px;
+  
+  .loading-spinner {
+    .spinner {
+      margin: 0 auto 20px;
+    }
+  }
+}
+
+/* Better responsive breakpoints */
+@media (max-width: 1200px) {
+  .overview-grid {
+    gap: 20px;
+  }
+  
+  .kanban-board {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .sprint-info-card {
+    padding: 20px;
+  }
+  
+  .tab-button {
+    font-size: 0.75rem;
+    padding: 10px 12px;
+    
+    svg {
+      width: 14px;
+      height: 14px;
+    }
+  }
+  
+  .kpi-card {
+    padding: 16px;
+    
+    .kpi-icon {
+      width: 40px;
+      height: 40px;
+    }
+    
+    .kpi-content .kpi-value {
+      font-size: 1.5rem;
+    }
+  }
+}
+
+/* Accessibility improvements */
+.tab-button:focus,
+.btn:focus {
+  outline: 2px solid #667eea;
+  outline-offset: 2px;
+}
+
+/* Animation performance */
+.kanban-card {
+  will-change: transform;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+/* Print styles */
+@media print {
+  .sprint-details-container {
+    background: white;
+    box-shadow: none;
+  }
+  
+  .tab-navigation {
+    display: none;
+  }
+  
+  .tab-pane {
+    display: block !important;
+    page-break-inside: avoid;
+  }
+}

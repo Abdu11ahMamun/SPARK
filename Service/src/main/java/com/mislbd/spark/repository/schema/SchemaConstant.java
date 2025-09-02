@@ -16,5 +16,6 @@ public class SchemaConstant {
     public static final String MITS_DOCUMENTS_TABLE_NAME = TABLE_NAME_PREFIX + "MITS_DOCUMENTS";
 
     public static final String TEAM_MEMBERSHIP_TABLE_NAME = TABLE_NAME_PREFIX + "TEAM_MEMBERSHIP";
+    public static final String SPRINT_TABLE_NAME = TABLE_NAME_PREFIX + "SPRINT";
     // Add more as needed
 }

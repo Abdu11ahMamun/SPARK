@@ -91,6 +91,7 @@ public class TaskController {
         taskDto.setCreateddate(LocalDateTime.now());
         taskDto.setModifieddate(LocalDateTime.now());
 
+
         // Map string type to taskType ID for backend compatibility
         if (taskDto.getTaskType() != null) {
             Integer typeId = taskDto.getTaskType();
@@ -123,6 +124,7 @@ public class TaskController {
         return backlogTaskService.getBacklogTaskById(id)
                 .map(existing -> {
                     taskDto.setId(id);
+
                     taskDto.setModifieddate(LocalDateTime.now());
                     // Preserve creation date
                     taskDto.setCreateddate(existing.getCreateddate());

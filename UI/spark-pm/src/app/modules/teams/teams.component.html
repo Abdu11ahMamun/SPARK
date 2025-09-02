@@ -1,4 +1,4 @@
-<div class="teams-container">
+<div class="teams-container fade-in">
   <!-- Teams Header -->
   <div class="teams-header">
     <h1 class="teams-title">Team Management</h1>
@@ -173,16 +173,23 @@
       </tbody>
     </table>
     
-    <!-- Empty State -->
-    <div *ngIf="teams.length === 0 && !isLoading" class="empty-state">
-      <svg width="48" height="48" fill="none" stroke="currentColor" stroke-width="1" viewBox="0 0 24 24" style="margin-bottom: 1rem; opacity: 0.3;">
-        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-        <circle cx="9" cy="7" r="4"/>
-        <path d="m22 2-5 5m0-5 5 5"/>
+  </div>
+
+  <!-- Empty State -->
+  <div *ngIf="teams.length === 0 && !isLoading" class="empty-state">
+    <svg width="64" height="64" fill="none" stroke="currentColor" stroke-width="1" viewBox="0 0 24 24">
+      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+      <circle cx="9" cy="7" r="4"/>
+      <path d="m22 2-5 5m0-5 5 5"/>
+    </svg>
+    <h3>No teams found</h3>
+    <p>Start building your organization by creating your first team. Teams help organize your projects and collaboration.</p>
+    <button class="btn btn-primary" (click)="addTeam()">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <path d="M12 5v14M5 12h14"/>
       </svg>
-      <h3>No teams found</h3>
-      <p>Get started by creating your first team.</p>
-    </div>
+      Create First Team
+    </button>
   </div>
 </div>
 
