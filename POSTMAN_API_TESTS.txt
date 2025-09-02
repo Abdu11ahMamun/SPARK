@@ -1,0 +1,604 @@
+================================================================================
+                        SPARK PROJECT - POSTMAN API TEST COLLECTION
+================================================================================
+
+📋 BASE CONFIGURATION
+Base URL: http://localhost:8080
+Frontend URL: http://localhost:4200
+Date Created: August 24, 2025
+
+================================================================================
+                                🔧 SETUP INSTRUCTIONS
+================================================================================
+
+1. Start Backend Server:
+   cd E:\SPARK\Service
+   .\gradlew bootRun --quiet
+
+2. Start Frontend Server:
+   cd E:\SPARK\UI\spark-pm
+   ng serve
+
+3. Verify Services:
+   - Backend: http://localhost:8080/api/tasks
+   - Frontend: http://localhost:4200
+
+================================================================================
+                                📋 1. TASKS ENDPOINTS
+================================================================================
+
+--- GET All Tasks ---
+Method: GET
+URL: http://localhost:8080/api/tasks
+Headers: None
+
+--- GET Tasks by Sprint (Main Test Endpoint) ⭐ ---
+Method: GET
+URL: http://localhost:8080/api/tasks/sprint/101
+Headers: None
+
+--- GET Task by ID ---
+Method: GET
+URL: http://localhost:8080/api/tasks/1
+Headers: None
+
+--- POST Create Task (Primary Test Data) ⭐ ---
+Method: POST
+URL: http://localhost:8080/api/tasks
+Headers: Content-Type: application/json
+
+Body:
+{
+  "title": "Implement user authentication",
+  "description": "Add JWT-based authentication system with login/logout functionality",
+  "status": "TODO",
+  "priority": "HIGH",
+  "deadline": "2025-09-15T23:59:59Z",
+  "assignedto": 1,
+  "sprintid": 101,
+  "productid": 1,
+  "points": 8,
+  "tasktypeid": 1,
+  "productModuleId": 1,
+  "taskType": 1,
+  "createBy": "john.doe",
+  "teamId": 1
+}
+
+--- POST Create Task #2 for Sprint 101 ---
+Method: POST
+URL: http://localhost:8080/api/tasks
+Headers: Content-Type: application/json
+
+Body:
+{
+  "title": "Fix login page bug",
+  "description": "Resolve issue where password field doesn't clear after failed login",
+  "status": "IN_PROGRESS",
+  "priority": "MEDIUM",
+  "deadline": "2025-08-30T17:00:00Z",
+  "assignedto": 2,
+  "sprintid": 101,
+  "productid": 1,
+  "points": 3,
+  "tasktypeid": 2,
+  "productModuleId": 1,
+  "taskType": 2,
+  "createBy": "jane.smith",
+  "teamId": 1
+}
+
+--- POST Create Task #3 for Sprint 101 ---
+Method: POST
+URL: http://localhost:8080/api/tasks
+Headers: Content-Type: application/json
+
+Body:
+{
+  "title": "Update dashboard UI",
+  "description": "Modernize dashboard with new design system",
+  "status": "REVIEW",
+  "priority": "LOW",
+  "deadline": "2025-09-05T16:00:00Z",
+  "assignedto": 3,
+  "sprintid": 101,
+  "productid": 1,
+  "points": 5,
+  "tasktypeid": 3,
+  "productModuleId": 2,
+  "taskType": 3,
+  "createBy": "mike.jones",
+  "teamId": 1
+}
+
+--- POST Create Task #4 for Sprint 101 ---
+Method: POST
+URL: http://localhost:8080/api/tasks
+Headers: Content-Type: application/json
+
+Body:
+{
+  "title": "Database optimization",
+  "description": "Optimize database queries for better performance",
+  "status": "DONE",
+  "priority": "HIGH",
+  "deadline": "2025-08-28T18:00:00Z",
+  "assignedto": 4,
+  "sprintid": 101,
+  "productid": 1,
+  "points": 13,
+  "tasktypeid": 3,
+  "productModuleId": 3,
+  "taskType": 3,
+  "createBy": "alex.wilson",
+  "teamId": 1
+}
+
+--- PUT Update Task ---
+Method: PUT
+URL: http://localhost:8080/api/tasks/1
+Headers: Content-Type: application/json
+
+Body:
+{
+  "title": "Implement user authentication - Updated",
+  "description": "Add JWT-based authentication with 2FA support",
+  "status": "IN_PROGRESS",
+  "priority": "HIGH",
+  "deadline": "2025-09-20T23:59:59Z",
+  "assignedto": 1,
+  "sprintid": 101,
+  "productid": 1,
+  "points": 10,
+  "tasktypeid": 1,
+  "productModuleId": 1,
+  "taskType": 1,
+  "updateBy": "john.doe",
+  "teamId": 1
+}
+
+--- DELETE Task ---
+Method: DELETE
+URL: http://localhost:8080/api/tasks/1
+Headers: None
+
+================================================================================
+                                🏃‍♂️ 2. SPRINTS ENDPOINTS
+================================================================================
+
+--- GET All Sprints ---
+Method: GET
+URL: http://localhost:8080/api/sprints
+Headers: None
+
+--- GET Sprint by ID (Sprint 101) ⭐ ---
+Method: GET
+URL: http://localhost:8080/api/sprints/101
+Headers: None
+
+--- POST Create Sprint 101 (Required for Testing) ⭐ ---
+Method: POST
+URL: http://localhost:8080/api/sprints
+Headers: Content-Type: application/json
+
+Body:
+{
+  "id": 101,
+  "sprintName": "Sprint 2025-Q3-1",
+  "noOfHolidays": 2,
+  "fromDate": "2025-08-24",
+  "toDate": "2025-09-07",
+  "tramId": 1,
+  "sprintPoint": 50,
+  "sprintArchive": 0,
+  "detailsRemark": "Focus on user authentication and UI improvements",
+  "createBy": "scrum.master",
+  "status": 1,
+  "comments": "Initial sprint for Q3",
+  "sprintOutcome": "TBD"
+}
+
+--- POST Create Sprint 102 ---
+Method: POST
+URL: http://localhost:8080/api/sprints
+Headers: Content-Type: application/json
+
+Body:
+{
+  "id": 102,
+  "sprintName": "Sprint 2025-Q3-2",
+  "noOfHolidays": 1,
+  "fromDate": "2025-09-08",
+  "toDate": "2025-09-21",
+  "tramId": 1,
+  "sprintPoint": 45,
+  "sprintArchive": 0,
+  "detailsRemark": "Performance optimization and bug fixes",
+  "createBy": "scrum.master",
+  "status": 0,
+  "comments": "Planning phase",
+  "sprintOutcome": "TBD"
+}
+
+--- PUT Update Sprint ---
+Method: PUT
+URL: http://localhost:8080/api/sprints/101
+Headers: Content-Type: application/json
+
+Body:
+{
+  "sprintName": "Sprint 2025-Q3-1 - Updated",
+  "noOfHolidays": 3,
+  "fromDate": "2025-08-24",
+  "toDate": "2025-09-10",
+  "tramId": 1,
+  "sprintPoint": 55,
+  "sprintArchive": 0,
+  "detailsRemark": "Focus on user authentication, UI improvements, and testing",
+  "createBy": "scrum.master",
+  "status": 1,
+  "comments": "Updated scope with additional testing tasks",
+  "sprintOutcome": "In Progress"
+}
+
+--- DELETE Sprint ---
+Method: DELETE
+URL: http://localhost:8080/api/sprints/101
+Headers: None
+
+================================================================================
+                                👥 3. TEAMS ENDPOINTS
+================================================================================
+
+--- GET All Teams ---
+Method: GET
+URL: http://localhost:8080/api/teams
+Headers: None
+
+--- GET Team by ID ---
+Method: GET
+URL: http://localhost:8080/api/teams/1
+Headers: None
+
+--- POST Create Team (Frontend Team) ⭐ ---
+Method: POST
+URL: http://localhost:8080/api/teams
+Headers: Content-Type: application/json
+
+Body:
+{
+  "teamName": "Frontend Development Team",
+  "description": "Responsible for UI/UX development and frontend architecture",
+  "status": 1,
+  "pOwner": 1,
+  "sMaster": 2
+}
+
+--- POST Create Team (Backend Team) ---
+Method: POST
+URL: http://localhost:8080/api/teams
+Headers: Content-Type: application/json
+
+Body:
+{
+  "teamName": "Backend API Team",
+  "description": "Handles backend services, APIs, and database management",
+  "status": 1,
+  "pOwner": 3,
+  "sMaster": 4
+}
+
+--- POST Create Team (QA Team) ---
+Method: POST
+URL: http://localhost:8080/api/teams
+Headers: Content-Type: application/json
+
+Body:
+{
+  "teamName": "Quality Assurance Team",
+  "description": "Testing, quality control, and automation",
+  "status": 1,
+  "pOwner": 5,
+  "sMaster": 6
+}
+
+--- PUT Update Team ---
+Method: PUT
+URL: http://localhost:8080/api/teams/1
+Headers: Content-Type: application/json
+
+Body:
+{
+  "teamName": "Frontend Development Team - Updated",
+  "description": "Responsible for UI/UX development, frontend architecture, and mobile apps",
+  "status": 1,
+  "pOwner": 1,
+  "sMaster": 2
+}
+
+--- DELETE Team ---
+Method: DELETE
+URL: http://localhost:8080/api/teams/1
+Headers: None
+
+================================================================================
+                                👤 4. USERS ENDPOINTS
+================================================================================
+
+--- GET All Users ---
+Method: GET
+URL: http://localhost:8080/api/users
+Headers: None
+
+--- GET User by ID ---
+Method: GET
+URL: http://localhost:8080/api/users/1
+Headers: None
+
+--- POST Create User #1 (John Doe) ⭐ ---
+Method: POST
+URL: http://localhost:8080/api/users
+Headers: Content-Type: application/json
+
+Body:
+{
+  "username": "john.doe",
+  "email": "john.doe@company.com",
+  "role": "DEVELOPER",
+  "fullName": "John Doe",
+  "phone": "+1-555-0123",
+  "employeeId": "EMP001",
+  "teamId": 1,
+  "teamName": "Frontend Development Team"
+}
+
+--- POST Create User #2 (Jane Smith) ---
+Method: POST
+URL: http://localhost:8080/api/users
+Headers: Content-Type: application/json
+
+Body:
+{
+  "username": "jane.smith",
+  "email": "jane.smith@company.com",
+  "role": "SENIOR_DEVELOPER",
+  "fullName": "Jane Smith",
+  "phone": "+1-555-0124",
+  "employeeId": "EMP002",
+  "teamId": 1,
+  "teamName": "Frontend Development Team"
+}
+
+--- POST Create User #3 (Mike Jones) ---
+Method: POST
+URL: http://localhost:8080/api/users
+Headers: Content-Type: application/json
+
+Body:
+{
+  "username": "mike.jones",
+  "email": "mike.jones@company.com",
+  "role": "UI_DESIGNER",
+  "fullName": "Mike Jones",
+  "phone": "+1-555-0125",
+  "employeeId": "EMP003",
+  "teamId": 1,
+  "teamName": "Frontend Development Team"
+}
+
+--- POST Create User #4 (Alex Wilson) ---
+Method: POST
+URL: http://localhost:8080/api/users
+Headers: Content-Type: application/json
+
+Body:
+{
+  "username": "alex.wilson",
+  "email": "alex.wilson@company.com",
+  "role": "BACKEND_DEVELOPER",
+  "fullName": "Alex Wilson",
+  "phone": "+1-555-0126",
+  "employeeId": "EMP004",
+  "teamId": 2,
+  "teamName": "Backend API Team"
+}
+
+--- PUT Update User ---
+Method: PUT
+URL: http://localhost:8080/api/users/1
+Headers: Content-Type: application/json
+
+Body:
+{
+  "username": "john.doe",
+  "email": "john.doe@company.com",
+  "role": "SENIOR_DEVELOPER",
+  "fullName": "John Doe Sr.",
+  "phone": "+1-555-0123",
+  "employeeId": "EMP001",
+  "teamId": 1,
+  "teamName": "Frontend Development Team"
+}
+
+--- DELETE User ---
+Method: DELETE
+URL: http://localhost:8080/api/users/1
+Headers: None
+
+================================================================================
+                            🔍 5. SEARCH & FILTER ENDPOINTS
+================================================================================
+
+--- GET Tasks by Module ---
+Method: GET
+URL: http://localhost:8080/api/tasks/by-module/1
+Headers: None
+
+--- GET Tasks by Assignee ---
+Method: GET
+URL: http://localhost:8080/api/tasks/by-assignee/1
+Headers: None
+
+--- GET Search Tasks (Multiple Filters) ---
+Method: GET
+URL: http://localhost:8080/api/tasks/search?title=auth&status=TODO&priority=HIGH&sprintId=101
+Headers: None
+
+--- GET Search Tasks (Title Only) ---
+Method: GET
+URL: http://localhost:8080/api/tasks/search?title=login
+Headers: None
+
+--- GET Search Tasks (Status Only) ---
+Method: GET
+URL: http://localhost:8080/api/tasks/search?status=IN_PROGRESS
+Headers: None
+
+--- GET Search Tasks (Priority Only) ---
+Method: GET
+URL: http://localhost:8080/api/tasks/search?priority=HIGH
+Headers: None
+
+================================================================================
+                                📝 6. TESTING SEQUENCE
+================================================================================
+
+🚀 COMPLETE TESTING WORKFLOW (Run in this order):
+
+1. Create Sprint 101:
+   POST /api/sprints (Sprint 101 body)
+
+2. Create Team:
+   POST /api/teams (Frontend Development Team body)
+
+3. Create Users:
+   POST /api/users (John Doe body)
+   POST /api/users (Jane Smith body)
+   POST /api/users (Mike Jones body)
+   POST /api/users (Alex Wilson body)
+
+4. Create Tasks for Sprint 101:
+   POST /api/tasks (Task #1 - Authentication)
+   POST /api/tasks (Task #2 - Login Bug Fix)
+   POST /api/tasks (Task #3 - Dashboard UI)
+   POST /api/tasks (Task #4 - Database Optimization)
+
+5. Verify Data:
+   GET /api/tasks/sprint/101
+   GET /api/sprints/101
+
+6. Test Frontend:
+   Open: http://localhost:4200/sprints/101
+
+================================================================================
+                                ⚡ 7. QUICK CURL COMMANDS
+================================================================================
+
+--- Test Backend Health ---
+curl http://localhost:8080/api/tasks
+
+--- Test Sprint 101 Tasks ---
+curl http://localhost:8080/api/tasks/sprint/101
+
+--- Create Quick Test Task ---
+curl -X POST http://localhost:8080/api/tasks \
+  -H "Content-Type: application/json" \
+  -d "{\"title\":\"Quick Test Task\",\"status\":\"TODO\",\"sprintid\":101,\"points\":5}"
+
+--- Create Sprint 101 (Quick) ---
+curl -X POST http://localhost:8080/api/sprints \
+  -H "Content-Type: application/json" \
+  -d "{\"id\":101,\"sprintName\":\"Test Sprint\",\"fromDate\":\"2025-08-24\",\"toDate\":\"2025-09-07\",\"status\":1}"
+
+================================================================================
+                                📊 8. REFERENCE DATA
+================================================================================
+
+🏷️ STATUS VALUES:
+- TODO
+- IN_PROGRESS
+- REVIEW
+- DONE
+
+🔥 PRIORITY VALUES:
+- LOW
+- MEDIUM
+- HIGH
+
+🎯 TASK TYPE IDS:
+- 1 = FEATURE
+- 2 = BUG
+- 3 = IMPROVEMENT
+- 4 = DOCUMENTATION
+- 5 = RESEARCH
+- 6 = TESTING
+
+📈 SPRINT STATUS:
+- 0 = Planning
+- 1 = Active
+- 2 = Completed
+
+👥 USER ROLES:
+- DEVELOPER
+- SENIOR_DEVELOPER
+- UI_DESIGNER
+- BACKEND_DEVELOPER
+- SCRUM_MASTER
+- PRODUCT_OWNER
+
+================================================================================
+                                🎯 9. EXPECTED RESULTS
+================================================================================
+
+✅ SUCCESSFUL RESPONSES:
+- GET requests: Return 200 OK with JSON data
+- POST requests: Return 201 Created with created object
+- PUT requests: Return 200 OK with updated object
+- DELETE requests: Return 204 No Content
+
+📊 SPRINT 101 FRONTEND BEHAVIOR:
+- Empty Sprint: Shows "No Tasks Available" message
+- With Tasks: Displays KPI cards, task table, Kanban board, burndown chart
+- Tab Navigation: Overview, Tasks, Kanban Board, Burndown Chart
+- Task Filtering: By title, status, assignee
+
+🚨 ERROR RESPONSES:
+- 404 Not Found: Resource doesn't exist
+- 400 Bad Request: Invalid request body
+- 500 Internal Server Error: Server-side issues
+
+================================================================================
+                            💡 10. TROUBLESHOOTING TIPS
+================================================================================
+
+🔧 COMMON ISSUES:
+
+1. CORS Errors:
+   - Ensure backend has @CrossOrigin annotation
+   - Check browser console for CORS messages
+
+2. 404 Errors:
+   - Verify backend is running on port 8080
+   - Check endpoint URLs match controller mappings
+
+3. Empty Data:
+   - Confirm database connection
+   - Check entity relationships and foreign keys
+
+4. Frontend Not Loading:
+   - Verify Angular dev server on port 4200
+   - Check browser console for JavaScript errors
+
+5. Task Not Showing in Sprint:
+   - Verify sprintid matches in task creation
+   - Check GET /api/tasks/sprint/101 returns data
+
+================================================================================
+                                🎉 END OF TEST COLLECTION
+================================================================================
+
+File Created: August 24, 2025
+Location: E:\SPARK\POSTMAN_API_TESTS.txt
+Purpose: Complete API testing reference for SPARK Project
+
+Happy Testing! 🚀🎯💻

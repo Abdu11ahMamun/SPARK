@@ -1,6 +1,5 @@
 package com.mislbd.spark.entity;
 
-import com.mislbd.spark.repository.schema.SchemaConstant;
 import jakarta.persistence.*;
 import lombok.*;
 import org.springframework.data.annotation.CreatedDate;

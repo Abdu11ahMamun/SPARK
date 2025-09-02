@@ -1,0 +1,10 @@
+{
+  "title": "Sample Task for Sprint 101",
+  "description": "This is a test task to verify the API is working",
+  "status": "TODO",
+  "priority": "MEDIUM",
+  "estimate": "2",
+  "assignee": "Test User",
+  "sprintid": 101,
+  "tasktypeid": 1
+}

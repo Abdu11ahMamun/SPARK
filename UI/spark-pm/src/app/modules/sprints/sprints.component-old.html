@@ -1,0 +1,602 @@
+<div class="sprint-management-container">
+  <!-- Header Section -->
+  <div class="sprint-header">
+    <div class="sprint-title-section">
+      <h1 class="sprint-title">Sprint Management</h1>
+      <div class="header-actions">
+        <button 
+          *ngIf="!showForm" 
+          (click)="showSprintCreationModal()" 
+          class="btn btn-primary">
+          <i class="fas fa-plus"></i> Create New Sprint
+        </button>
+        <button 
+          *ngIf="!showForm" 
+          (click)="showCreateForm()" 
+          class="btn btn-secondary">
+          <i class="fas fa-edit"></i> Quick Sprint
+        </button>
+      </div>
+    </div>
+    
+    <!-- Current Sprint Summary -->
+    <div *ngIf="currentSprint" class="current-sprint-summary">
+      <div class="sprint-info-card">
+        <h2>{{ currentSprint.sprintName }}</h2>
+        <div class="sprint-dates">
+          <span class="date-range">{{ formatDate(currentSprint.fromDate) }} - {{ formatDate(currentSprint.toDate) }}</span>
+          <span class="days-info">{{ getSprintDays(currentSprint) }} days ({{ currentSprint.noOfHolidays }} holidays excluded)</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Error Message -->
+  <div *ngIf="error" class="alert alert-danger">
+    {{ error }}
+    <button type="button" class="btn-close" (click)="dismissError()"></button>
+  </div>
+
+  <!-- Professional Sprint Creation Dialog -->
+  <div *ngIf="showSprintCreationDialog" class="sprint-creation-modal">
+    <div class="modal-backdrop"></div>
+    <div class="modal-content">
+      <div class="modal-header">
+        <div class="tab-navigation">
+          <div class="tab active">Sprint Declare</div>
+          <div class="tab">Sprint Task Info</div>
+        </div>
+        <div class="modal-actions">
+          <button (click)="createSprintWithUsers()" [disabled]="!sprintCreationForm.valid || sprintUsers.length === 0" class="btn btn-success">
+            Create
+          </button>
+          <button (click)="closeSprintCreationModal()" class="btn btn-cancel">
+            Cancel
+          </button>
+        </div>
+      </div>
+
+      <div class="modal-body">
+        <div class="sprint-declare-section">
+          <h3 class="section-title">Sprint Declare</h3>
+          
+          <form [formGroup]="sprintCreationForm" class="sprint-creation-form">
+            <div class="form-row">
+              <div class="form-group">
+                <label for="teamSelect">Team Name</label>
+                <select 
+                  id="teamSelect" 
+                  formControlName="teamId" 
+                  (change)="onTeamChange()"
+                  class="form-control">
+                  <option value="">Select Team</option>
+                  <option *ngFor="let team of availableTeams" [value]="team.id">
+                    {{ team.name }}
+                  </option>
+                </select>
+              </div>
+              
+              <div class="form-group">
+                <label for="sprintNameInput">Sprint Name</label>
+                <input 
+                  type="text" 
+                  id="sprintNameInput" 
+                  formControlName="sprintName" 
+                  class="form-control"
+                  placeholder="Team - Investment Team | Sprint - 01">
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="fromDateInput">From Date</label>
+                <input 
+                  type="date" 
+                  id="fromDateInput" 
+                  formControlName="fromDate" 
+                  (change)="onDateChange()"
+                  class="form-control">
+              </div>
+              
+              <div class="form-group">
+                <label for="toDateInput">To Date</label>
+                <input 
+                  type="date" 
+                  id="toDateInput" 
+                  formControlName="toDate" 
+                  (change)="onDateChange()"
+                  class="form-control">
+                <div class="date-info" *ngIf="sprintCreationForm.get('fromDate')?.value && sprintCreationForm.get('toDate')?.value">
+                  Total Sprint: {{ calculateTotalDays() }} Days
+                </div>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="holidaysInput">No Of Holidays</label>
+                <input 
+                  type="number" 
+                  id="holidaysInput" 
+                  formControlName="noOfHolidays" 
+                  (change)="onDateChange()"
+                  class="form-control"
+                  min="0">
+              </div>
+              
+              <div class="form-group">
+                <label for="sprintPointInput">Sprint Point</label>
+                <input 
+                  type="number" 
+                  id="sprintPointInput" 
+                  formControlName="sprintPoint" 
+                  class="form-control"
+                  min="0">
+              </div>
+            </div>
+
+            <div class="form-row full-width">
+              <div class="form-group">
+                <label for="detailsInput">Details Remark</label>
+                <textarea 
+                  id="detailsInput" 
+                  formControlName="detailsRemark" 
+                  class="form-control"
+                  rows="3"
+                  placeholder="Enter sprint details and remarks"></textarea>
+              </div>
+            </div>
+          </form>
+        </div>
+
+        <!-- Team Users Management Section -->
+        <div class="users-management-section" *ngIf="selectedTeam">
+          <h3 class="section-title users-title">No Of Users</h3>
+          
+          <div class="users-table-container">
+            <table class="users-table">
+              <thead>
+                <tr>
+                  <th>Sl</th>
+                  <th>User Name</th>
+                  <th>User Capacity</th>
+                  <th>Leave Days</th>
+                  <th>Total Working Hour</th>
+                  <th>User Working Hour</th>
+                  <th></th>
+                  <th>Remove</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let user of sprintUsers; let i = index" class="user-row">
+                  <td>{{ i + 1 }}</td>
+                  <td>{{ user.name }}</td>
+                  <td>
+                    <input 
+                      type="number" 
+                      [(ngModel)]="user.userCapacity"
+                      (change)="updateUserCapacity(user)"
+                      class="capacity-input"
+                      min="0" 
+                      max="100">
+                  </td>
+                  <td>
+                    <input 
+                      type="number" 
+                      [(ngModel)]="user.leaveDays"
+                      (change)="updateUserLeaveDays(user)"
+                      class="leave-input"
+                      min="0">
+                  </td>
+                  <td class="working-hours">{{ user.totalWorkingHours }}</td>
+                  <td class="user-working-hours">{{ user.userWorkingHours }}</td>
+                  <td>
+                    <input 
+                      type="checkbox" 
+                      [(ngModel)]="user.isActive"
+                      class="user-checkbox">
+                  </td>
+                  <td>
+                    <button 
+                      (click)="removeUser(i)" 
+                      class="btn btn-remove">
+                      <i class="fas fa-trash"></i>
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="team-summary" *ngIf="sprintUsers.length > 0">
+            <div class="summary-card">
+              <h4>Team Capacity Summary</h4>
+              <div class="summary-details">
+                <div class="summary-item">
+                  <span class="label">Total Team Members:</span>
+                  <span class="value">{{ sprintUsers.length }}</span>
+                </div>
+                <div class="summary-item">
+                  <span class="label">Total Team Working Hours:</span>
+                  <span class="value">{{ getTotalWorkingHours() }} hours</span>
+                </div>
+                <div class="summary-item">
+                  <span class="label">Average Capacity:</span>
+                  <span class="value">{{ getAverageCapacity() | number:'1.1-1' }}%</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="pagination-controls">
+            <span class="page-info">1 - {{ sprintUsers.length }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sprint Form -->
+  <div *ngIf="showForm" class="sprint-form-container">
+    <div class="form-header">
+      <h3>{{ isEditing ? 'Edit Sprint' : 'Create New Sprint' }}</h3>
+      <button type="button" (click)="cancelForm()" class="btn btn-secondary">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+    
+    <form [formGroup]="sprintForm" (ngSubmit)="onSubmit()" class="sprint-form">
+      <div class="form-grid">
+        <div class="form-group">
+          <label for="sprintName">Sprint Name *</label>
+          <input 
+            type="text" 
+            id="sprintName" 
+            formControlName="sprintName" 
+            class="form-control"
+            placeholder="e.g., Sprint 33">
+        </div>
+
+        <div class="form-group">
+          <label for="tramId">Team ID *</label>
+          <input 
+            type="number" 
+            id="tramId" 
+            formControlName="tramId" 
+            class="form-control"
+            placeholder="Team ID">
+        </div>
+
+        <div class="form-group">
+          <label for="fromDate">Start Date *</label>
+          <input 
+            type="date" 
+            id="fromDate" 
+            formControlName="fromDate" 
+            class="form-control">
+        </div>
+
+        <div class="form-group">
+          <label for="toDate">End Date *</label>
+          <input 
+            type="date" 
+            id="toDate" 
+            formControlName="toDate" 
+            class="form-control">
+        </div>
+
+        <div class="form-group">
+          <label for="sprintPoint">Sprint Points *</label>
+          <input 
+            type="number" 
+            id="sprintPoint" 
+            formControlName="sprintPoint" 
+            class="form-control"
+            placeholder="Total story points">
+        </div>
+
+        <div class="form-group">
+          <label for="noOfHolidays">Holidays Count</label>
+          <input 
+            type="number" 
+            id="noOfHolidays" 
+            formControlName="noOfHolidays" 
+            class="form-control"
+            placeholder="Number of holidays">
+        </div>
+
+        <div class="form-group full-width">
+          <label for="detailsRemark">Details & Remarks</label>
+          <textarea 
+            id="detailsRemark" 
+            formControlName="detailsRemark" 
+            class="form-control"
+            rows="3"
+            placeholder="Sprint details and remarks"></textarea>
+        </div>
+
+        <div class="form-group full-width">
+          <label for="comments">Comments</label>
+          <textarea 
+            id="comments" 
+            formControlName="comments" 
+            class="form-control"
+            rows="2"
+            placeholder="Additional comments"></textarea>
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <button type="submit" [disabled]="!sprintForm.valid || loading" class="btn btn-primary">
+          <i class="fas fa-save"></i>
+          {{ isEditing ? 'Update Sprint' : 'Create Sprint' }}
+        </button>
+        <button type="button" (click)="cancelForm()" class="btn btn-secondary">
+          Cancel
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Sprint Details View -->
+  <div *ngIf="selectedSprint && !showForm" class="sprint-details-container">
+    
+    <!-- Sprint Header Info -->
+    <div class="sprint-details-header">
+      <div class="sprint-title-row">
+        <h2>{{ selectedSprint.sprintName }}</h2>
+        <div class="sprint-actions">
+          <button (click)="editSprint(selectedSprint)" class="btn btn-outline-primary btn-sm">
+            <i class="fas fa-edit"></i> Edit
+          </button>
+          <button (click)="deleteSprint(selectedSprint)" class="btn btn-outline-danger btn-sm">
+            <i class="fas fa-trash"></i> Delete
+          </button>
+          <button (click)="exportSprintReport()" class="btn btn-outline-success btn-sm">
+            <i class="fas fa-file-excel"></i> Export
+          </button>
+        </div>
+      </div>
+      
+      <div class="sprint-meta-info">
+        <div class="meta-item">
+          <span class="label">Duration:</span>
+          <span class="value">{{ getSprintDuration(selectedSprint) }}</span>
+        </div>
+        <div class="meta-item">
+          <span class="label">Sprint Calendar:</span>
+          <span class="value">{{ formatDate(selectedSprint.fromDate) }} - {{ formatDate(selectedSprint.toDate) }}</span>
+        </div>
+        <div class="meta-item">
+          <span class="label">Product Owner:</span>
+          <span class="value">{{ sprintDetails?.productOwner || 'Mr. Afsan' }}</span>
+        </div>
+        <div class="meta-item">
+          <span class="label">Scrum Master:</span>
+          <span class="value">{{ sprintDetails?.scrumMaster || 'Mr. Saleh' }}</span>
+        </div>
+        <div class="meta-item">
+          <span class="label">Team Velocity:</span>
+          <span class="value">{{ sprintDetails?.teamVelocity || 'Pts.' }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sprint Summary Section -->
+    <div class="sprint-summary-section">
+      <div class="summary-cards">
+        <div class="summary-card">
+          <h4>Total</h4>
+          <div class="card-content">
+            <div class="assigned-points">
+              <span class="number">{{ sprintDetails?.totalTasks || 40 }}</span>
+              <span class="label">Total Tasks</span>
+            </div>
+            <div class="completed-points">
+              <span class="number">{{ sprintDetails?.assignedPoints || 221 }}</span>
+              <span class="label">Assigned Points</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="summary-card">
+          <h4>Progress</h4>
+          <div class="card-content">
+            <div class="task-assigned">
+              <span class="number">{{ sprintDetails?.tasksAssigned || 33 }}</span>
+              <span class="label">Tasks Assigned</span>
+            </div>
+            <div class="task-completed">
+              <span class="number">{{ sprintDetails?.tasksCompleted || 1 }}</span>
+              <span class="label">Tasks Completed</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="summary-card achievement">
+          <h4>Achievement</h4>
+          <div class="card-content">
+            <div class="achievement-percent">
+              <span class="number">{{ getAchievementPercentage() }}%</span>
+              <span class="label">SPI = {{ getSPI() }}</span>
+            </div>
+            <div class="velocity-info">
+              <span class="number">{{ sprintDetails?.currentVelocity || '08.64%' }}</span>
+              <span class="label">Current Velocity</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Task Breakdown Table -->
+    <div class="task-breakdown-section">
+      <h3>Task Breakdown</h3>
+      <div class="table-container">
+        <table class="sprint-table">
+          <thead>
+            <tr>
+              <th>MITS ID</th>
+              <th>Assignment</th>
+              <th>Task Type</th>
+              <th>Product</th>
+              <th>Client</th>
+              <th>Release Sprint</th>
+              <th>Priority</th>
+              <th>Task Category</th>
+              <th>Point Person</th>
+              <th>Status</th>
+              <th>Story Size</th>
+              <th>Time Est.</th>
+              <th>Completed</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let task of sprintTasks; let i = index" [class.completed]="task.status === 'Completed'">
+              <td>{{ task.mitsId }}</td>
+              <td class="task-description">{{ task.assignment }}</td>
+              <td>
+                <span class="task-type" [class]="task.taskType.toLowerCase()">{{ task.taskType }}</span>
+              </td>
+              <td>{{ task.product }}</td>
+              <td>{{ task.client }}</td>
+              <td>{{ task.releaseSprint }}</td>
+              <td>
+                <span class="priority" [class]="task.priority.toLowerCase()">{{ task.priority }}</span>
+              </td>
+              <td>{{ task.taskCategory }}</td>
+              <td>{{ task.pointPerson }}</td>
+              <td>
+                <span class="status" [class]="task.status.toLowerCase().replace(' ', '-')">{{ task.status }}</span>
+              </td>
+              <td class="text-center">{{ task.storySize }}</td>
+              <td class="text-center">{{ task.timeEstimate }}</td>
+              <td class="text-center">{{ task.completed }}</td>
+              <td class="actions">
+                <button (click)="editTask(task)" class="btn btn-sm btn-outline-primary">
+                  <i class="fas fa-edit"></i>
+                </button>
+                <button (click)="deleteTask(task)" class="btn btn-sm btn-outline-danger">
+                  <i class="fas fa-trash"></i>
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Team Performance Chart -->
+    <div class="team-performance-section">
+      <h3>Assigned (Points) and Completed (Points)</h3>
+      <div class="chart-container">
+        <canvas #teamChart id="teamChart" width="800" height="400"></canvas>
+      </div>
+    </div>
+
+    <!-- Burn Down Chart -->
+    <div class="burndown-section">
+      <h3>Burn Down Chart</h3>
+      <div class="chart-container">
+        <canvas #burndownChart id="burndownChart" width="800" height="400"></canvas>
+      </div>
+      
+      <div class="burndown-table">
+        <table class="sprint-table">
+          <thead>
+            <tr>
+              <th>Sprint Days</th>
+              <th>No. of Tasks Remain</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let day of burndownData">
+              <td>{{ day.date }}</td>
+              <td>{{ day.tasksRemaining }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Sprint Goal Section -->
+    <div class="sprint-goal-section">
+      <h3>Sprint Goal [{{ formatDate(selectedSprint.fromDate) }} to {{ formatDate(selectedSprint.toDate) }}]</h3>
+      <div class="goal-items">
+        <div *ngFor="let goal of sprintGoals" class="goal-item" [class.completed]="goal.completed">
+          <div class="goal-header">
+            <span class="goal-type">{{ goal.type }}</span>
+            <span class="goal-status" [class.completed]="goal.completed">
+              {{ goal.status }}
+            </span>
+          </div>
+          <div class="goal-description">{{ goal.description }}</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Sprint List View (when no sprint is selected) -->
+  <div *ngIf="!selectedSprint && !showForm" class="sprint-list-container">
+    <div class="list-header">
+      <h3>All Sprints</h3>
+      <div class="list-actions">
+        <input 
+          type="text" 
+          [(ngModel)]="searchTerm" 
+          placeholder="Search sprints..." 
+          class="search-input">
+        <select [(ngModel)]="statusFilter" class="status-filter">
+          <option value="">All Status</option>
+          <option value="1">Active</option>
+          <option value="0">Inactive</option>
+          <option value="2">Completed</option>
+        </select>
+      </div>
+    </div>
+
+    <div *ngIf="loading" class="loading-spinner">
+      <i class="fas fa-spinner fa-spin"></i> Loading sprints...
+    </div>
+
+    <div class="sprint-cards">
+      <div 
+        *ngFor="let sprint of filteredSprints" 
+        class="sprint-card"
+        (click)="selectSprint(sprint)">
+        <div class="card-header">
+          <h4>{{ sprint.sprintName }}</h4>
+          <span class="status-badge" [class]="getStatusClass(sprint.status)">
+            {{ getStatusText(sprint.status) }}
+          </span>
+        </div>
+        <div class="card-content">
+          <div class="sprint-info">
+            <div class="info-item">
+              <i class="fas fa-calendar"></i>
+              {{ formatDate(sprint.fromDate) }} - {{ formatDate(sprint.toDate) }}
+            </div>
+            <div class="info-item">
+              <i class="fas fa-users"></i>
+              Team {{ sprint.tramId }}
+            </div>
+            <div class="info-item">
+              <i class="fas fa-chart-line"></i>
+              {{ sprint.sprintPoint }} points
+            </div>
+          </div>
+          <div class="card-actions">
+            <button (click)="editSprint(sprint); $event.stopPropagation()" class="btn btn-sm btn-outline-primary">
+              <i class="fas fa-edit"></i>
+            </button>
+            <button (click)="deleteSprint(sprint); $event.stopPropagation()" class="btn btn-sm btn-outline-danger">
+              <i class="fas fa-trash"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

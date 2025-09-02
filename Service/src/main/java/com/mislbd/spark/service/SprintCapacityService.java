@@ -49,8 +49,8 @@ public class SprintCapacityService {
         // Create Sprint Info
         SprintInfo sprintInfo = SprintInfo.builder()
                 .sprintName(sprintDto.getSprintName())
-                .fromDate(sprintDto.getFromDate().atStartOfDay().toInstant(java.time.ZoneOffset.UTC))
-                .toDate(sprintDto.getToDate().atStartOfDay().toInstant(java.time.ZoneOffset.UTC))
+                .fromDate(sprintDto.getFromDate())
+                .toDate(sprintDto.getToDate())
                 .tramId(sprintDto.getTramId())
                 .sprintPoint(sprintDto.getSprintPoint())
                 .detailsRemark(sprintDto.getDetailsRemark())
@@ -86,7 +86,7 @@ public class SprintCapacityService {
                 .orElseThrow(() -> new RuntimeException("User not found with ID: " + capacityDto.getUserId()));
 
         // Calculate sprint duration
-        int sprintDurationDays = calculateSprintDurationFromInstant(sprint.getFromDate(), sprint.getToDate());
+        int sprintDurationDays = calculateSprintDuration(sprint.getFromDate(), sprint.getToDate());
 
         // Find existing capacity or create new
         SprintUserCapacity capacity = capacityRepository.findBySprintIdAndUserId(sprintId, capacityDto.getUserId())
@@ -275,8 +275,8 @@ public class SprintCapacityService {
     }
 
     private SprintCapacitySummaryDto createEmptySummary(SprintInfo sprint) {
-        int sprintDuration = calculateSprintDurationFromInstant(sprint.getFromDate(), sprint.getToDate());
-        
+        int sprintDuration = calculateSprintDuration(sprint.getFromDate(), sprint.getToDate());
+
         return SprintCapacitySummaryDto.builder()
                 .totalTeamMembers(0)
                 .activeMembers(0)
@@ -300,8 +300,8 @@ public class SprintCapacityService {
     }
 
     private SprintCapacitySummaryDto calculateCapacitySummary(SprintInfo sprint, List<SprintUserCapacity> capacities) {
-        int sprintDuration = calculateSprintDurationFromInstant(sprint.getFromDate(), sprint.getToDate());
-        
+        int sprintDuration = calculateSprintDuration(sprint.getFromDate(), sprint.getToDate());
+
         // Basic counts
         int totalMembers = capacities.size();
         int membersWithLeave = (int) capacities.stream().filter(c -> c.getLeaveDays() > 0).count();
