@@ -1,10 +1,11 @@
-import { Component, OnInit, AfterViewInit, OnDestroy, ElementRef, ViewChild } from '@angular/core';
+import { Component, OnInit, AfterViewInit, OnDestroy, ElementRef, ViewChild, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { SprintService, Sprint } from './sprint.service';
 import { TaskService } from '../tasks/task.service';
-import { forkJoin } from 'rxjs';
+import { forkJoin, Subscription } from 'rxjs';
+import { delay } from 'rxjs/operators';
 import Chart from 'chart.js/auto';
 
 @Component({
@@ -20,6 +21,8 @@ export class SprintDetailsComponent implements OnInit, AfterViewInit, OnDestroy 
   isError = false;
   hasNoData = false; // Track when sprint has no tasks
   activeTab = 'overview'; // overview, tasks, kanban, burndown
+  
+  private routeSubscription: Subscription = new Subscription();
 
   // Placeholders to be wired to services later
   sprint: Sprint | null = null;
@@ -46,21 +49,26 @@ export class SprintDetailsComponent implements OnInit, AfterViewInit, OnDestroy 
     private route: ActivatedRoute,
     private router: Router,
     private sprintService: SprintService,
-    private taskService: TaskService
+    private taskService: TaskService,
+    private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit(): void {
-    const id = Number(this.route.snapshot.paramMap.get('id'));
-    console.log('ngOnInit - Route id param:', this.route.snapshot.paramMap.get('id'), 'Parsed id:', id);
-    if (!isNaN(id)) {
-      this.sprintId = id;
-      console.log('SprintId set to:', this.sprintId);
-    } else {
-      console.error('Invalid sprint ID');
-    }
-
-    // Load sprint and tasks
-    this.fetchAll();
+    // Subscribe to route parameter changes to handle direct navigation
+    this.routeSubscription = this.route.paramMap.subscribe(params => {
+      const id = Number(params.get('id'));
+      console.log('ngOnInit - Route id param:', params.get('id'), 'Parsed id:', id);
+      if (!isNaN(id)) {
+        this.sprintId = id;
+        console.log('SprintId set to:', this.sprintId);
+        // Load sprint and tasks whenever the route parameter changes
+        this.fetchAll();
+      } else {
+        console.error('Invalid sprint ID');
+        this.isLoading = false;
+        this.isError = true;
+      }
+    });
   }
 
   back(): void {
@@ -83,13 +91,26 @@ export class SprintDetailsComponent implements OnInit, AfterViewInit, OnDestroy 
 
   fetchAll(): void {
     console.log('fetchAll called for sprintId:', this.sprintId);
+    
+    // Ensure we have a valid sprint ID
+    if (!this.sprintId) {
+      console.error('No valid sprint ID available');
+      this.isLoading = false;
+      this.isError = true;
+      return;
+    }
+    
     this.isLoading = true;
     this.isError = false;
     this.hasNoData = false;
+    
+    // Add a small delay to ensure component is fully initialized
     forkJoin({
       sprint: this.sprintService.getSprintById(this.sprintId),
-  tasks: this.taskService.getTasksBySprint(this.sprintId)
-    }).subscribe({
+      tasks: this.taskService.getTasksBySprint(this.sprintId)
+    }).pipe(
+      delay(100) // Small delay to ensure component is ready
+    ).subscribe({
       next: ({ sprint, tasks }) => {
         console.log('Data received - Sprint:', sprint, 'Tasks:', tasks);
         this.sprint = sprint;
@@ -99,6 +120,9 @@ export class SprintDetailsComponent implements OnInit, AfterViewInit, OnDestroy 
         this.groupTasksToKanban();
         this.buildBurndown();
         this.isLoading = false;
+        
+        // Trigger change detection to ensure UI updates
+        this.cdr.detectChanges();
       },
       error: (error) => {
         console.error('Error fetching data:', error);
@@ -221,6 +245,7 @@ export class SprintDetailsComponent implements OnInit, AfterViewInit, OnDestroy 
 
   ngOnDestroy(): void {
     if (this.chart) { this.chart.destroy(); }
+    this.routeSubscription.unsubscribe();
   }
 
   // Tab functionality
