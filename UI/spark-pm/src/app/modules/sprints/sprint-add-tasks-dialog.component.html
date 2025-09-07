@@ -1,0 +1,79 @@
+<div class="dialog-backdrop" *ngIf="open">
+  <div class="dialog-shell">
+    <div class="dialog-header">
+      <h3>Add Tasks To Sprint {{ sprintId }}</h3>
+      <button class="icon-btn" (click)="closeDialog()" aria-label="Close">✕</button>
+    </div>
+    <div class="dialog-filters">
+      <input class="form-control" placeholder="Search title or MITS" [(ngModel)]="search" (input)="apply()" />
+      <select class="form-control" [(ngModel)]="statusFilter" (change)="apply()">
+        <option value="">All Status</option>
+        <option value="OPEN">OPEN</option>
+        <option value="IN_PROGRESS">IN_PROGRESS</option>
+        <option value="BLOCKED">BLOCKED</option>
+      </select>
+      <select class="form-control" [(ngModel)]="priorityFilter" (change)="apply()">
+        <option value="">All Priority</option>
+        <option value="LOW">LOW</option>
+        <option value="MEDIUM">MEDIUM</option>
+        <option value="HIGH">HIGH</option>
+        <option value="CRITICAL">CRITICAL</option>
+      </select>
+      <select class="form-control" [(ngModel)]="typeFilter" (change)="apply()">
+        <option value="">All Types</option>
+        <option value="1">FEATURE</option>
+        <option value="2">BUG</option>
+        <option value="3">IMPROVEMENT</option>
+        <option value="4">DOCUMENTATION</option>
+        <option value="5">RESEARCH</option>
+        <option value="6">TESTING</option>
+      </select>
+      <button class="btn btn-sm" type="button" (click)="load()">Refresh</button>
+    </div>
+    <div class="dialog-body" *ngIf="!loading; else loadingTpl">
+      <div class="table-wrapper">
+        <table class="task-table">
+          <thead>
+            <tr>
+              <th><input type="checkbox" [checked]="isAllSelected()" (change)="toggleAll($event.target.checked)" /></th>
+              <th>MITS No</th>
+              <th>Title</th>
+              <th>Module</th>
+              <th>Task Type</th>
+              <th>Assignee</th>
+              <th>Status</th>
+              <th>Priority</th>
+              <th>Deadline</th>
+              <th>Points</th>
+              <th>Team</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let t of filtered">
+              <td><input type="checkbox" [checked]="selectedIds.has(t.id)" (change)="toggle(t.id, $event.target.checked)" /></td>
+              <td>{{ t.mitsNo }}</td>
+              <td>{{ t.title }}</td>
+              <td>{{ t.productModuleId || '—' }}</td>
+              <td>{{ t.taskType }}</td>
+              <td>{{ t.assigneeUserId || '—' }}</td>
+              <td>{{ t.status }}</td>
+              <td>{{ t.priority }}</td>
+              <td>{{ t.deadline | date:'yyyy-MM-dd' }}</td>
+              <td>{{ t.points || 0 }}</td>
+              <td>{{ t.teamId || '—' }}</td>
+            </tr>
+            <tr *ngIf="!filtered.length">
+              <td colspan="11" class="empty">No matching tasks</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="dialog-footer">
+      <div class="summary">{{ selectedIds.size }} selected</div>
+      <button class="btn btn-secondary" type="button" (click)="closeDialog()">Cancel</button>
+      <button class="btn btn-primary" type="button" (click)="assign()" [disabled]="assigning || !selectedIds.size">Assign</button>
+    </div>
+  </div>
+</div>
+<ng-template #loadingTpl><div class="loading">Loading tasks…</div></ng-template>

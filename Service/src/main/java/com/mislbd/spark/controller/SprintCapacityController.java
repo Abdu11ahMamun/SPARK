@@ -18,6 +18,7 @@ import java.util.List;
  */
 @RestController
 @RequestMapping("/api/sprint-capacity")
+@CrossOrigin(origins = "*", allowCredentials = "false")
 @RequiredArgsConstructor
 @Slf4j
 @Validated

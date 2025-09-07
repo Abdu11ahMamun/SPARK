@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { tap } from 'rxjs/operators';
 import { TeamMember } from '../teams/team.model';
 
 // Inline interfaces to avoid module resolution issues
@@ -93,6 +94,24 @@ export interface SprintCreation {
   capacitySummary?: SprintCapacitySummary;
 }
 
+export interface SprintUserProgress {
+  userId: number;
+  userName: string;
+  totalWorkingHours: number;
+  availableWorkingHours: number;
+  allocatedHours: number;
+  remainingHours: number;
+  utilizationPercentage: number;
+  overAllocated: boolean;
+  tasksTotal: number;
+  tasksDone: number;
+  pointsTotal: number;
+  pointsDone: number;
+  completionPercentage: number;
+  pointsCompletionPercentage: number;
+  velocityPointsPerDay: number;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -132,7 +151,19 @@ export class SprintService {
   }
 
   getSprintCapacitySummary(sprintId: number): Observable<SprintCapacitySummary> {
-    return this.http.get<SprintCapacitySummary>(`${this.capacityUrl}/sprint/${sprintId}/summary`);
+    const url = `${this.capacityUrl}/sprint/${sprintId}/summary`;
+    console.log('SprintService: Making HTTP request to:', url);
+    console.log('SprintService: Base capacity URL:', this.capacityUrl);
+    
+    return this.http.get<SprintCapacitySummary>(url).pipe(
+      tap(response => {
+        console.log('SprintService: HTTP response received:', response);
+      }),
+      tap(
+        response => console.log('SprintService: Success tap:', response),
+        error => console.error('SprintService: Error tap:', error)
+      )
+    );
   }
 
   createSprintWithCapacity(sprintData: any): Observable<Sprint> {
@@ -149,5 +180,19 @@ export class SprintService {
 
   updateUserAllocation(sprintId: number, userId: number, allocatedHours: number): Observable<SprintUserCapacity> {
     return this.http.put<SprintUserCapacity>(`${this.capacityUrl}/sprint/${sprintId}/user/${userId}/allocation?allocatedHours=${allocatedHours}`, {});
+  }
+
+  getSprintUserProgress(sprintId: number) {
+    return this.http.get<SprintUserProgress[]>(`${this.capacityUrl}/sprint/${sprintId}/user-progress`);
+  }
+
+  // Backlog undone tasks (team scoped, excluding already in sprint)
+  getUndoneTasksByTeam(teamId: number) {
+    return this.http.get<any[]>(`http://localhost:8080/api/tasks/team/${teamId}/undone`);
+  }
+
+  // Assign selected tasks to sprint
+  assignTasksToSprint(sprintId: number, taskIds: number[]) {
+    return this.http.post<any[]>(`http://localhost:8080/api/tasks/assign-to-sprint?sprintId=${sprintId}`, taskIds);
   }
 }
