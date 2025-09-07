@@ -66,18 +66,18 @@ public class SprintInfoService {
     @Transactional
     public SprintInfo saveSprintInfo(SprintInfo sprintInfo) {
         log.info("Saving sprint information: {}", sprintInfo.getSprintName());
-        
+
         // Set creation time if new entity
         if (sprintInfo.getId() == null) {
             sprintInfo.setCreateTime(Instant.now());
         }
-        
+
         // Validate business rules
         validateSprintDates(sprintInfo);
-        
+
         SprintInfo savedSprint = sprintInfoRepository.save(sprintInfo);
         log.info("Successfully saved sprint with ID: {}", savedSprint.getId());
-        
+
         return savedSprint;
     }
 
@@ -88,12 +88,12 @@ public class SprintInfoService {
     @Transactional
     public void deleteSprintInfo(Integer id) {
         log.info("Deleting sprint information with ID: {}", id);
-        
+
         if (!sprintInfoRepository.existsById(id)) {
             log.warn("Attempted to delete non-existent sprint with ID: {}", id);
             throw new RuntimeException("Sprint not found with ID: " + id);
         }
-        
+
         sprintInfoRepository.deleteById(id);
         log.info("Successfully deleted sprint with ID: {}", id);
     }

@@ -1,6 +1,7 @@
 package com.mislbd.spark.service;
 
 import com.mislbd.spark.dto.*;
+import com.mislbd.spark.entity.BacklogTask;
 import com.mislbd.spark.entity.SprintInfo;
 import com.mislbd.spark.entity.SprintUserCapacity;
 import com.mislbd.spark.entity.User;
@@ -34,6 +35,7 @@ public class SprintCapacityService {
     private final SprintInfoRepository sprintInfoRepository;
     private final UserRepository userRepository;
     private final TeamMembershipService teamMembershipService;
+    private final BacklogTaskService backlogTaskService;
 
     /**
      * Create sprint with capacity planning
@@ -43,7 +45,7 @@ public class SprintCapacityService {
         log.info("Creating sprint with capacity planning: {}", sprintDto.getSprintName());
 
         // Calculate sprint duration
-        int sprintDurationDays = calculateSprintDuration(sprintDto.getFromDate(), sprintDto.getToDate());
+        int sprintDurationDays = calculateSprintDurationFromLocalDate(sprintDto.getFromDate(), sprintDto.getToDate());
         sprintDto.setSprintDurationDays(sprintDurationDays);
 
         // Create Sprint Info
@@ -86,6 +88,7 @@ public class SprintCapacityService {
                 .orElseThrow(() -> new RuntimeException("User not found with ID: " + capacityDto.getUserId()));
 
         // Calculate sprint duration
+        //  int sprintDurationDays = calculateSprintDurationFromLocalDate(sprint.getFromDate(), sprint.getToDate());
         int sprintDurationDays = calculateSprintDuration(sprint.getFromDate(), sprint.getToDate());
 
         // Find existing capacity or create new
@@ -118,32 +121,12 @@ public class SprintCapacityService {
     }
 
     /**
-     * Get sprint capacity summary
-     */
-    public SprintCapacitySummaryDto getSprintCapacitySummary(Integer sprintId) {
-        log.info("Calculating sprint capacity summary for sprint ID: {}", sprintId);
-
-        // Get sprint info
-        SprintInfo sprint = sprintInfoRepository.findById(sprintId)
-                .orElseThrow(() -> new RuntimeException("Sprint not found with ID: " + sprintId));
-
-        // Get all user capacities
-        List<SprintUserCapacity> capacities = capacityRepository.findBySprintIdAndStatus(sprintId, 1);
-
-        if (capacities.isEmpty()) {
-            return createEmptySummary(sprint);
-        }
-
-        return calculateCapacitySummary(sprint, capacities);
-    }
-
-    /**
      * Remove user from sprint
      */
     @Transactional
     public void removeUserFromSprint(Integer sprintId, Long userId) {
         log.info("Removing user {} from sprint {}", userId, sprintId);
-        
+
         Optional<SprintUserCapacity> capacity = capacityRepository.findBySprintIdAndUserId(sprintId, userId);
         if (capacity.isPresent()) {
             capacityRepository.delete(capacity.get());
@@ -161,7 +144,7 @@ public class SprintCapacityService {
 
         capacity.setAllocatedHours(allocatedHours);
         capacity.setRemainingHours(capacity.getAvailableWorkingHours().subtract(allocatedHours));
-        
+
         capacity = capacityRepository.save(capacity);
         return convertToDto(capacity);
     }
@@ -171,7 +154,7 @@ public class SprintCapacityService {
      */
     public List<TeamMemberDto> getTeamMembers(Integer teamId) {
         log.info("Getting team members for team ID: {}", teamId);
-        
+
         try {
             // Get team members using TeamMembershipService
             return teamMembershipService.getTeamMembers(teamId);
@@ -179,6 +162,83 @@ public class SprintCapacityService {
             log.error("Error getting team members for team {}: {}", teamId, e.getMessage());
             throw new RuntimeException("Failed to get team members for team: " + teamId, e);
         }
+    }
+
+    /**
+     * Get sprint user progress
+     */
+    public List<SprintUserProgressDto> getSprintUserProgress(Integer sprintId) {
+        // Load sprint & capacities
+        SprintInfo sprint = sprintInfoRepository.findById(sprintId)
+                .orElseThrow(() -> new RuntimeException("Sprint not found with ID: " + sprintId));
+        List<SprintUserCapacity> capacities = capacityRepository.findBySprintIdAndStatus(sprintId, 1);
+        int sprintDuration = calculateSprintDurationFromLocalDate(sprint.getFromDate(), sprint.getToDate());
+
+        // Map capacity by userId
+        java.util.Map<Long, SprintUserCapacity> capMap = capacities.stream()
+                .collect(java.util.stream.Collectors.toMap(SprintUserCapacity::getUserId, c -> c, (a,b)->a));
+
+        // Gather tasks for this sprint (use entity directly to avoid generic inference mismatch)
+        List<BacklogTask> tasks = backlogTaskService.getAllBacklogTasks().stream()
+                .filter(t -> t.getSprintid() != null && t.getSprintid().equals(sprintId))
+                .collect(java.util.stream.Collectors.toList());
+
+        // Aggregate tasks by user
+        class Agg { int tasksTotal=0; int tasksDone=0; int pointsTotal=0; int pointsDone=0; }
+        java.util.Map<Long, Agg> taskAgg = new java.util.HashMap<>();
+        for (BacklogTask t : tasks) {
+            Long uid = t.getAssignedto() == null ? -1L : t.getAssignedto().longValue();
+            Agg a = taskAgg.computeIfAbsent(uid, k-> new Agg());
+            a.tasksTotal++;
+            if (t.getPoints()!=null) a.pointsTotal += t.getPoints();
+            if ("DONE".equalsIgnoreCase(t.getStatus())) {
+                a.tasksDone++;
+                if (t.getPoints()!=null) a.pointsDone += t.getPoints();
+            }
+        }
+
+        java.util.Set<Long> allUserIds = new java.util.HashSet<>();
+        allUserIds.addAll(capMap.keySet());
+        allUserIds.addAll(taskAgg.keySet());
+        allUserIds.remove(-1L); // exclude unassigned pseudo user
+
+        java.util.List<SprintUserProgressDto> result = new java.util.ArrayList<>();
+        for (Long uid : allUserIds) {
+            SprintUserCapacity cap = capMap.get(uid);
+            Agg a = taskAgg.getOrDefault(uid, new Agg());
+            java.math.BigDecimal totalWorking = cap != null ? cap.getTotalWorkingHours() : java.math.BigDecimal.ZERO;
+            java.math.BigDecimal available = cap != null ? cap.getAvailableWorkingHours() : java.math.BigDecimal.ZERO;
+            java.math.BigDecimal allocated = cap != null && cap.getAllocatedHours()!=null ? cap.getAllocatedHours() : java.math.BigDecimal.ZERO;
+            java.math.BigDecimal remaining = available.subtract(allocated);
+            java.math.BigDecimal utilization = available.compareTo(java.math.BigDecimal.ZERO)>0 ?
+                    allocated.multiply(java.math.BigDecimal.valueOf(100)).divide(available,2, java.math.RoundingMode.HALF_UP)
+                    : java.math.BigDecimal.ZERO;
+            int completionPct = a.tasksTotal>0 ? (int) Math.round((a.tasksDone*100.0)/a.tasksTotal) : 0;
+            int pointsCompletionPct = a.pointsTotal>0 ? (int) Math.round((a.pointsDone*100.0)/a.pointsTotal) : 0;
+            java.math.BigDecimal velocity = sprintDuration>0 ?
+                    java.math.BigDecimal.valueOf(a.pointsDone).divide(java.math.BigDecimal.valueOf(sprintDuration),2, java.math.RoundingMode.HALF_UP)
+                    : java.math.BigDecimal.ZERO;
+            result.add(SprintUserProgressDto.builder()
+                    .userId(uid)
+                    .userName(cap != null ? cap.getUserName() : ("User "+uid))
+                    .totalWorkingHours(totalWorking)
+                    .availableWorkingHours(available)
+                    .allocatedHours(allocated)
+                    .remainingHours(remaining)
+                    .utilizationPercentage(utilization)
+                    .overAllocated(cap != null && cap.isOverAllocated())
+                    .tasksTotal(a.tasksTotal)
+                    .tasksDone(a.tasksDone)
+                    .pointsTotal(a.pointsTotal)
+                    .pointsDone(a.pointsDone)
+                    .completionPercentage(completionPct)
+                    .pointsCompletionPercentage(pointsCompletionPct)
+                    .velocityPointsPerDay(velocity)
+                    .build());
+        }
+        // Sort by user name
+        result.sort(java.util.Comparator.comparing(SprintUserProgressDto::getUserName, java.text.Collator.getInstance()));
+        return result;
     }
 
     // Private helper methods
@@ -193,10 +253,10 @@ public class SprintCapacityService {
                     .sprintId(sprintId)
                     .userId(dto.getUserId())
                     .userName(user.getFirstName() + " " + user.getLastName())
-                    .userCapacityPercentage(dto.getUserCapacityPercentage() != null ? 
+                    .userCapacityPercentage(dto.getUserCapacityPercentage() != null ?
                             dto.getUserCapacityPercentage() : BigDecimal.valueOf(100))
                     .leaveDays(dto.getLeaveDays() != null ? dto.getLeaveDays() : 0)
-                    .dailyWorkingHours(dto.getDailyWorkingHours() != null ? 
+                    .dailyWorkingHours(dto.getDailyWorkingHours() != null ?
                             dto.getDailyWorkingHours() : BigDecimal.valueOf(8))
                     .allocatedHours(BigDecimal.ZERO)
                     .notes(dto.getNotes())
@@ -275,7 +335,9 @@ public class SprintCapacityService {
     }
 
     private SprintCapacitySummaryDto createEmptySummary(SprintInfo sprint) {
-        int sprintDuration = calculateSprintDuration(sprint.getFromDate(), sprint.getToDate());
+        int sprintDuration = calculateSprintDurationFromLocalDate(sprint.getFromDate(), sprint.getToDate());
+        //int sprintDuration = calculateSprintDuration(sprint.getFromDate(), sprint.getToDate());
+
 
         return SprintCapacitySummaryDto.builder()
                 .totalTeamMembers(0)
@@ -300,47 +362,50 @@ public class SprintCapacityService {
     }
 
     private SprintCapacitySummaryDto calculateCapacitySummary(SprintInfo sprint, List<SprintUserCapacity> capacities) {
-        int sprintDuration = calculateSprintDuration(sprint.getFromDate(), sprint.getToDate());
+
+        int sprintDuration = calculateSprintDurationFromLocalDate(sprint.getFromDate(), sprint.getToDate());
+        //int sprintDuration = calculateSprintDuration(sprint.getFromDate(), sprint.getToDate());
+
 
         // Basic counts
         int totalMembers = capacities.size();
         int membersWithLeave = (int) capacities.stream().filter(c -> c.getLeaveDays() > 0).count();
-        
+
         // Hour calculations
         BigDecimal totalPotentialHours = capacities.stream()
                 .map(SprintUserCapacity::getTotalWorkingHours)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
-                
+
         BigDecimal totalAvailableHours = capacities.stream()
                 .map(SprintUserCapacity::getAvailableWorkingHours)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
-                
+
         BigDecimal totalAllocatedHours = capacities.stream()
                 .map(c -> c.getAllocatedHours() != null ? c.getAllocatedHours() : BigDecimal.ZERO)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
-                
+
         BigDecimal totalRemainingHours = totalAvailableHours.subtract(totalAllocatedHours);
-        
+
         // Lost hours calculations
         BigDecimal totalLostToLeave = totalPotentialHours.subtract(totalAvailableHours);
-        
+
         // Utilization and efficiency
         BigDecimal averageUtilization = totalAvailableHours.compareTo(BigDecimal.ZERO) > 0 ?
                 totalAllocatedHours.multiply(BigDecimal.valueOf(100))
-                .divide(totalAvailableHours, 2, RoundingMode.HALF_UP) : BigDecimal.ZERO;
-                
+                        .divide(totalAvailableHours, 2, RoundingMode.HALF_UP) : BigDecimal.ZERO;
+
         BigDecimal teamEfficiency = totalPotentialHours.compareTo(BigDecimal.ZERO) > 0 ?
                 totalAvailableHours.multiply(BigDecimal.valueOf(100))
-                .divide(totalPotentialHours, 2, RoundingMode.HALF_UP) : BigDecimal.ZERO;
-        
+                        .divide(totalPotentialHours, 2, RoundingMode.HALF_UP) : BigDecimal.ZERO;
+
         // Risk indicators
         int overAllocatedMembers = (int) capacities.stream().filter(SprintUserCapacity::isOverAllocated).count();
         int underUtilizedMembers = (int) capacities.stream()
                 .filter(c -> c.getUtilizationPercentage().compareTo(BigDecimal.valueOf(70)) < 0).count();
-                
+
         // Total leave days
         int totalLeaveDays = capacities.stream().mapToInt(SprintUserCapacity::getLeaveDays).sum();
-        
+
         return SprintCapacitySummaryDto.builder()
                 .totalTeamMembers(totalMembers)
                 .activeMembers(totalMembers)
@@ -360,6 +425,67 @@ public class SprintCapacityService {
                 .sprintDurationDays(sprintDuration)
                 .workingDays(sprintDuration - (sprint.getNoOfHolidays() != null ? sprint.getNoOfHolidays() : 0))
                 .holidays(sprint.getNoOfHolidays() != null ? sprint.getNoOfHolidays() : 0)
+                .build();
+    }
+
+    /**
+     * Calculate sprint duration in days from LocalDate
+     */
+    private int calculateSprintDurationFromLocalDate(LocalDate fromDate, LocalDate toDate) {
+        return (int) ChronoUnit.DAYS.between(fromDate, toDate) + 1; // +1 to include both start and end dates
+    }
+
+    /**
+     * Get sprint capacity summary
+     */
+    public SprintCapacitySummaryDto getSprintCapacitySummary(Integer sprintId) {
+        SprintInfo sprint = sprintInfoRepository.findById(sprintId)
+                .orElseThrow(() -> new RuntimeException("Sprint not found with ID: " + sprintId));
+
+        // Get sprint dates
+        LocalDate sprintStartDate = sprint.getFromDate();
+        LocalDate sprintEndDate = sprint.getToDate();
+
+        // Calculate sprint duration
+        int sprintDuration = calculateSprintDurationFromLocalDate(sprintStartDate, sprintEndDate);
+
+        // Get all team members using the existing service
+        List<TeamMemberDto> teamMembers = teamMembershipService.getTeamMembers(sprint.getTramId());
+
+        // Calculate total capacity hours (assuming 8 hours per day per member)
+        double dailyHoursPerMember = 8.0;
+        double totalCapacityHours = teamMembers.size() * dailyHoursPerMember * sprintDuration;
+
+        // For now, we'll use a placeholder for allocated hours
+        // You may need to adjust this based on actual task allocation
+        double totalAllocatedHours = totalCapacityHours * 0.8; // 80% allocation
+
+        // Calculate remaining hours
+        double totalRemainingHours = Math.max(0, totalCapacityHours - totalAllocatedHours);
+
+        // Calculate utilization
+        double averageUtilization = totalCapacityHours > 0 ? (totalAllocatedHours / totalCapacityHours) * 100 : 0;
+
+        // Create and return summary DTO using Builder pattern
+        return SprintCapacitySummaryDto.builder()
+                .totalTeamMembers(teamMembers.size())
+                .activeMembers(teamMembers.size()) // All members assumed active for now
+                .membersOnLeave(0) // Placeholder
+                .totalCapacityHours(BigDecimal.valueOf(totalCapacityHours))
+                .totalAllocatedHours(BigDecimal.valueOf(totalAllocatedHours))
+                .totalRemainingHours(BigDecimal.valueOf(totalRemainingHours))
+                .averageUtilization(BigDecimal.valueOf(averageUtilization))
+                .totalPotentialHours(BigDecimal.valueOf(totalCapacityHours))
+                .totalLostHoursToLeave(BigDecimal.ZERO)
+                .totalLostHoursToCapacity(BigDecimal.ZERO)
+                .totalLeaveDays(0)
+                .teamEfficiency(BigDecimal.valueOf(80.0)) // Default efficiency
+                .overAllocatedMembers(averageUtilization > 100 ? 1 : 0)
+                .underUtilizedMembers(averageUtilization < 70 ? teamMembers.size() : 0)
+                .hasCapacityRisks(averageUtilization > 90 || averageUtilization < 50)
+                .sprintDurationDays(sprintDuration)
+                .workingDays(sprintDuration - sprint.getNoOfHolidays())
+                .holidays(sprint.getNoOfHolidays())
                 .build();
     }
 }

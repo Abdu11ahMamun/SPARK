@@ -77,7 +77,7 @@ public interface SprintUserCapacityRepository extends JpaRepository<SprintUserCa
         AND suc.status = 1 
         AND (suc.allocatedHours * 100 / suc.availableWorkingHours) < :utilizationThreshold
         """)
-    List<SprintUserCapacity> findUnderUtilizedMembers(@Param("sprintId") Integer sprintId, 
+    List<SprintUserCapacity> findUnderUtilizedMembers(@Param("sprintId") Integer sprintId,
                                                       @Param("utilizationThreshold") Double utilizationThreshold);
 
     /**

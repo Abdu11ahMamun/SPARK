@@ -11,13 +11,13 @@ import java.util.List;
 
 @Repository
 public interface TeamMembershipRepository extends JpaRepository<TeamMembership, TeamMembershipId> {
-    
+
     @Query("SELECT tm FROM TeamMembership tm WHERE tm.team.id = :teamId")
     List<TeamMembership> findByTeamId(@Param("teamId") Integer teamId);
-    
+
     @Query("SELECT tm FROM TeamMembership tm WHERE tm.user.id = :userId")
     List<TeamMembership> findByUserId(@Param("userId") Long userId);
-    
+
     @Query("SELECT COUNT(tm) FROM TeamMembership tm WHERE tm.team.id = :teamId")
     Long countByTeamId(@Param("teamId") Integer teamId);
 }

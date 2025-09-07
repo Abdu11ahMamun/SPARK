@@ -18,6 +18,7 @@ import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/teams")
+@CrossOrigin(origins = "*", allowCredentials = "false")
 public class TeamController {
     private final TeamService teamService;
     private final TeamMapper teamMapper;

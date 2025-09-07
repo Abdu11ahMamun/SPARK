@@ -64,7 +64,7 @@ public class UserService {
 
     public List<User> searchUsers(String searchTerm) {
         return userRepository.findByFirstNameContainingIgnoreCaseOrLastNameContainingIgnoreCaseOrUsernameContainingIgnoreCaseOrEmailContainingIgnoreCase(
-            searchTerm, searchTerm, searchTerm, searchTerm
+                searchTerm, searchTerm, searchTerm, searchTerm
         );
     }
 }

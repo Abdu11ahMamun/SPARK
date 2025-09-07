@@ -20,15 +20,15 @@ import java.util.stream.Collectors;
 @Service
 @Transactional
 public class TeamMembershipService {
-    
+
     private final TeamMembershipRepository teamMembershipRepository;
     private final TeamRepository teamRepository;
     private final UserRepository userRepository;
 
     @Autowired
-    public TeamMembershipService(TeamMembershipRepository teamMembershipRepository, 
-                                TeamRepository teamRepository, 
-                                UserRepository userRepository) {
+    public TeamMembershipService(TeamMembershipRepository teamMembershipRepository,
+                                 TeamRepository teamRepository,
+                                 UserRepository userRepository) {
         this.teamMembershipRepository = teamMembershipRepository;
         this.teamRepository = teamRepository;
         this.userRepository = userRepository;
@@ -71,7 +71,7 @@ public class TeamMembershipService {
     public TeamMemberDto addTeamMember(Integer teamId, Integer userId, String role) {
         Team team = teamRepository.findById(teamId)
                 .orElseThrow(() -> new RuntimeException("Team not found"));
-        
+
         User user = userRepository.findById(Long.valueOf(userId))
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
@@ -113,7 +113,7 @@ public class TeamMembershipService {
     private TeamMemberDto convertToDto(TeamMembership membership) {
         User user = membership.getUser();
         String fullName = buildFullName(user.getFirstName(), user.getMiddleName(), user.getLastName());
-        
+
         return TeamMemberDto.builder()
                 .id(user.getId().intValue())
                 .userId(user.getId().intValue())
