@@ -13,6 +13,7 @@ import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/product-modules")
+@CrossOrigin(origins = "*", allowCredentials = "false")
 public class ProductModuleController {
     private final ProductModuleService productModuleService;
     private final ProductModuleMapper productModuleMapper;

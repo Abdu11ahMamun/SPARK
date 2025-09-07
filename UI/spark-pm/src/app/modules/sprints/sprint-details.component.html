@@ -127,11 +127,11 @@
           </svg>
           <h3>No Tasks Available</h3>
           <p>This sprint doesn't have any tasks assigned yet. Tasks will appear here once they are created and assigned to this sprint.</p>
-          <button class="btn btn-primary" disabled>
+          <button class="btn btn-primary" (click)="addTask()">
             <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
               <path d="M12 5v14m7-7H5"/>
             </svg>
-            Add Task (Coming Soon)
+            Add Task
           </button>
         </div>
       </div>
@@ -223,7 +223,7 @@
         <div class="tasks-section">
           <div class="tasks-header">
             <h3>Tasks Table</h3>
-            <button class="btn btn-primary" disabled>
+            <button class="btn btn-primary" (click)="addTask()">
               <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                 <path d="M12 5v14m7-7H5"/>
               </svg>
@@ -263,66 +263,47 @@
             <button class="btn btn-secondary" (click)="clearFilters()">Clear Filters</button>
           </div>
 
-          <div class="tasks-table-container">
-            <table class="tasks-table">
+          <div class="table-responsive">
+            <table class="table" aria-label="Tasks table">
               <thead>
                 <tr>
-                  <th>Key</th>
+                  <th>ID</th>
+                  <th>MITS</th>
                   <th>Title</th>
-                  <th>Assignee</th>
-                  <th>Status</th>
-                  <th>Estimate</th>
+                  <th>Type</th>
                   <th>Priority</th>
-                  <th>Actions</th>
+                  <th>Status</th>
+                  <th>Points</th>
+                  <th>Assignee</th>
+                  <th>Product</th>
+                  <th>Module</th>
+                  <th>Deadline</th>
                 </tr>
               </thead>
               <tbody>
                 <tr *ngFor="let task of filteredTasks; trackBy: trackByTaskId">
-                  <td>
-                    <span class="task-key">{{ task.key || 'T-' + task.id }}</span>
-                  </td>
-                  <td>
-                    <div class="task-title">{{ task.title }}</div>
-                  </td>
-                  <td>
-                    <div class="task-assignee" *ngIf="task.assignee">
-                      <div class="assignee-avatar">{{ task.assignee.charAt(0).toUpperCase() }}</div>
-                      <span>{{ task.assignee }}</span>
-                    </div>
-                    <span class="unassigned" *ngIf="!task.assignee">Unassigned</span>
-                  </td>
-                  <td>
-                    <span class="status-badge" [class]="'status-' + task.status?.toLowerCase()">
-                      {{ task.status }}
-                    </span>
-                  </td>
-                  <td>
-                    <span class="estimate">{{ task.estimate || '—' }}</span>
-                  </td>
+                  <td>{{ task.id }}</td>
+                  <td>{{ task.mitsNo || task.mitsId || '—' }}</td>
+                  <td>{{ task.title }}</td>
+                  <td>{{ task.taskType || task.type || '—' }}</td>
                   <td>
                     <span class="priority" [class]="'priority-' + (task.priority || 'medium')?.toLowerCase()">
                       {{ task.priority || 'Medium' }}
                     </span>
                   </td>
                   <td>
-                    <div class="task-actions">
-                      <button class="action-btn edit" title="Edit Task" disabled>
-                        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                          <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
-                          <path d="m18.5 2.5 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-                        </svg>
-                      </button>
-                      <button class="action-btn delete" title="Delete Task" disabled>
-                        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                          <path d="M3 6h18"/>
-                          <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/>
-                        </svg>
-                      </button>
-                    </div>
+                    <span class="status-badge" [class]="'status-' + task.status?.toLowerCase()">
+                      {{ task.status }}
+                    </span>
                   </td>
+                  <td>{{ task.points || task.storyPoints || task.estimate || 0 }}</td>
+                  <td>{{ task.assigneeUserId || task.assignee || '—' }}</td>
+                  <td>{{ task.productId || task.product || '—' }}</td>
+                  <td>{{ task.productModuleId || task.module || '—' }}</td>
+                  <td>{{ task.deadline | date:'yyyy-MM-dd' }}</td>
                 </tr>
                 <tr *ngIf="filteredTasks.length === 0">
-                  <td colspan="7" class="empty-state">
+                  <td colspan="11" class="empty-state">
                     <div class="empty-content">
                       <svg width="48" height="48" fill="none" stroke="currentColor" stroke-width="1" viewBox="0 0 24 24">
                         <path d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
@@ -409,4 +390,13 @@
       </div>
     </div>
   </div>
+
+  <!-- Add Tasks Dialog -->
+  <app-sprint-add-tasks-dialog
+    [open]="showAddTasksDialog"
+    [sprintId]="sprintId"
+    [teamId]="sprint?.tramId || 0"
+    (close)="closeAddTasksDialog()"
+    (added)="onTasksAdded($event)">
+  </app-sprint-add-tasks-dialog>
 </div>

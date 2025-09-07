@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { SprintService, Sprint } from './sprint.service';
 import { TaskService } from '../tasks/task.service';
+import { SprintAddTasksDialogComponent } from './sprint-add-tasks-dialog.component';
 import { forkJoin, Subscription } from 'rxjs';
 import { delay } from 'rxjs/operators';
 import Chart from 'chart.js/auto';
@@ -11,7 +12,7 @@ import Chart from 'chart.js/auto';
 @Component({
   selector: 'app-sprint-details',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, SprintAddTasksDialogComponent],
   templateUrl: './sprint-details.component.html',
   styleUrls: ['./sprint-details.component.scss']
 })
@@ -42,6 +43,9 @@ export class SprintDetailsComponent implements OnInit, AfterViewInit, OnDestroy 
     status: '',
     assignee: ''
   };
+
+  // Add tasks dialog properties
+  showAddTasksDialog = false;
 
   @ViewChild('burndownCanvas') burndownCanvas?: ElementRef<HTMLCanvasElement>;
 
@@ -363,5 +367,71 @@ export class SprintDetailsComponent implements OnInit, AfterViewInit, OnDestroy 
   // Track by function for task table performance
   trackByTaskId(index: number, task: any): any {
     return task.id || index;
+  }
+
+  // UI action handlers
+  addTask(): void { 
+    this.openAddTasksDialog(); 
+  }
+  
+  refreshData(): void { 
+    this.loadSprintSummary(); 
+    this.loadSprintTasks(); 
+  }
+  
+  exportData(): void { 
+    // placeholder 
+  }
+
+  openAddTasksDialog(): void {
+    this.showAddTasksDialog = true;
+    // Under zoneless change detection we need to manually flush the state change
+    this.cdr.detectChanges();
+  }
+
+  closeAddTasksDialog(): void {
+    this.showAddTasksDialog = false;
+    this.cdr.detectChanges();
+  }
+
+  onTasksAdded(taskIds: number[]): void {
+    console.log('Tasks added to sprint:', taskIds);
+    // Refresh the sprint data to show newly added tasks
+    this.fetchAll();
+    this.closeAddTasksDialog();
+  }
+
+  // Helper methods for dialog (since it needs teamId and sprintId)
+  loadSprintSummary(): void {
+    // Reload sprint details
+    if (this.sprintId) {
+      this.sprintService.getSprintById(this.sprintId).subscribe({
+        next: (sprint) => {
+          this.sprint = sprint;
+          this.cdr.detectChanges();
+        },
+        error: (error) => {
+          console.error('Error loading sprint summary:', error);
+        }
+      });
+    }
+  }
+
+  loadSprintTasks(): void {
+    // Reload sprint tasks
+    if (this.sprintId) {
+      this.taskService.getTasksBySprint(this.sprintId).subscribe({
+        next: (tasks) => {
+          this.tasks = tasks || [];
+          this.hasNoData = this.tasks.length === 0;
+          this.groupTasksToKanban();
+          this.buildBurndown();
+          this.cdr.detectChanges();
+        },
+        error: (error) => {
+          console.error('Error loading sprint tasks:', error);
+        }
+      });
+    }
   }
 }

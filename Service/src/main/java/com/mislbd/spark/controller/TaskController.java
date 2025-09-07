@@ -274,4 +274,36 @@ public class TaskController {
 
         return tasks;
     }
+     // Get undone tasks for a team excluding those already in a sprint
+    @GetMapping("/team/{teamId}/undone")
+    public List<BacklogTaskDto> getUndoneTasksForTeam(
+            @PathVariable Integer teamId) {
+
+        return backlogTaskService
+                .getUndoneTasksByTeam(teamId)
+                .stream()
+                .map(backlogTaskMapper::toDto)
+                .peek(dto -> {
+                    if (dto.getTasktypeid() != null) {
+                        dto.setTaskType(dto.getTasktypeid());
+                    }
+                })
+                .collect(Collectors.toList());
+    }
+
+    // Bulk assign tasks to a sprint
+    @PostMapping("/assign-to-sprint")
+    public List<BacklogTaskDto> assignTasksToSprint(@RequestParam Integer sprintId, @RequestBody List<Integer> taskIds) {
+        return backlogTaskService.assignTasksToSprint(sprintId, taskIds).stream()
+                .map(backlogTaskMapper::toDto)
+                .peek(task -> {
+                    if (task.getTasktypeid() != null) {
+                        String typeString = ID_TO_TASK_TYPE.get(task.getTasktypeid());
+                        if (typeString != null) {
+                            task.setTaskType(task.getTasktypeid());
+                        }
+                    }
+                })
+                .collect(Collectors.toList());
+    }
 }
