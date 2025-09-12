@@ -122,7 +122,8 @@ export class TasksComponent implements OnInit {
       status: ['OPEN', Validators.required],
       priority: ['MEDIUM', Validators.required],
       deadline: [''],
-      points: [0, [Validators.min(0)]]
+      points: [0, [Validators.min(0)]],
+      teamId: [''] // Add team selection to reactive form
     });
   }
 
@@ -154,7 +155,8 @@ export class TasksComponent implements OnInit {
         points: task.points,
         taskType: String(task.taskType || task.tasktypeid || ''),
         mitsNo: task.mitsId ? String(task.mitsId) : (task.id?.toString() || ''),
-        teamId: task.teamId
+        // Support multiple possible backend field casings / structures
+        teamId: task.teamId ?? task.teamid ?? (typeof task.team === 'object' ? task.team?.id : task.team) ?? null
       } as TaskItem)); 
   // Sort newest first (assuming higher id == newer)
   this.tasks.sort((a,b) => (b.id || 0) - (a.id || 0));
@@ -313,21 +315,37 @@ export class TasksComponent implements OnInit {
   // CRUD
   async addTask() { 
     this.isEditMode = false; this.selected = null; 
-    this.form.reset({ status: 'OPEN', priority: 'MEDIUM', points: 0 }); 
+    this.form.reset({ status: 'OPEN', priority: 'MEDIUM', points: 0, teamId: '' }); 
     this.selectedTeamId=''; this.teamMembers=[]; 
     await this.ensureTeamsLoaded();
     this.isModalOpen = true; 
-    // Force immediate render of team options
     this.cdr.detectChanges();
   }
   editTask(t: TaskItem) {
-    this.isEditMode = true; this.selected = t; this.form.patchValue(t); 
-    this.ensureTeamsLoaded();
+    this.isEditMode = true; this.selected = t; this.form.patchValue({...t, teamId: t.teamId || ''});
+    this.selectedTeamId = t.teamId || '';
+    this.ensureTeamsLoaded().then(() => {
+      if (this.selectedTeamId) { this.onTeamChange(); }
+      this.cdr.detectChanges();
+    });
     this.isModalOpen = true;
   }
   async saveTask() {
     if (this.form.invalid) { Object.values(this.form.controls).forEach(c => c.markAsTouched()); return; }
     const data: TaskItem = this.form.value;
+    
+    // Use form value for team ID
+    const formTeamId = this.form.get('teamId')?.value;
+    
+    // Convert team ID to number, handling union type properly
+    let teamIdValue: number | undefined;
+    if (typeof formTeamId === 'number') {
+      teamIdValue = formTeamId;
+    } else if (typeof formTeamId === 'string' && formTeamId !== '') {
+      teamIdValue = Number(formTeamId);
+    } else {
+      teamIdValue = undefined;
+    }
     
     // Map frontend field names to backend field names
     const backendData: any = {
@@ -344,7 +362,9 @@ export class TasksComponent implements OnInit {
       taskType: typeof data.taskType === 'string' ? Number(data.taskType) : data.taskType,
       tasktypeid: typeof data.taskType === 'string' ? Number(data.taskType) : data.taskType,
       mitsId: data.mitsNo ? Number(data.mitsNo) : null,
-      teamId: this.selectedTeamId || null
+      // Send both variants to maximize backend compatibility
+      teamId: teamIdValue ?? null,
+      teamid: teamIdValue ?? null
     };
     
     try {
@@ -357,7 +377,9 @@ export class TasksComponent implements OnInit {
           productId: data.productId,
           productModuleId: data.productModuleId,
           assigneeUserId: data.assigneeUserId,
-          points: data.points
+          points: data.points,
+          // Use our sent value since backend might not echo teamId correctly
+          teamId: teamIdValue || undefined
         });
         // Move updated task to top (treat as recently modified)
         this.tasks = [this.selected!, ...this.tasks.filter(t => t.id !== this.selected!.id)];
@@ -377,7 +399,8 @@ export class TasksComponent implements OnInit {
             points: created.points,
             taskType: String(created.taskType || created.tasktypeid || ''),
             mitsNo: created.mitsId ? String(created.mitsId) : (created.id?.toString() || ''),
-            teamId: created.teamId
+            // Use our sent value since backend returns null 
+            teamId: teamIdValue || undefined
           };
           this.tasks.unshift(mappedTask);
         }
@@ -435,9 +458,18 @@ export class TasksComponent implements OnInit {
   onTeamChange() {
     if (!this.selectedTeamId) { this.teamMembers = []; this.form.patchValue({ assigneeUserId: '' }); return; }
     this.teamService.getTeamMembers(Number(this.selectedTeamId)).subscribe({
-      next: members => { this.teamMembers = members || []; this.form.patchValue({ assigneeUserId: '' }); },
+      next: members => { 
+        this.teamMembers = members || []; 
+        this.form.patchValue({ assigneeUserId: '' }); 
+      },
       error: () => { this.teamMembers = []; }
     });
+  }
+
+  onTeamFormChange() {
+    const teamIdFromForm = this.form.get('teamId')?.value;
+    this.selectedTeamId = teamIdFromForm;
+    this.onTeamChange();
   }
 
   getAssignableUsers(): { id: number; name: string }[] {

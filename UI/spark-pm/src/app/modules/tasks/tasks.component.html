@@ -327,7 +327,7 @@
           <div class="form-grid">
             <div class="form-group">
               <label for="teamSelect">Team</label>
-              <select id="teamSelect" class="form-control" [(ngModel)]="selectedTeamId" name="teamSelect" (change)="onTeamChange()" [disabled]="isTeamsLoading">
+              <select id="teamSelect" class="form-control" formControlName="teamId" (change)="onTeamFormChange()" [disabled]="isTeamsLoading">
                 <option value="" *ngIf="!isTeamsLoading">-- Select Team --</option>
                 <option value="" disabled *ngIf="isTeamsLoading">Loading teams...</option>
                 <option *ngFor="let t of teams" [value]="t.id">{{ t.teamName }}</option>
