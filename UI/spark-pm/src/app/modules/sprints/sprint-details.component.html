@@ -195,22 +195,36 @@
 
           <!-- User Progress Bars Panel -->
           <div class="progress-section panel">
-            <h3>User Progress Bars</h3>
+            <h3>User Progress (Points)</h3>
             <div class="user-progress-list">
-              <div class="user-progress-item" *ngFor="let user of getUserProgressData()">
+              <div class="user-progress-item" *ngFor="let user of userProgress; trackBy: trackByTaskId">
                 <div class="user-info">
-                  <div class="user-avatar">{{ user.name.charAt(0).toUpperCase() }}</div>
+                  <div class="user-avatar">{{ (user.userName || '?').charAt(0).toUpperCase() }}</div>
                   <div class="user-details">
-                    <div class="user-name">{{ user.name }}</div>
-                    <div class="user-stats">{{ user.completedTasks }}/{{ user.totalTasks }} tasks</div>
+                    <div class="user-name">{{ user.userName }}</div>
+                    <div class="user-stats">
+                      {{ user.accomplishedPoints }}/{{ user.assignedPoints }} pts
+                      • {{ user.completedTasks }}/{{ user.totalTasks }} tasks
+                    </div>
                   </div>
                 </div>
-                <div class="progress-bar">
-                  <div class="progress-fill" [style.width.%]="user.progress"></div>
-                  <span class="progress-text">{{ user.progress }}%</span>
+                <div class="progress-bar" [title]="user.accomplishedPoints + ' of ' + user.assignedPoints + ' points'">
+                  <div class="progress-fill" 
+                       [style.width.%]="user.progressPercentage" 
+                       [style.background]="getProgressColor(user.progressPercentage)"></div>
+                  <span class="progress-text">
+                    {{ user.progressPercentage }}%
+                  </span>
+                </div>
+                <div class="progress-meta">
+                  <span class="meta in-progress" *ngIf="user.inProgressPoints">In Progress: {{ user.inProgressPoints }}</span>
+                  <span class="meta remaining" *ngIf="user.remainingPoints">Remaining: {{ user.remainingPoints }}</span>
+                  <span class="meta efficiency" [style.color]="getEfficiencyColor(user.efficiency)">
+                    {{ user.efficiency }}
+                  </span>
                 </div>
               </div>
-              <div class="no-users" *ngIf="getUserProgressData().length === 0">
+              <div class="no-users" *ngIf="userProgress.length === 0">
                 No assigned users yet
               </div>
             </div>
@@ -278,6 +292,7 @@
                   <th>Product</th>
                   <th>Module</th>
                   <th>Deadline</th>
+                  <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -297,13 +312,18 @@
                     </span>
                   </td>
                   <td>{{ task.points || task.storyPoints || task.estimate || 0 }}</td>
-                  <td>{{ task.assigneeUserId || task.assignee || '—' }}</td>
+                  <td>{{ getAssigneeName(task.assigneeId || task.assigneeUserId || task.assignedto) || task.assigneeName || task.assignee || '—' }}</td>
                   <td>{{ task.productId || task.product || '—' }}</td>
                   <td>{{ task.productModuleId || task.module || '—' }}</td>
                   <td>{{ task.deadline | date:'yyyy-MM-dd' }}</td>
+                  <td>
+                    <button class="btn btn-xs" (click)="openAssignDialog(task)" title="Assign task">
+                      Assign
+                    </button>
+                  </td>
                 </tr>
                 <tr *ngIf="filteredTasks.length === 0">
-                  <td colspan="11" class="empty-state">
+                  <td colspan="12" class="empty-state">
                     <div class="empty-content">
                       <svg width="48" height="48" fill="none" stroke="currentColor" stroke-width="1" viewBox="0 0 24 24">
                         <path d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>

@@ -85,7 +85,15 @@ export class SprintAddTasksDialogComponent implements OnInit, OnChanges {
 				this.typeFilter = '';
 				this.teamFilter = '';
 				
-				this.tasks = (list || []).sort((a,b) => (b.id || 0) - (a.id || 0)); 
+				// Filter out tasks already in this sprint (avoid duplicates in dialog)
+				const filteredOutAlreadyInSprint = (list || []).filter(t => {
+					const sid: any = (t as any).sprintId ?? (t as any).sprintid ?? (t as any).sprintID;
+					return !(sid && this.sprintId && Number(sid) === Number(this.sprintId));
+				});
+				if (filteredOutAlreadyInSprint.length !== (list || []).length) {
+					console.log('Excluded tasks already in sprint', this.sprintId, 'Removed:', (list || []).length - filteredOutAlreadyInSprint.length);
+				}
+				this.tasks = filteredOutAlreadyInSprint.sort((a,b) => (b.id || 0) - (a.id || 0)); 
 				console.log('Set tasks array:', this.tasks);
 				console.log('Tasks count:', this.tasks.length);
 				

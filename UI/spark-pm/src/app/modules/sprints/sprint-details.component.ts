@@ -5,9 +5,46 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { SprintService, Sprint } from './sprint.service';
 import { TaskService } from '../tasks/task.service';
 import { SprintAddTasksDialogComponent } from './sprint-add-tasks-dialog.component';
+import { User } from './user.model';
+import { Product } from '../products/product.model';
 import { forkJoin, Subscription } from 'rxjs';
+import { HttpClient } from '@angular/common/http';
+import { environment } from '../../../environments/environment';
 import { delay } from 'rxjs/operators';
 import Chart from 'chart.js/auto';
+
+// Interface for user progress based on points
+interface UserProgress {
+  userId: number;
+  userName: string;
+  userEmail?: string;
+  avatar?: string;
+  assignedPoints: number;
+  accomplishedPoints: number;
+  inProgressPoints: number;
+  remainingPoints: number;
+  progressPercentage: number;
+  totalTasks: number;
+  completedTasks: number;
+  inProgressTasks: number;
+  pendingTasks: number;
+  efficiency: 'High' | 'Medium' | 'Low';
+}
+
+// Additional interfaces for component use
+interface ProductModule {
+  id: number;
+  name: string;
+  productId: number;
+}
+
+interface SprintCapacity {
+  id: number;
+  userId: number;
+  sprintId: number;
+  availableHours: number;
+  userName?: string;
+}
 
 @Component({
   selector: 'app-sprint-details',
@@ -28,6 +65,12 @@ export class SprintDetailsComponent implements OnInit, AfterViewInit, OnDestroy 
   // Placeholders to be wired to services later
   sprint: Sprint | null = null;
   tasks: any[] = [];
+  users: User[] = [];
+  products: Product[] = [];
+  productModules: ProductModule[] = [];
+  sprintCapacities: SprintCapacity[] = [];
+  userProgress: UserProgress[] = [];
+  
   kanbanColumns: { key: string; title: string; tasks: any[] }[] = [
     { key: 'TODO', title: 'To-Do', tasks: [] },
     { key: 'IN_PROGRESS', title: 'In Progress', tasks: [] },
@@ -54,7 +97,8 @@ export class SprintDetailsComponent implements OnInit, AfterViewInit, OnDestroy 
     private router: Router,
     private sprintService: SprintService,
     private taskService: TaskService,
-    private cdr: ChangeDetectorRef
+  private cdr: ChangeDetectorRef,
+  private http: HttpClient
   ) {}
 
   ngOnInit(): void {
@@ -111,18 +155,35 @@ export class SprintDetailsComponent implements OnInit, AfterViewInit, OnDestroy 
     // Add a small delay to ensure component is fully initialized
     forkJoin({
       sprint: this.sprintService.getSprintById(this.sprintId),
-      tasks: this.taskService.getTasksBySprint(this.sprintId)
+      tasks: this.taskService.getTasksBySprint(this.sprintId),
+      users: this.http.get<User[]>(`${environment.apiUrl}/api/users`)
     }).pipe(
       delay(100) // Small delay to ensure component is ready
     ).subscribe({
-      next: ({ sprint, tasks }) => {
-        console.log('Data received - Sprint:', sprint, 'Tasks:', tasks);
+      next: ({ sprint, tasks, users }) => {
+        console.log('Data received - Sprint:', sprint, 'Tasks:', tasks?.length, 'Users:', users?.length);
         this.sprint = sprint;
         this.tasks = tasks || [];
+        this.users = users || [];
+        // Enrich tasks with assigneeName if user list available
+        if (this.users.length) {
+          this.tasks = this.tasks.map(t => {
+            const uid = t.assigneeId || t.assigneeUserId || t.assignedto || t.userId;
+            if (uid) {
+              const u: any = this.users.find(x => x.id === uid);
+              if (u) {
+                const full = [u.firstName, u.lastName].filter(Boolean).join(' ').trim();
+                return { ...t, assigneeName: full || u.username || u.name || ('User ' + uid) };
+              }
+            }
+            return t;
+          });
+        }
         this.hasNoData = this.tasks.length === 0;
         console.log('hasNoData:', this.hasNoData, 'tasks length:', this.tasks.length);
-        this.groupTasksToKanban();
-        this.buildBurndown();
+  this.groupTasksToKanban();
+  this.buildBurndown();
+  this.calculateUserProgress();
         this.isLoading = false;
         
         // Trigger change detection to ensure UI updates
@@ -151,6 +212,105 @@ export class SprintDetailsComponent implements OnInit, AfterViewInit, OnDestroy 
       const col = this.kanbanColumns.find(c => c.key === key);
       if (col) col.tasks.push(t);
     }
+  }
+
+  /**
+   * Calculate user progress based on assigned and accomplished points (storyPoints | points | estimate)
+   */
+  private calculateUserProgress(): void {
+    if (!Array.isArray(this.tasks) || this.tasks.length === 0) {
+      this.userProgress = [];
+      return;
+    }
+
+    const normalizeStatus = (s: any) => String(s || '').toUpperCase().replace(/\s+/g, '_');
+
+    interface Aggregated {
+      userId: number;
+      userName: string;
+      userEmail?: string;
+      avatar?: string;
+      assignedPoints: number;
+      accomplishedPoints: number;
+      inProgressPoints: number;
+      remainingPoints: number;
+      totalTasks: number;
+      completedTasks: number;
+      inProgressTasks: number;
+    }
+
+    const byUser = new Map<number, Aggregated>();
+
+    for (const task of this.tasks) {
+      // Derive points
+      const pts = Number(task?.storyPoints ?? task?.points ?? task?.estimate ?? 0) || 0;
+      const status = normalizeStatus(task?.status);
+  const userId: number | undefined = task?.assigneeId ?? task?.assigneeID ?? task?.assigneeUserId ?? task?.assignedto ?? task?.userId; // expanded fallbacks
+      if (!userId) continue; // skip tasks without an identifiable user
+
+      if (!byUser.has(userId)) {
+        byUser.set(userId, {
+          userId,
+          userName: (() => {
+            if (this.users.length) {
+              const u: any = this.users.find(x => x.id === userId);
+              if (u) {
+                const full = [u.firstName, u.lastName].filter(Boolean).join(' ').trim();
+                return full || u.username || u.name || `User ${userId}`;
+              }
+            }
+            return task?.assigneeName || task?.assignee || `User ${userId}`;
+          })(),
+          userEmail: task?.assigneeEmail,
+          avatar: task?.assigneeAvatar,
+          assignedPoints: 0,
+          accomplishedPoints: 0,
+          inProgressPoints: 0,
+          remainingPoints: 0,
+          totalTasks: 0,
+          completedTasks: 0,
+          inProgressTasks: 0
+        });
+      }
+      const agg = byUser.get(userId)!;
+      agg.assignedPoints += pts;
+      agg.totalTasks += 1;
+      if (status === 'DONE' || status === 'COMPLETED') {
+        agg.accomplishedPoints += pts;
+        agg.completedTasks += 1;
+      } else if (status === 'IN_PROGRESS' || status === 'PROGRESS') {
+        agg.inProgressPoints += pts;
+        agg.inProgressTasks += 1;
+      }
+    }
+
+    this.userProgress = Array.from(byUser.values()).map(u => {
+      const remaining = Math.max(0, u.assignedPoints - u.accomplishedPoints - u.inProgressPoints);
+      const progressPercentage = u.assignedPoints > 0 ? Math.round((u.accomplishedPoints / u.assignedPoints) * 100) : 0;
+      const pendingTasks = Math.max(0, u.totalTasks - u.completedTasks - u.inProgressTasks);
+
+      let efficiency: 'High' | 'Medium' | 'Low';
+      if (progressPercentage >= 80) efficiency = 'High';
+      else if (progressPercentage >= 50) efficiency = 'Medium';
+      else efficiency = 'Low';
+
+      return {
+        userId: u.userId,
+        userName: u.userName,
+        userEmail: u.userEmail,
+        avatar: u.avatar,
+        assignedPoints: u.assignedPoints,
+        accomplishedPoints: u.accomplishedPoints,
+        inProgressPoints: u.inProgressPoints,
+        remainingPoints: remaining,
+        progressPercentage,
+        totalTasks: u.totalTasks,
+        completedTasks: u.completedTasks,
+        inProgressTasks: u.inProgressTasks,
+        pendingTasks,
+        efficiency
+      };
+    });
   }
 
   private buildBurndown(): void {
@@ -347,21 +507,32 @@ export class SprintDetailsComponent implements OnInit, AfterViewInit, OnDestroy 
     return total > 0 ? Math.round((completed / total) * 100) : 0;
   }
 
-  // User progress calculation
-  getUserProgressData(): any[] {
-    const users = [...new Set(this.tasks.map(task => task.assignee).filter(Boolean))];
-    return users.map(user => {
-      const userTasks = this.tasks.filter(task => task.assignee === user);
-      const completedTasks = userTasks.filter(task => task.status === 'DONE');
-      const progress = userTasks.length > 0 ? (completedTasks.length / userTasks.length) * 100 : 0;
-      
-      return {
-        name: user,
-        totalTasks: userTasks.length,
-        completedTasks: completedTasks.length,
-        progress: Math.round(progress)
-      };
-    });
+  // Exposed helpers for template (efficiency + color lookups)
+  getEfficiencyColor(efficiency: string): string {
+    switch (efficiency) {
+      case 'High': return '#10B981';
+      case 'Medium': return '#F59E0B';
+      case 'Low': return '#EF4444';
+      default: return '#6B7280';
+    }
+  }
+
+  getProgressColor(percentage: number): string {
+    if (percentage >= 80) return '#10B981';
+    if (percentage >= 50) return '#F59E0B';
+    if (percentage >= 25) return '#F97316';
+    return '#EF4444';
+  }
+
+  // Mirror tasks.component helper to resolve assignee name by user id
+  getAssigneeName(id?: number): string {
+    if (!id) return '—';
+    const u: any = this.users?.find((x: any) => x.id === id);
+    if (u) {
+      const full = [u.firstName, u.lastName].filter(Boolean).join(' ').trim();
+      return full || u.username || u.name || ('User ' + id);
+    }
+    return 'User ' + id;
   }
 
   // Track by function for task table performance
@@ -381,6 +552,12 @@ export class SprintDetailsComponent implements OnInit, AfterViewInit, OnDestroy 
   
   exportData(): void { 
     // placeholder 
+  }
+
+  // Open assign dialog (placeholder - to be implemented or integrated with existing user selection UI)
+  openAssignDialog(task: any): void {
+    console.log('Assign clicked for task', task.id);
+    // TODO: Implement assignment dialog / modal
   }
 
   openAddTasksDialog(): void {
@@ -420,18 +597,41 @@ export class SprintDetailsComponent implements OnInit, AfterViewInit, OnDestroy 
   loadSprintTasks(): void {
     // Reload sprint tasks
     if (this.sprintId) {
-      this.taskService.getTasksBySprint(this.sprintId).subscribe({
-        next: (tasks) => {
-          this.tasks = tasks || [];
-          this.hasNoData = this.tasks.length === 0;
-          this.groupTasksToKanban();
-          this.buildBurndown();
-          this.cdr.detectChanges();
-        },
-        error: (error) => {
-          console.error('Error loading sprint tasks:', error);
-        }
-      });
+      const users$ = this.users.length ? [] : this.http.get<User[]>(`${environment.apiUrl}/api/users`);
+      if (Array.isArray(users$)) {
+        // Only tasks call if users already loaded
+        this.taskService.getTasksBySprint(this.sprintId).subscribe({
+          next: (tasks) => {
+            this.tasks = tasks || [];
+            this.hasNoData = this.tasks.length === 0;
+            this.groupTasksToKanban();
+            this.buildBurndown();
+            this.calculateUserProgress();
+            this.cdr.detectChanges();
+          },
+          error: (error) => {
+            console.error('Error loading sprint tasks:', error);
+          }
+        });
+      } else {
+        forkJoin({
+          tasks: this.taskService.getTasksBySprint(this.sprintId),
+          users: users$
+        }).subscribe({
+          next: ({ tasks, users }) => {
+            this.tasks = tasks || [];
+            if (users) this.users = users;
+            this.hasNoData = this.tasks.length === 0;
+            this.groupTasksToKanban();
+            this.buildBurndown();
+            this.calculateUserProgress();
+            this.cdr.detectChanges();
+          },
+          error: (error) => {
+            console.error('Error loading sprint tasks/users:', error);
+          }
+        });
+      }
     }
   }
 }

@@ -1,16 +1,18 @@
-import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { tap, catchError } from 'rxjs/operators';
 import { of } from 'rxjs';
+import { TeamService } from '../teams/team.service';
+import { Team, TeamMember } from '../teams/team.model';
 
 // Local minimal interfaces to decouple from model file
 interface TaskItem {
   id?: number;
   mitsNo: string;
   taskType: string;
-  productId?: number;
+  productId?: number; // maps backend productid
   productModuleId?: number;
   title: string;
   description?: string;
@@ -19,6 +21,7 @@ interface TaskItem {
   priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
   deadline?: string;
   points?: number;
+  teamId?: number;
 }
 interface ProductOption { id: number; name: string; }
 interface ModuleOption { id: number; name: string; productId: number; }
@@ -43,6 +46,10 @@ export class TasksComponent implements OnInit {
   users: UserOption[] = [];
   jobTypes: JobTypeOption[] = [];
   jobTypeOptions: { value: number; label: string }[] = [];
+  teams: Team[] = [];
+  teamMembers: TeamMember[] = [];
+  selectedTeamId: number | '' = '';
+  isTeamsLoading = false;
 
   // UI state
   isLoading = false;
@@ -83,10 +90,25 @@ export class TasksComponent implements OnInit {
   constructor(
     private http: HttpClient,
     private fb: FormBuilder,
-    private cdr: ChangeDetectorRef
+    private cdr: ChangeDetectorRef,
+    private teamService: TeamService
   ) { this.initForm(); }
+    actionMenuOpenId: number | null = null;
 
-  ngOnInit(): void { this.load(); }
+  ngOnInit(): void { 
+    // Fetch teams early so modal has data quickly, then load full dataset
+    this.fetchTeamsQuick();
+    this.load(); 
+  }
+
+  private fetchTeamsQuick() {
+    // Lightweight early fetch; ignores errors silently
+    this.isTeamsLoading = true;
+    this.teamService.getTeams().subscribe({
+      next: ts => { if (!this.teams.length) { this.teams = ts || []; this.cdr.markForCheck(); } this.isTeamsLoading = false; },
+      error: () => { this.isTeamsLoading = false; }
+    });
+  }
 
   private initForm() {
     this.form = this.fb.group({
@@ -108,24 +130,39 @@ export class TasksComponent implements OnInit {
     this.isLoading = true; this.error = null;
     try {
       const base = (await import('../../../environments/environment')).environment.apiUrl;
-      const [tasks, products, modules, users, jobTypes] = await Promise.all([
+  const [tasks, products, modules, users, jobTypes, teams] = await Promise.all([
         this.http.get<any[]>(`${base}/api/tasks`).toPromise(),
         this.http.get<any[]>(`${base}/api/products`).toPromise(),
         this.http.get<any[]>(`${base}/api/product-modules`).toPromise(),
         this.http.get<any[]>(`${base}/api/users`).toPromise(),
-        this.http.get<JobTypeOption[]>(`${base}/api/job-types`).toPromise()
+        this.http.get<JobTypeOption[]>(`${base}/api/job-types`).toPromise(),
+        this.teamService.getTeams().toPromise()
       ]);
       
-      // Map backend field names to frontend interface
-      this.tasks = (tasks || []).map(task => ({
-        ...task,
+  // Map backend field names to frontend interface
+  this.tasks = (tasks || []).map(task => ({
+        id: task.id,
+        title: task.title,
+        description: task.description,
+        status: (task.status || 'OPEN').toUpperCase(),
+        priority: (task.priority || 'MEDIUM').toUpperCase(),
+        deadline: task.deadline || null,
         assigneeUserId: task.assignedto,
-        mitsNo: task.mitsId || task.id?.toString() || ''
-      })); 
+        sprintId: task.sprintid,
+        productId: task.productid,
+        productModuleId: task.productModuleId,
+        points: task.points,
+        taskType: String(task.taskType || task.tasktypeid || ''),
+        mitsNo: task.mitsId ? String(task.mitsId) : (task.id?.toString() || ''),
+        teamId: task.teamId
+      } as TaskItem)); 
+  // Sort newest first (assuming higher id == newer)
+  this.tasks.sort((a,b) => (b.id || 0) - (a.id || 0));
       this.products = products || []; 
       this.modules = modules || []; 
       this.users = users || []; 
       this.jobTypes = jobTypes || [];
+      this.teams = teams || [];
       
       // Map job types to dropdown options
       this.jobTypeOptions = this.jobTypes.map(type => ({ 
@@ -274,35 +311,73 @@ export class TasksComponent implements OnInit {
   }
 
   // CRUD
-  addTask() { this.isEditMode = false; this.selected = null; this.form.reset({ status: 'OPEN', priority: 'MEDIUM', points: 0 }); this.isModalOpen = true; }
+  async addTask() { 
+    this.isEditMode = false; this.selected = null; 
+    this.form.reset({ status: 'OPEN', priority: 'MEDIUM', points: 0 }); 
+    this.selectedTeamId=''; this.teamMembers=[]; 
+    await this.ensureTeamsLoaded();
+    this.isModalOpen = true; 
+    // Force immediate render of team options
+    this.cdr.detectChanges();
+  }
   editTask(t: TaskItem) {
-    this.isEditMode = true; this.selected = t; this.form.patchValue(t); this.isModalOpen = true;
+    this.isEditMode = true; this.selected = t; this.form.patchValue(t); 
+    this.ensureTeamsLoaded();
+    this.isModalOpen = true;
   }
   async saveTask() {
     if (this.form.invalid) { Object.values(this.form.controls).forEach(c => c.markAsTouched()); return; }
     const data: TaskItem = this.form.value;
     
     // Map frontend field names to backend field names
-    const backendData = {
-      ...data,
-      assignedto: data.assigneeUserId,
-      mitsId: data.mitsNo
+    const backendData: any = {
+      id: this.isEditMode ? this.selected?.id : undefined,
+      title: data.title,
+      description: data.description,
+      status: data.status,
+      priority: data.priority,
+      deadline: data.deadline || null,
+      assignedto: data.assigneeUserId || null,
+      productid: data.productId ? Number(data.productId) : null,
+      productModuleId: data.productModuleId ? Number(data.productModuleId) : null,
+      points: data.points || 0,
+      taskType: typeof data.taskType === 'string' ? Number(data.taskType) : data.taskType,
+      tasktypeid: typeof data.taskType === 'string' ? Number(data.taskType) : data.taskType,
+      mitsId: data.mitsNo ? Number(data.mitsNo) : null,
+      teamId: this.selectedTeamId || null
     };
     
     try {
       const base = (await import('../../../environments/environment')).environment.apiUrl;
       if (this.isEditMode && this.selected?.id) {
-        const updated = { ...this.selected, ...backendData } as any;
-        await this.http.put<void>(`${base}/api/tasks/${this.selected.id}`, updated).toPromise();
-        Object.assign(this.selected, data);
+        const updated = { ...backendData };
+        await this.http.put<any>(`${base}/api/tasks/${this.selected.id}`, updated).toPromise();
+        Object.assign(this.selected!, {
+          ...data,
+          productId: data.productId,
+          productModuleId: data.productModuleId,
+          assigneeUserId: data.assigneeUserId,
+          points: data.points
+        });
+        // Move updated task to top (treat as recently modified)
+        this.tasks = [this.selected!, ...this.tasks.filter(t => t.id !== this.selected!.id)];
       } else {
-        const created = await this.http.post<any>(`${base}/api/tasks`, backendData as any).toPromise(); 
+        const created = await this.http.post<any>(`${base}/api/tasks`, backendData as any).toPromise();
         if (created) {
-          // Map the response back to frontend format
-          const mappedTask = {
-            ...created,
+          const mappedTask: TaskItem = {
+            id: created.id,
+            title: created.title,
+            description: created.description,
+            status: (created.status || 'OPEN').toUpperCase(),
+            priority: (created.priority || 'MEDIUM').toUpperCase(),
+            deadline: created.deadline || null,
             assigneeUserId: created.assignedto,
-            mitsNo: created.mitsId || created.id?.toString() || ''
+            productId: created.productid,
+            productModuleId: created.productModuleId,
+            points: created.points,
+            taskType: String(created.taskType || created.tasktypeid || ''),
+            mitsNo: created.mitsId ? String(created.mitsId) : (created.id?.toString() || ''),
+            teamId: created.teamId
           };
           this.tasks.unshift(mappedTask);
         }
@@ -325,6 +400,10 @@ export class TasksComponent implements OnInit {
 
   // View helpers
   getAssigneeName(id?: number): string {
+    if (this.selectedTeamId && this.teamMembers.length) {
+      const tm = this.teamMembers.find(m => m.userId === id);
+      if (tm) return tm.userName;
+    }
     const u = this.users.find(x => x.id === id); if (!u) return '—';
     const full = [u.firstName, u.lastName].filter(Boolean).join(' ').trim();
     return full || u.username;
@@ -351,5 +430,57 @@ export class TasksComponent implements OnInit {
     const today = new Date();
     const deadlineDate = new Date(deadline);
     return deadlineDate < today;
+  }
+
+  onTeamChange() {
+    if (!this.selectedTeamId) { this.teamMembers = []; this.form.patchValue({ assigneeUserId: '' }); return; }
+    this.teamService.getTeamMembers(Number(this.selectedTeamId)).subscribe({
+      next: members => { this.teamMembers = members || []; this.form.patchValue({ assigneeUserId: '' }); },
+      error: () => { this.teamMembers = []; }
+    });
+  }
+
+  getAssignableUsers(): { id: number; name: string }[] {
+    if (this.selectedTeamId && this.teamMembers.length) {
+      return this.teamMembers.map(m => ({ id: m.userId, name: m.userName }));
+    }
+    return this.users.map(u => ({ id: u.id, name: this.getAssigneeName(u.id) }));
+  }
+
+  getSelectedTeamName(): string {
+    if (!this.selectedTeamId) return '';
+    const team = this.teams.find(t => t.id === Number(this.selectedTeamId));
+    return team?.teamName || '';
+  }
+  
+  getTeamName(teamId?: number): string {
+    if (!teamId) return '—';
+    const t = this.teams.find(x => x.id === teamId);
+    return t?.teamName || '—';
+  }
+  
+  toggleActionMenu(taskId: number | undefined, event: Event) {
+    event.stopPropagation();
+    if (!taskId) return;
+    this.actionMenuOpenId = this.actionMenuOpenId === taskId ? null : taskId;
+  }
+  
+  @HostListener('document:click') onDocClick() { this.actionMenuOpenId = null; }
+
+  private ensureTeamsLoaded(): Promise<void> {
+    if (this.teams && this.teams.length) return Promise.resolve();
+    this.isTeamsLoading = true;
+    return new Promise(resolve => {
+      this.teamService.getTeams().subscribe({
+        next: ts => { 
+          this.teams = ts || []; 
+          this.isTeamsLoading = false; 
+          // Trigger change detection immediately for modal select
+          this.cdr.detectChanges(); 
+          resolve(); 
+        },
+        error: () => { this.isTeamsLoading = false; resolve(); }
+      });
+    });
   }
 }
