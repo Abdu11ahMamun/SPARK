@@ -70,6 +70,10 @@ export class SprintDetailsComponent implements OnInit, AfterViewInit, OnDestroy 
   productModules: ProductModule[] = [];
   sprintCapacities: SprintCapacity[] = [];
   userProgress: UserProgress[] = [];
+
+  // Inline edit state
+  editingTaskId: number | null = null;
+  editBuffer: { status?: string; assigneeId?: number; points?: number } = {};
   
   kanbanColumns: { key: string; title: string; tasks: any[] }[] = [
     { key: 'TODO', title: 'To-Do', tasks: [] },
@@ -577,9 +581,36 @@ export class SprintDetailsComponent implements OnInit, AfterViewInit, OnDestroy 
   }
 
   editTask(task: any): void {
-    console.log('Edit task from sprint details', task.id);
-    // Placeholder: could route to task management with query param
-    // TODO: implement modal/edit overlay in sprint context
+    if (!task) return;
+    this.editingTaskId = task.id;
+    this.editBuffer = {
+      status: task.status,
+      assigneeId: task.assigneeId || task.assigneeUserId || task.assignedto,
+      points: Number(task.storyPoints ?? task.points ?? task.estimate ?? 0)
+    };
+    this.cdr.detectChanges();
+  }
+
+  cancelEdit(): void {
+    this.editingTaskId = null;
+    this.editBuffer = {};
+    this.cdr.detectChanges();
+  }
+
+  saveInline(task: any): void {
+    if (!task || this.editingTaskId !== task.id) return;
+    // Optimistic update
+    task.status = this.editBuffer.status;
+    task.assigneeId = this.editBuffer.assigneeId;
+    task.points = this.editBuffer.points;
+    task.storyPoints = this.editBuffer.points; // unify naming
+    // TODO: persist via service (patch task) when backend endpoint is defined
+    this.editingTaskId = null;
+    this.editBuffer = {};
+    this.groupTasksToKanban();
+    this.calculateUserProgress();
+    this.buildBurndown();
+    this.cdr.detectChanges();
   }
 
   openAddTasksDialog(): void {
