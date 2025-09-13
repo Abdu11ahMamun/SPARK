@@ -401,9 +401,12 @@
 
 /* Point Calculator Integration */
 .points-row { display:flex; gap:.5rem; align-items:center; }
-.points-row .calc-btn { background:#2563eb; color:#fff; border:none; padding:.45rem .7rem; border-radius:6px; font-size:.65rem; font-weight:600; cursor:pointer; letter-spacing:.5px; }
-.points-row .calc-btn.icon { display:flex; align-items:center; justify-content:center; width:34px; padding:0; }
-.points-row .calc-btn:hover { background:#1d4ed8; }
+.points-row .calc-btn { background:#f3f4f6; color:#374151; border:1px solid #d1d5db; padding:.45rem .7rem; border-radius:8px; font-size:.65rem; font-weight:600; cursor:pointer; letter-spacing:.3px; box-shadow:0 1px 2px rgba(0,0,0,.04); transition:all .18s ease; }
+.points-row .calc-btn.icon { display:flex; align-items:center; justify-content:center; width:38px; padding:0; font-weight:500; }
+.points-row .calc-btn svg { stroke:#374151; transition:stroke .18s ease; }
+.points-row .calc-btn:hover { background:#e5e7eb; border-color:#c3c8ce; }
+.points-row .calc-btn:active { background:#d9dde2; box-shadow:0 0 0 1px #c3c8ce inset; }
+.points-row .calc-btn:focus-visible { outline:2px solid #6366f1; outline-offset:2px; }
 .hint { display:block; margin-top:4px; font-size:.6rem; color:#6b7280; letter-spacing:.03em; }
 .pc-overlay { position:fixed; inset:0; background:rgba(17,24,39,.55); display:flex; align-items:center; justify-content:center; z-index:1000; backdrop-filter:blur(2px); }
 .pc-inner { animation:fadeInPc .18s ease; }
