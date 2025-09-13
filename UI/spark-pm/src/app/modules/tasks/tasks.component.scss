@@ -399,6 +399,16 @@
   background: #f9fafb;
 }
 
+/* Point Calculator Integration */
+.points-row { display:flex; gap:.5rem; align-items:center; }
+.points-row .calc-btn { background:#2563eb; color:#fff; border:none; padding:.45rem .7rem; border-radius:6px; font-size:.65rem; font-weight:600; cursor:pointer; letter-spacing:.5px; }
+.points-row .calc-btn.icon { display:flex; align-items:center; justify-content:center; width:34px; padding:0; }
+.points-row .calc-btn:hover { background:#1d4ed8; }
+.hint { display:block; margin-top:4px; font-size:.6rem; color:#6b7280; letter-spacing:.03em; }
+.pc-overlay { position:fixed; inset:0; background:rgba(17,24,39,.55); display:flex; align-items:center; justify-content:center; z-index:1000; backdrop-filter:blur(2px); }
+.pc-inner { animation:fadeInPc .18s ease; }
+@keyframes fadeInPc { from { opacity:0; transform:translateY(4px);} to { opacity:1; transform:translateY(0);} }
+
 .data-table tbody tr:last-child td {
   border-bottom: none;
 }

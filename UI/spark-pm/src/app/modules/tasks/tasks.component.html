@@ -473,14 +473,27 @@
             
             <div class="form-group">
               <label for="points">Points</label>
-              <input 
-                id="points"
-                class="form-control" 
-                type="number" 
-                min="0" 
-                formControlName="points"
-                placeholder="0"
-              />
+              <div class="points-row">
+                <input 
+                  id="points"
+                  class="form-control" 
+                  type="number" 
+                  min="0" 
+                  formControlName="points"
+                  placeholder="0"
+                  readonly
+                />
+                <button type="button" class="btn btn-sm calc-btn icon" (click)="openPointCalc()" title="Open point calculator">
+                  <svg width="14" height="14" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M4 4h16v16H4z"/>
+                    <path d="M8 4v16"/>
+                    <path d="M4 10h16"/>
+                    <path d="M12 14h4"/>
+                    <path d="M12 18h4"/>
+                  </svg>
+                </button>
+              </div>
+              <small class="hint">Use calculator to derive story points.</small>
             </div>
           </div>
         </form>
@@ -515,6 +528,13 @@
         <button class="btn btn-secondary" type="button" (click)="closeDelete()">Cancel</button>
         <button class="btn btn-danger" type="button" (click)="confirmDelete()">Delete</button>
       </div>
+    </div>
+  </div>
+
+  <!-- Point Calculator Overlay -->
+  <div class="pc-overlay" *ngIf="showPointCalc">
+    <div class="pc-inner">
+      <app-point-calculator (pointsChange)="onPointsCalculated($event)" (closed)="onPointCalcClosed()"></app-point-calculator>
     </div>
   </div>
 </div>

@@ -6,6 +6,7 @@ import { tap, catchError } from 'rxjs/operators';
 import { of } from 'rxjs';
 import { TeamService } from '../teams/team.service';
 import { Team, TeamMember } from '../teams/team.model';
+import { PointCalculatorComponent } from '../../shared/point-calculator/point-calculator.component';
 
 // Local minimal interfaces to decouple from model file
 interface TaskItem {
@@ -31,7 +32,7 @@ interface JobTypeOption { id: number; type: string; description?: string; }
 @Component({
   selector: 'app-tasks',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, PointCalculatorComponent],
   templateUrl: './tasks.component.html',
   styleUrls: ['./tasks.component.scss']
 })
@@ -86,6 +87,7 @@ export class TasksComponent implements OnInit {
   selected: TaskItem | null = null;
   form!: FormGroup;
   Math = Math;
+  showPointCalc = false;
 
   constructor(
     private http: HttpClient,
@@ -408,6 +410,10 @@ export class TasksComponent implements OnInit {
       this.applyFilters(); this.closeModal();
     } catch (e) { console.error(e); this.error = 'Failed to save task'; }
   }
+  // Point calculator integration
+  openPointCalc() { this.showPointCalc = true; }
+  onPointsCalculated(val: number) { this.form.patchValue({ points: val }); this.showPointCalc = false; }
+  onPointCalcClosed() { this.showPointCalc = false; }
   askDelete(t: TaskItem) { this.selected = t; this.isDeleteModalOpen = true; }
   async confirmDelete() {
     if (!this.selected?.id) return; try {

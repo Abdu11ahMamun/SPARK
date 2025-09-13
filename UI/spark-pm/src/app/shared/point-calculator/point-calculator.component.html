@@ -1,0 +1,50 @@
+<div class="pc-wrapper">
+	<div class="pc-header">
+		<h4>Point Calculator</h4>
+		<button class="icon-btn" (click)="close()" aria-label="Close">✕</button>
+	</div>
+	<form [formGroup]="form" class="pc-form">
+		<div class="pc-grid">
+			<div class="pc-factor" *ngFor="let f of factors">
+				<label>{{ f.label }} <span class="range">{{ getLevelLabel(form.get(f.key)?.value || f.min) }}</span></label>
+				<input type="range" [min]="f.min" [max]="f.max" [step]="1" [formControlName]="f.key" />
+				<div class="pc-scale">
+					<span *ngFor="let n of [].constructor(f.max - f.min + 1); let i = index" 
+						[class.active]="(i + f.min) == form.get(f.key)?.value"
+						[class.level-1]="(i + f.min)===1"
+						[class.level-2]="(i + f.min)===2"
+						[class.level-3]="(i + f.min)===3"
+						[class.level-4]="(i + f.min)===4"
+						[class.level-5]="(i + f.min)===5"
+						>
+						{{ getLevelLabel(i + f.min) }}
+					</span>
+				</div>
+				<small class="help" *ngIf="f.help">{{ f.help }}</small>
+			</div>
+		</div>
+		<div class="legend">
+			<span class="badge level-1">Minimal</span>
+			<span class="badge level-2">Low</span>
+			<span class="badge level-3">Moderate</span>
+			<span class="badge level-4">High</span>
+			<span class="badge level-5">Very High</span>
+		</div>
+	</form>
+	<div class="pc-summary">
+		<div class="agg">
+			<div class="label">Weighted Score</div>
+			<div class="value">{{ aggregate }}<span class="unit">%</span></div>
+		</div>
+		<div class="points">
+			<div class="label">Story Points</div>
+			<div class="value highlight">{{ storyPoints }}</div>
+		</div>
+	</div>
+	<div class="pc-actions">
+		<button type="button" class="btn ghost" (click)="resetDefaults()">Reset</button>
+		<div class="grow"></div>
+		<button type="button" class="btn secondary" (click)="close()">Cancel</button>
+		<button type="button" class="btn primary" (click)="confirm()">Apply</button>
+	</div>
+</div>
