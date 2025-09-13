@@ -401,12 +401,17 @@
 
 /* Point Calculator Integration */
 .points-row { display:flex; gap:.5rem; align-items:center; }
-.points-row .calc-btn { background:#f3f4f6; color:#374151; border:1px solid #d1d5db; padding:.45rem .7rem; border-radius:8px; font-size:.65rem; font-weight:600; cursor:pointer; letter-spacing:.3px; box-shadow:0 1px 2px rgba(0,0,0,.04); transition:all .18s ease; }
-.points-row .calc-btn.icon { display:flex; align-items:center; justify-content:center; width:38px; padding:0; font-weight:500; }
-.points-row .calc-btn svg { stroke:#374151; transition:stroke .18s ease; }
-.points-row .calc-btn:hover { background:#e5e7eb; border-color:#c3c8ce; }
-.points-row .calc-btn:active { background:#d9dde2; box-shadow:0 0 0 1px #c3c8ce inset; }
-.points-row .calc-btn:focus-visible { outline:2px solid #6366f1; outline-offset:2px; }
+/* Calculator trigger redesigned */
+.points-row { display:flex; gap:.5rem; align-items:center; }
+.calc-trigger { position:relative; display:inline-flex; align-items:center; gap:.5rem; background:#fff; border:1px solid #d1d5db; border-radius:10px; padding:.45rem .75rem; font-size:.65rem; font-weight:600; letter-spacing:.3px; cursor:pointer; color:#1e293b; line-height:1; box-shadow:0 2px 4px rgba(15,23,42,.04),0 1px 2px rgba(15,23,42,.05); transition:background .18s, border-color .18s, box-shadow .18s, transform .18s; }
+.calc-trigger:hover { background:#f1f5f9; border-color:#c6ccd2; }
+.calc-trigger:active { background:#e2e8f0; box-shadow:0 0 0 1px #c6ccd2 inset; transform:translateY(1px); }
+.calc-trigger:focus-visible { outline:2px solid #6366f1; outline-offset:2px; }
+.calc-trigger .icon-wrap { width:24px; height:24px; border-radius:8px; display:flex; align-items:center; justify-content:center; background:linear-gradient(135deg,#667eea,#764ba2); color:#fff; box-shadow:0 1px 2px rgba(0,0,0,.15); }
+.calc-trigger .icon-wrap svg { stroke:#fff; }
+.calc-trigger .calc-text { font-weight:600; color:#374151; }
+.calc-trigger .points-chip { background:#eef2ff; color:#4338ca; padding:.25rem .45rem; font-size:.6rem; border-radius:6px; font-weight:600; line-height:1; letter-spacing:.5px; box-shadow:0 0 0 1px #e0e7ff inset; }
+.calc-trigger .points-chip::after { content:' pts'; font-weight:500; color:#6366f1; }
 .hint { display:block; margin-top:4px; font-size:.6rem; color:#6b7280; letter-spacing:.03em; }
 .pc-overlay { position:fixed; inset:0; background:rgba(17,24,39,.55); display:flex; align-items:center; justify-content:center; z-index:1000; backdrop-filter:blur(2px); }
 .pc-inner { animation:fadeInPc .18s ease; }
