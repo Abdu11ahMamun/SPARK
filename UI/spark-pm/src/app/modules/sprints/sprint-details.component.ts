@@ -560,6 +560,28 @@ export class SprintDetailsComponent implements OnInit, AfterViewInit, OnDestroy 
     // TODO: Implement assignment dialog / modal
   }
 
+  removeTaskFromSprint(task: any): void {
+    console.log('Remove from sprint clicked for task', task.id);
+    // Soft removal: set sprintId null via service (placeholder)
+    // TODO: integrate with backend endpoint if available
+    if (!task) return;
+    if (confirm('Remove this task from sprint without deleting it?')) {
+      // Optimistic UI update
+      this.tasks = this.tasks.filter(t => t.id !== task.id);
+      this.groupTasksToKanban();
+      this.calculateUserProgress();
+      this.buildBurndown();
+      this.cdr.detectChanges();
+      // TODO: call service when API exists
+    }
+  }
+
+  editTask(task: any): void {
+    console.log('Edit task from sprint details', task.id);
+    // Placeholder: could route to task management with query param
+    // TODO: implement modal/edit overlay in sprint context
+  }
+
   openAddTasksDialog(): void {
     this.showAddTasksDialog = true;
     // Under zoneless change detection we need to manually flush the state change
