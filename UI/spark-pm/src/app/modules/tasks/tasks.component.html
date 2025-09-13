@@ -539,7 +539,7 @@
   <!-- Point Calculator Overlay -->
   <div class="pc-overlay" *ngIf="showPointCalc">
     <div class="pc-inner">
-      <app-point-calculator (pointsChange)="onPointsCalculated($event)" (closed)="onPointCalcClosed()"></app-point-calculator>
+  <app-point-calculator [initialPoints]="form.value.points" [resetToken]="pointCalcReset" (pointsChange)="onPointsCalculated($event)" (closed)="onPointCalcClosed()"></app-point-calculator>
     </div>
   </div>
 </div>

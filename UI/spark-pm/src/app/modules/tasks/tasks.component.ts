@@ -88,6 +88,7 @@ export class TasksComponent implements OnInit {
   form!: FormGroup;
   Math = Math;
   showPointCalc = false;
+  pointCalcReset = 0; // increment to force calculator internal reset
 
   constructor(
     private http: HttpClient,
@@ -320,6 +321,7 @@ export class TasksComponent implements OnInit {
     this.form.reset({ status: 'OPEN', priority: 'MEDIUM', points: 0, teamId: '' }); 
     this.selectedTeamId=''; this.teamMembers=[]; 
     await this.ensureTeamsLoaded();
+    this.pointCalcReset++; // ensure calculator resets defaults for new task
     this.isModalOpen = true; 
     this.cdr.detectChanges();
   }
@@ -411,7 +413,11 @@ export class TasksComponent implements OnInit {
     } catch (e) { console.error(e); this.error = 'Failed to save task'; }
   }
   // Point calculator integration
-  openPointCalc() { this.showPointCalc = true; }
+  openPointCalc() { 
+    // If form points is 0 or undefined we reset to default factors fresh
+    if (!this.isEditMode || !this.form.value.points) { this.pointCalcReset++; }
+    this.showPointCalc = true; 
+  }
   onPointsCalculated(val: number) { this.form.patchValue({ points: val }); this.showPointCalc = false; }
   onPointCalcClosed() { this.showPointCalc = false; }
   askDelete(t: TaskItem) { this.selected = t; this.isDeleteModalOpen = true; }
