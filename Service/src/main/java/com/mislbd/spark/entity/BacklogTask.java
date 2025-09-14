@@ -1,9 +1,7 @@
 package com.mislbd.spark.entity;
 
-import com.mislbd.spark.entity.types.TaskType;
 import jakarta.persistence.*;
 import lombok.*;
-import java.time.Instant;
 import com.mislbd.spark.repository.schema.SchemaConstant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -53,4 +51,5 @@ public class BacklogTask {
     private String updateBy;
     private LocalDateTime updatedate;
     private Integer teamId;
+    private LocalDateTime dateOfDone; // newly added column to track completion timestamp
 }

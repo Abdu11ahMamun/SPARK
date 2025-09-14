@@ -292,6 +292,7 @@
                   <th>Product</th>
                   <th>Module</th>
                   <th>Deadline</th>
+                  <th>Date of Done</th>
                   <th>Actions</th>
                 </tr>
               </thead>
@@ -357,6 +358,7 @@
                     </ng-container>
                     <ng-template #viewDeadline>{{ task.deadline | date:'yyyy-MM-dd' }}</ng-template>
                   </td>
+                  <td>{{ task.dateOfDone | date:'yyyy-MM-dd' }}</td>
                   <td>
                     <div class="task-actions">
                       <button class="icon-btn assign" (click)="openAssignDialog(task)" title="Assign / Reassign">

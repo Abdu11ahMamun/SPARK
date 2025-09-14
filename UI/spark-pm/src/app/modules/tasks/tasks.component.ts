@@ -23,6 +23,7 @@ interface TaskItem {
   deadline?: string;
   points?: number;
   teamId?: number;
+  dateOfDone?: string; // ISO string for completion date-time
 }
 interface ProductOption { id: number; name: string; }
 interface ModuleOption { id: number; name: string; productId: number; }
@@ -155,7 +156,8 @@ export class TasksComponent implements OnInit {
         sprintId: task.sprintid,
         productId: task.productid,
         productModuleId: task.productModuleId,
-        points: task.points,
+    points: task.points,
+    dateOfDone: task.dateOfDone || task.date_of_done || null,
         taskType: String(task.taskType || task.tasktypeid || ''),
         mitsNo: task.mitsId ? String(task.mitsId) : (task.id?.toString() || ''),
         // Support multiple possible backend field casings / structures
@@ -397,6 +399,7 @@ export class TasksComponent implements OnInit {
             status: (created.status || 'OPEN').toUpperCase(),
             priority: (created.priority || 'MEDIUM').toUpperCase(),
             deadline: created.deadline || null,
+          dateOfDone: created.dateOfDone || created.date_of_done || null,
             assigneeUserId: created.assignedto,
             productId: created.productid,
             productModuleId: created.productModuleId,

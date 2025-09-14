@@ -47,6 +47,17 @@ public class BacklogTaskController {
         return backlogTaskService.getBacklogTaskById(id)
                 .map(existing -> {
                     backlogTaskDto.setId(id);
+                    // Preserve existing dateOfDone unless transitioning to DONE now
+                    if (backlogTaskDto.getDateOfDone() == null) {
+                        // If status becomes DONE and previously not DONE, stamp now
+                        boolean wasDone = existing.getStatus() != null && existing.getStatus().equalsIgnoreCase("DONE");
+                        boolean nowDone = backlogTaskDto.getStatus() != null && backlogTaskDto.getStatus().equalsIgnoreCase("DONE");
+                        if (nowDone && !wasDone) {
+                            backlogTaskDto.setDateOfDone(java.time.LocalDateTime.now());
+                        } else {
+                            backlogTaskDto.setDateOfDone(existing.getDateOfDone());
+                        }
+                    }
                     BacklogTask updated = backlogTaskService.saveBacklogTask(backlogTaskMapper.toEntity(backlogTaskDto));
                     return ResponseEntity.ok(backlogTaskMapper.toDto(updated));
                 })

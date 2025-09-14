@@ -34,4 +34,5 @@ package com.mislbd.spark.dto;
         private String updateBy;
         private LocalDateTime updatedate;
         private Integer teamId;
+        private LocalDateTime dateOfDone; // completion timestamp (nullable)
     }

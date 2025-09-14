@@ -176,6 +176,7 @@
           <th>Status</th>
           <th>Priority</th>
           <th>Deadline</th>
+          <th>Date of Done</th>
           <th>Points</th>
           <th>Actions</th>
         </tr>
@@ -214,6 +215,11 @@
             <div class="deadline-info" [class.overdue]="isOverdue(t.deadline)">
               {{ t.deadline ? (t.deadline | date:'MMM dd, yyyy') : '—' }}
               <div *ngIf="isOverdue(t.deadline)" class="overdue-label">Overdue</div>
+            </div>
+          </td>
+          <td>
+            <div class="done-info">
+              {{ t.dateOfDone ? (t.dateOfDone | date:'MMM dd, yyyy') : '—' }}
             </div>
           </td>
           <td>

@@ -197,10 +197,10 @@ export class SprintDetailsComponent implements OnInit, AfterViewInit, OnDestroy 
               const u: any = this.users.find(x => x.id === uid);
               if (u) {
                 const full = [u.firstName, u.lastName].filter(Boolean).join(' ').trim();
-                return { ...t, assigneeName: full || u.username || u.name || ('User ' + uid) };
+                return { ...t, assigneeName: full || u.username || u.name || ('User ' + uid), dateOfDone: t.dateOfDone || t.date_of_done || null };
               }
             }
-            return t;
+            return { ...t, dateOfDone: t.dateOfDone || t.date_of_done || null };
           });
         }
         // Enrich tasks with product & module names for quick template lookup
@@ -722,6 +722,13 @@ export class SprintDetailsComponent implements OnInit, AfterViewInit, OnDestroy 
       teamid: task.teamId ?? null,
       mitsId: task.mitsId || task.mitsNo || task.id
     };
+
+    // If transitioning to DONE and no dateOfDone yet, set locally (backend will persist if controller logic exists there for tasks endpoint)
+    if ((newStatus === 'DONE' || newStatus === 'COMPLETED') && !task.dateOfDone) {
+      const nowIso = new Date().toISOString();
+      payload.dateOfDone = nowIso;
+      task.dateOfDone = nowIso;
+    }
 
     // Apply local optimistic changes
     task.status = newStatus;
