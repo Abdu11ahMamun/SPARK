@@ -1178,3 +1178,12 @@ button.calc-inline-display { background:transparent; border:1px solid var(--pc-b
 button.calc-inline-display .val { font-weight:600; }
 button.calc-inline-display .badge { font-size:10px; opacity:.7; text-transform:uppercase; letter-spacing:.5px; }
 button.calc-inline-display:hover { background:#f1f5f9; border-color:#cbd5e1; }
+
+/* Dirty field highlight */
+td .inline-input.dirty, td.dirty { outline:2px solid #f59e0b; outline-offset:0; background:#fffbeb; }
+tr.editing { background:#f8fafc; }
+/* Save button disabled state */
+.task-actions .icon-btn.save[disabled] { opacity:.45; cursor:not-allowed; }
+/* Inline mini spinner */
+.task-actions .icon-btn .spinner { width:14px; height:14px; border:2px solid rgba(255,255,255,.4); border-top-color:#059669; border-radius:50%; animation:spin .7s linear infinite; margin-right:2px; }
+@keyframes spin { to { transform:rotate(360deg); } }

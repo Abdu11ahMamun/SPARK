@@ -76,7 +76,7 @@ export class SprintDetailsComponent implements OnInit, AfterViewInit, OnDestroy 
 
   // Inline edit state
   editingTaskId: number | null = null;
-  editBuffer: { status?: string; assigneeId?: number; points?: number } = {};
+  editBuffer: { status?: string; assigneeId?: number; points?: number; taskType?: string | number; productModuleId?: number; deadline?: string | null } = {};
   // Inline calculator state
   showInlineCalcFor: number | null = null;
   inlineCalcReset = 0;
@@ -87,6 +87,7 @@ export class SprintDetailsComponent implements OnInit, AfterViewInit, OnDestroy 
   private suppressCloseUntil = 0;
   // Prevent immediate re-open after closing (Apply / Cancel) while input still focused
   private ignoreFocusUntil = 0;
+  inlineSaving: number | null = null; // task id currently saving inline
   
   kanbanColumns: { key: string; title: string; tasks: any[] }[] = [
     { key: 'TODO', title: 'To-Do', tasks: [] },
@@ -173,15 +174,21 @@ export class SprintDetailsComponent implements OnInit, AfterViewInit, OnDestroy 
     forkJoin({
       sprint: this.sprintService.getSprintById(this.sprintId),
       tasks: this.taskService.getTasksBySprint(this.sprintId),
-      users: this.http.get<User[]>(`${environment.apiUrl}/api/users`)
+      users: this.http.get<User[]>(`${environment.apiUrl}/api/users`),
+      products: this.http.get<Product[]>(`${environment.apiUrl}/api/products`).pipe(delay(0)),
+      productModules: this.http.get<ProductModule[]>(`${environment.apiUrl}/api/product-modules`).pipe(delay(0)),
+      jobTypes: this.http.get<{id:number; type:string}[]>(`${environment.apiUrl}/api/job-types`).pipe(delay(0))
     }).pipe(
       delay(100) // Small delay to ensure component is ready
     ).subscribe({
-      next: ({ sprint, tasks, users }) => {
-        console.log('Data received - Sprint:', sprint, 'Tasks:', tasks?.length, 'Users:', users?.length);
+      next: ({ sprint, tasks, users, products, productModules, jobTypes }) => {
+        console.log('Data received - Sprint:', sprint, 'Tasks:', tasks?.length, 'Users:', users?.length, 'Products:', products?.length, 'Modules:', productModules?.length, 'JobTypes:', jobTypes?.length);
         this.sprint = sprint;
         this.tasks = tasks || [];
         this.users = users || [];
+        this.products = products || [];
+        this.productModules = productModules || [];
+        this.jobTypes = jobTypes || [];
         // Enrich tasks with assigneeName if user list available
         if (this.users.length) {
           this.tasks = this.tasks.map(t => {
@@ -195,6 +202,14 @@ export class SprintDetailsComponent implements OnInit, AfterViewInit, OnDestroy 
             }
             return t;
           });
+        }
+        // Enrich tasks with product & module names for quick template lookup
+        if (this.products.length || this.productModules.length) {
+          this.tasks = this.tasks.map(t => ({
+            ...t,
+            productName: this.getProductName(t.productId || t.productid),
+            moduleName: this.getModuleName(t.productModuleId || t.productmoduleid)
+          }));
         }
         this.hasNoData = this.tasks.length === 0;
         console.log('hasNoData:', this.hasNoData, 'tasks length:', this.tasks.length);
@@ -579,6 +594,17 @@ export class SprintDetailsComponent implements OnInit, AfterViewInit, OnDestroy 
     return m?.name || '—';
   }
 
+  getModulesForProduct(productId?: number): ProductModule[] {
+    if (!productId) return this.productModules;
+    return this.productModules.filter(m => m.productId === productId);
+  }
+
+  getProductName(productId?: number): string {
+    if (!productId) return '—';
+    const p = this.products.find(pr => pr.id === productId);
+    return p?.name || '—';
+  }
+
   // Track by function for task table performance
   trackByTaskId(index: number, task: any): any {
     return task.id || index;
@@ -626,11 +652,30 @@ export class SprintDetailsComponent implements OnInit, AfterViewInit, OnDestroy 
     this.editBuffer = {
       status: task.status,
       assigneeId: task.assigneeId || task.assigneeUserId || task.assignedto,
-      points: Number(task.storyPoints ?? task.points ?? task.estimate ?? 0)
+      points: Number(task.storyPoints ?? task.points ?? task.estimate ?? 0),
+      taskType: task.taskType || task.tasktypeid,
+      productModuleId: task.productModuleId || task.productmoduleid,
+      deadline: task.deadline ? (typeof task.deadline === 'string' ? task.deadline.substring(0,10) : task.deadline) : null
     };
     this.originalPointsForCalc = this.editBuffer.points || 0;
     // Do not auto open yet—will open when user focuses the points field
     this.cdr.detectChanges();
+  }
+
+  isEditDirty(task: any): boolean {
+    if (!task || this.editingTaskId !== task.id) return false;
+    const originalPoints = Number(task.points || task.storyPoints || 0);
+    const originalTaskType = task.taskType || task.tasktypeid;
+    const originalModule = task.productModuleId || task.productmoduleid;
+    const originalDeadline = task.deadline ? (typeof task.deadline === 'string' ? task.deadline.substring(0,10) : task.deadline) : null;
+    return !(
+      task.status === this.editBuffer.status &&
+      task.assigneeId === this.editBuffer.assigneeId &&
+      originalPoints === (this.editBuffer.points ?? originalPoints) &&
+      originalTaskType === (this.editBuffer.taskType ?? originalTaskType) &&
+      originalModule === (this.editBuffer.productModuleId ?? originalModule) &&
+      originalDeadline === (this.editBuffer.deadline ?? originalDeadline)
+    );
   }
 
   cancelEdit(): void {
@@ -641,21 +686,36 @@ export class SprintDetailsComponent implements OnInit, AfterViewInit, OnDestroy 
 
   saveInline(task: any): void {
     if (!task || this.editingTaskId !== task.id) return;
+    if (this.inlineSaving) return; // prevent double submit
+    const originalStatus = task.status;
+    const originalAssignee = task.assigneeId;
+    const originalPoints = Number(task.points || task.storyPoints || 0);
+    const originalTaskType = task.taskType || task.tasktypeid;
+    const originalModule = task.productModuleId || task.productmoduleid;
+    const originalDeadline = task.deadline ? (typeof task.deadline === 'string' ? task.deadline.substring(0,10) : task.deadline) : null;
+    const newStatus = this.editBuffer.status;
+    const newAssignee = this.editBuffer.assigneeId;
+    const newPoints = this.editBuffer.points ?? originalPoints;
+    const newTaskType = this.editBuffer.taskType ?? originalTaskType;
+    const newModule = this.editBuffer.productModuleId ?? originalModule;
+    const newDeadline = this.editBuffer.deadline ?? originalDeadline;
+    const noChange = originalStatus===newStatus && originalAssignee===newAssignee && originalPoints===newPoints && originalTaskType===newTaskType && originalModule===newModule && originalDeadline===newDeadline;
+    if (noChange) { this.cancelEdit(); return; }
     // Prepare backend payload similar to tasks.component saveTask mapping
     const payload: any = {
-      status: task.status,
+      status: newStatus,
       priority: task.priority,
       title: task.title,
       description: task.description,
-      deadline: task.deadline || null,
-      assignedto: this.editBuffer.assigneeId ?? task.assigneeId ?? null,
-      assigneeId: this.editBuffer.assigneeId ?? task.assigneeId ?? null,
-      points: this.editBuffer.points ?? task.points ?? 0,
-      storyPoints: this.editBuffer.points ?? task.storyPoints ?? 0,
-      taskType: task.taskType,
-      tasktypeid: task.taskType,
+      deadline: newDeadline || null,
+      assignedto: newAssignee ?? task.assigneeId ?? null,
+      assigneeId: newAssignee ?? task.assigneeId ?? null,
+      points: newPoints ?? task.points ?? 0,
+      storyPoints: newPoints ?? task.storyPoints ?? 0,
+      taskType: newTaskType,
+      tasktypeid: newTaskType,
       productid: task.productId ?? task.productid ?? null,
-      productModuleId: task.productModuleId ?? task.productmoduleid ?? null,
+      productModuleId: newModule ?? null,
       sprintid: this.sprintId,
       sprintId: this.sprintId,
       teamId: task.teamId ?? null,
@@ -664,14 +724,21 @@ export class SprintDetailsComponent implements OnInit, AfterViewInit, OnDestroy 
     };
 
     // Apply local optimistic changes
-    task.status = this.editBuffer.status;
-    task.assigneeId = this.editBuffer.assigneeId;
-    task.points = this.editBuffer.points;
-    task.storyPoints = this.editBuffer.points;
+    task.status = newStatus;
+    task.assigneeId = newAssignee;
+    task.points = newPoints;
+    task.storyPoints = newPoints;
+    task.taskType = newTaskType;
+    task.tasktypeid = newTaskType;
+    task.productModuleId = newModule;
+    task.productmoduleid = newModule;
+    task.deadline = newDeadline;
 
     // Persist
+    this.inlineSaving = task.id;
     this.http.put(`${environment.apiUrl}/api/tasks/${task.id}`, payload).subscribe({
       next: () => {
+        this.inlineSaving = null;
         // finalize edit state
         this.editingTaskId = null;
         this.editBuffer = {};
@@ -683,6 +750,7 @@ export class SprintDetailsComponent implements OnInit, AfterViewInit, OnDestroy 
       },
       error: (err) => {
         console.error('Failed to persist task inline edit', err);
+        this.inlineSaving = null;
         // Optionally revert? For now keep optimistic & mark error.
         this.editingTaskId = null;
         this.editBuffer = {};

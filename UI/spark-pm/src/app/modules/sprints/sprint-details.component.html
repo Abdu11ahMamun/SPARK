@@ -296,11 +296,18 @@
                 </tr>
               </thead>
               <tbody>
-                <tr *ngFor="let task of filteredTasks; trackBy: trackByTaskId">
+                <tr *ngFor="let task of filteredTasks; trackBy: trackByTaskId" [class.editing]="editingTaskId===task.id">
                   <td>{{ task.id }}</td>
                   <td>{{ task.mitsNo || task.mitsId || '—' }}</td>
-                  <td>{{ task.title }}</td>
-                  <td>{{ task.taskType || task.type || '—' }}</td>
+                  <td [class.dirty]="editingTaskId===task.id && task.title!==task.title">{{ task.title }}</td>
+                  <td>
+                    <ng-container *ngIf="editingTaskId === task.id; else viewType">
+                      <select class="inline-input" [(ngModel)]="editBuffer.taskType">
+                        <option *ngFor="let jt of jobTypes" [ngValue]="jt.id">{{ jt.type }}</option>
+                      </select>
+                    </ng-container>
+                    <ng-template #viewType>{{ getTaskTypeLabel(task.taskType || task.tasktypeid) }}</ng-template>
+                  </td>
                   <td>
                     <span class="priority" [class]="'priority-' + (task.priority || 'medium')?.toLowerCase()">
                       {{ task.priority || 'Medium' }}
@@ -327,16 +334,29 @@
                   </td>
                   <td>
                     <ng-container *ngIf="editingTaskId === task.id; else viewAssignee">
-                      <select class="inline-input" [(ngModel)]="editBuffer.assigneeId">
+                      <select class="inline-input" [(ngModel)]="editBuffer.assigneeId" [class.dirty]="task.assigneeId!==editBuffer.assigneeId">
                         <option [ngValue]="undefined">Unassigned</option>
                         <option *ngFor="let u of users" [ngValue]="u.id">{{ (u.firstName + ' ' + u.lastName) || u.username }}</option>
                       </select>
                     </ng-container>
                     <ng-template #viewAssignee>{{ getAssigneeName(task.assigneeId || task.assigneeUserId || task.assignedto) || task.assigneeName || task.assignee || '—' }}</ng-template>
                   </td>
-                  <td>{{ task.productId || task.product || '—' }}</td>
-                  <td>{{ task.productModuleId || task.module || '—' }}</td>
-                  <td>{{ task.deadline | date:'yyyy-MM-dd' }}</td>
+                  <td>{{ task.productName || getProductName(task.productId || task.productid) }}</td>
+                  <td>
+                    <ng-container *ngIf="editingTaskId === task.id; else viewModule">
+                      <select class="inline-input" [(ngModel)]="editBuffer.productModuleId">
+                        <option [ngValue]="undefined">— Module —</option>
+                        <option *ngFor="let m of getModulesForProduct(task.productId || task.productid)" [ngValue]="m.id">{{ m.name }}</option>
+                      </select>
+                    </ng-container>
+                    <ng-template #viewModule>{{ task.moduleName || getModuleName(task.productModuleId || task.productmoduleid) }}</ng-template>
+                  </td>
+                  <td>
+                    <ng-container *ngIf="editingTaskId === task.id; else viewDeadline">
+                      <input type="date" class="inline-input" [(ngModel)]="editBuffer.deadline" />
+                    </ng-container>
+                    <ng-template #viewDeadline>{{ task.deadline | date:'yyyy-MM-dd' }}</ng-template>
+                  </td>
                   <td>
                     <div class="task-actions">
                       <button class="icon-btn assign" (click)="openAssignDialog(task)" title="Assign / Reassign">
@@ -357,7 +377,8 @@
                         </svg>
                       </button>
                       <ng-container *ngIf="editingTaskId === task.id; else editBtn">
-                        <button class="icon-btn save" (click)="saveInline(task)" title="Save">
+                        <button class="icon-btn save" (click)="saveInline(task)" title="Save" [disabled]="!isEditDirty(task)">
+                          <span class="spinner" *ngIf="inlineSaving===task.id"></span>
                           <svg width="15" height="15" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M5 13l4 4L19 7" />
                           </svg>
@@ -380,14 +401,10 @@
                     </div>
                   </td>
                 </tr>
-                    <div class="task-assignee" *ngIf="task.assigneeId || task.assigneeUserId || task.assignedto; else unassigned">
+                <tr *ngIf="filteredTasks.length===0">
                   <td colspan="12" class="empty-state">
                     <div class="empty-content">
-                      <svg width="48" height="48" fill="none" stroke="currentColor" stroke-width="1" viewBox="0 0 24 24">
-                        <path d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
-                      </svg>
-                  <td>{{ getTaskTypeLabel(task.taskType || task.tasktypeid) }}</td>
-                  <td>{{ getModuleName(task.productModuleId || task.productmoduleid) }}</td>
+                      <svg width="48" height="48" fill="none" stroke="currentColor" stroke-width="1" viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
                       <p>No tasks found</p>
                     </div>
                   </td>
