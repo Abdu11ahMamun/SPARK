@@ -83,6 +83,8 @@ export class SprintDetailsComponent implements OnInit, AfterViewInit, OnDestroy 
   calcPosition: { top: number; left: number } | null = null; // unused in modal mode
   private lastFocusedInput?: HTMLElement;
   private suppressCloseUntil = 0;
+  // Prevent immediate re-open after closing (Apply / Cancel) while input still focused
+  private ignoreFocusUntil = 0;
   
   kanbanColumns: { key: string; title: string; tasks: any[] }[] = [
     { key: 'TODO', title: 'To-Do', tasks: [] },
@@ -627,6 +629,10 @@ export class SprintDetailsComponent implements OnInit, AfterViewInit, OnDestroy 
 
   onPointsFieldFocus(task: any) {
     if (!task || this.editingTaskId !== task.id) return;
+    // Guard against immediate reopen right after a close (user clicked Apply/Cancel)
+    if (Date.now() < this.ignoreFocusUntil) {
+      return;
+    }
     // Open calculator immediately
     if (this.showInlineCalcFor !== task.id) {
       this.showInlineCalcFor = task.id;
@@ -657,12 +663,21 @@ export class SprintDetailsComponent implements OnInit, AfterViewInit, OnDestroy 
   onInlineCalcPoints(points: number, task: any) {
     if (this.editingTaskId === task.id) {
       this.editBuffer.points = points;
-      // keep calculator open until user closes editing or clicks outside
-      this.cdr.detectChanges();
+      // Close immediately after applying per requirement
+      this.closeInlineCalc(true);
     }
   }
 
-  closeInlineCalc() {
+  closeInlineCalc(suppressReopen: boolean = true) {
+    if (suppressReopen) {
+      // Suppress focus-triggered reopen for a short window
+      this.ignoreFocusUntil = Date.now() + 300; // 300ms is enough to allow blur
+      // Blur any active element (e.g., the points input) so it doesn't refocus
+      const active = document.activeElement as HTMLElement | null;
+      if (active && typeof active.blur === 'function') {
+        active.blur();
+      }
+    }
     this.showInlineCalcFor = null;
     this.cdr.detectChanges();
     document.body.classList.remove('no-scroll');
