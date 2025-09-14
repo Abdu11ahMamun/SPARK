@@ -35,34 +35,23 @@
 }
 
 .sprint-status {
-    position: relative;
+  position: relative;
   padding: 6px 16px;
   border-radius: 20px;
   font-size: 0.875rem;
   font-weight: 600;
-/* Inline calculator */
-/* Center modal calculator */
-/* Shared task-style point calculator overlay */
+  background: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(10px);
+  &.status-1 { background: rgba(34, 197, 94, 0.9); }
+  &.status-2 { background: rgba(168, 85, 247, 0.9); }
+  &.status-0 { background: rgba(251, 191, 36, 0.9); }
+}
+
+/* Shared task-style point calculator overlay (moved outside sprint-status block) */
 .pc-overlay { position:fixed; inset:0; background:rgba(17,24,39,.55); display:flex; align-items:center; justify-content:center; z-index:1000; backdrop-filter:blur(2px); }
 .pc-inner { animation:fadeInPc .18s ease; }
 @keyframes fadeInPc { from { opacity:0; transform:translateY(4px);} to { opacity:1; transform:translateY(0);} }
-
 body.no-scroll { overflow:hidden; }
-  background: rgba(255, 255, 255, 0.2);
-  backdrop-filter: blur(10px);
-  
-  &.status-1 {
-    background: rgba(34, 197, 94, 0.9);
-  }
-  
-  &.status-2 {
-    background: rgba(168, 85, 247, 0.9);
-  }
-  
-  &.status-0 {
-    background: rgba(251, 191, 36, 0.9);
-  }
-}
 
 .sprint-meta {
   display: grid;
@@ -1179,3 +1168,13 @@ body.no-scroll { overflow:hidden; }
     page-break-inside: avoid;
   }
 }
+
+/* Inline points calculator trigger & display */
+.points-edit-inline { display:flex; align-items:center; gap:4px; }
+.points-edit-inline .calc-trigger-mini { background: var(--pc-accent, #2563eb); border:1px solid #1d4ed8; color:#fff; width:26px; height:26px; display:inline-flex; align-items:center; justify-content:center; border-radius:6px; cursor:pointer; padding:0; transition: background .15s ease, transform .15s ease; }
+.points-edit-inline .calc-trigger-mini:hover { background:#1d4ed8; }
+.points-edit-inline .calc-trigger-mini:active { transform:translateY(1px); }
+button.calc-inline-display { background:transparent; border:1px solid var(--pc-border,#e2e8f0); padding:2px 8px 3px; border-radius:16px; font-size:12px; line-height:1.2; display:inline-flex; align-items:center; gap:4px; cursor:pointer; color:var(--pc-fg,#1e293b); transition: background .15s ease, border-color .15s ease; }
+button.calc-inline-display .val { font-weight:600; }
+button.calc-inline-display .badge { font-size:10px; opacity:.7; text-transform:uppercase; letter-spacing:.5px; }
+button.calc-inline-display:hover { background:#f1f5f9; border-color:#cbd5e1; }

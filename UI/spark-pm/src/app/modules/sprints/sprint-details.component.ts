@@ -82,6 +82,7 @@ export class SprintDetailsComponent implements OnInit, AfterViewInit, OnDestroy 
   // Center modal now; keep fields for potential future revert
   calcPosition: { top: number; left: number } | null = null; // unused in modal mode
   private lastFocusedInput?: HTMLElement;
+  private suppressCloseUntil = 0;
   
   kanbanColumns: { key: string; title: string; tasks: any[] }[] = [
     { key: 'TODO', title: 'To-Do', tasks: [] },
@@ -630,10 +631,28 @@ export class SprintDetailsComponent implements OnInit, AfterViewInit, OnDestroy 
     if (this.showInlineCalcFor !== task.id) {
       this.showInlineCalcFor = task.id;
       this.inlineCalcReset++;
+      // prevent immediate outside-click close (same event cycle)
+      this.suppressCloseUntil = Date.now() + 120; // 120ms buffer
       this.cdr.detectChanges();
         document.body.classList.add('no-scroll');
+        // Defer opening to next microtask so originating click is finished
+        Promise.resolve().then(() => {
+          this.showInlineCalcFor = task.id;
+          this.inlineCalcReset++;
+          this.suppressCloseUntil = Date.now() + 120; // still keep guard for keyboard focus cases
+          this.cdr.detectChanges();
+          document.body.classList.add('no-scroll');
+        });
     }
   }
+
+    openCalculatorForTask(task: any) {
+      if (!task) return;
+      if (this.editingTaskId !== task.id) {
+        this.editTask(task);
+      }
+      this.onPointsFieldFocus(task);
+    }
 
   onInlineCalcPoints(points: number, task: any) {
     if (this.editingTaskId === task.id) {
@@ -649,14 +668,7 @@ export class SprintDetailsComponent implements OnInit, AfterViewInit, OnDestroy 
     document.body.classList.remove('no-scroll');
   }
 
-  @HostListener('document:click', ['$event']) onDocClick(ev: MouseEvent) {
-    if (!this.showInlineCalcFor) return;
-    const target = ev.target as HTMLElement;
-    if (!target) return;
-  if (target.closest('.pc-inner') || target.closest('.points-cell')) return; // ignore internal clicks
-    // Backdrop click handled directly; document click outside also closes
-    this.closeInlineCalc();
-  }
+  // Removed global document click handler; backdrop <div class="pc-overlay"> now handles close.
 
   @HostListener('window:keydown', ['$event']) onKey(ev: KeyboardEvent) {
     if (ev.key === 'Escape' && this.showInlineCalcFor) {
