@@ -1,4 +1,4 @@
-import { Component, OnInit, AfterViewInit, OnDestroy, ElementRef, ViewChild, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, AfterViewInit, OnDestroy, ElementRef, ViewChild, ChangeDetectorRef, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -11,6 +11,7 @@ import { forkJoin, Subscription } from 'rxjs';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
 import { delay } from 'rxjs/operators';
+import { PointCalculatorComponent } from '../../shared/point-calculator/point-calculator.component';
 import Chart from 'chart.js/auto';
 
 // Interface for user progress based on points
@@ -49,7 +50,7 @@ interface SprintCapacity {
 @Component({
   selector: 'app-sprint-details',
   standalone: true,
-  imports: [CommonModule, FormsModule, SprintAddTasksDialogComponent],
+  imports: [CommonModule, FormsModule, SprintAddTasksDialogComponent, PointCalculatorComponent],
   templateUrl: './sprint-details.component.html',
   styleUrls: ['./sprint-details.component.scss']
 })
@@ -74,6 +75,13 @@ export class SprintDetailsComponent implements OnInit, AfterViewInit, OnDestroy 
   // Inline edit state
   editingTaskId: number | null = null;
   editBuffer: { status?: string; assigneeId?: number; points?: number } = {};
+  // Inline calculator state
+  showInlineCalcFor: number | null = null;
+  inlineCalcReset = 0;
+  originalPointsForCalc = 0;
+  // Center modal now; keep fields for potential future revert
+  calcPosition: { top: number; left: number } | null = null; // unused in modal mode
+  private lastFocusedInput?: HTMLElement;
   
   kanbanColumns: { key: string; title: string; tasks: any[] }[] = [
     { key: 'TODO', title: 'To-Do', tasks: [] },
@@ -588,6 +596,8 @@ export class SprintDetailsComponent implements OnInit, AfterViewInit, OnDestroy 
       assigneeId: task.assigneeId || task.assigneeUserId || task.assignedto,
       points: Number(task.storyPoints ?? task.points ?? task.estimate ?? 0)
     };
+    this.originalPointsForCalc = this.editBuffer.points || 0;
+    // Do not auto open yet—will open when user focuses the points field
     this.cdr.detectChanges();
   }
 
@@ -607,10 +617,52 @@ export class SprintDetailsComponent implements OnInit, AfterViewInit, OnDestroy 
     // TODO: persist via service (patch task) when backend endpoint is defined
     this.editingTaskId = null;
     this.editBuffer = {};
+    this.showInlineCalcFor = null;
     this.groupTasksToKanban();
     this.calculateUserProgress();
     this.buildBurndown();
     this.cdr.detectChanges();
+  }
+
+  onPointsFieldFocus(task: any) {
+    if (!task || this.editingTaskId !== task.id) return;
+    // Open calculator immediately
+    if (this.showInlineCalcFor !== task.id) {
+      this.showInlineCalcFor = task.id;
+      this.inlineCalcReset++;
+      this.cdr.detectChanges();
+        document.body.classList.add('no-scroll');
+    }
+  }
+
+  onInlineCalcPoints(points: number, task: any) {
+    if (this.editingTaskId === task.id) {
+      this.editBuffer.points = points;
+      // keep calculator open until user closes editing or clicks outside
+      this.cdr.detectChanges();
+    }
+  }
+
+  closeInlineCalc() {
+    this.showInlineCalcFor = null;
+    this.cdr.detectChanges();
+    document.body.classList.remove('no-scroll');
+  }
+
+  @HostListener('document:click', ['$event']) onDocClick(ev: MouseEvent) {
+    if (!this.showInlineCalcFor) return;
+    const target = ev.target as HTMLElement;
+    if (!target) return;
+  if (target.closest('.pc-inner') || target.closest('.points-cell')) return; // ignore internal clicks
+    // Backdrop click handled directly; document click outside also closes
+    this.closeInlineCalc();
+  }
+
+  @HostListener('window:keydown', ['$event']) onKey(ev: KeyboardEvent) {
+    if (ev.key === 'Escape' && this.showInlineCalcFor) {
+      this.closeInlineCalc();
+      ev.stopPropagation();
+    }
   }
 
   openAddTasksDialog(): void {

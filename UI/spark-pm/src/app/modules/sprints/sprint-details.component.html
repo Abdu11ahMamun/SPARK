@@ -319,9 +319,9 @@
                       <span class="status-badge" [class]="'status-' + task.status?.toLowerCase()">{{ task.status }}</span>
                     </ng-template>
                   </td>
-                  <td>
+                  <td class="points-cell">
                     <ng-container *ngIf="editingTaskId === task.id; else viewPoints">
-                      <input type="number" min="0" class="inline-input number" [(ngModel)]="editBuffer.points" />
+                      <input type="number" min="0" class="inline-input number" [(ngModel)]="editBuffer.points" (focus)="onPointsFieldFocus(task)" />
                     </ng-container>
                     <ng-template #viewPoints>{{ task.points || task.storyPoints || task.estimate || 0 }}</ng-template>
                   </td>
@@ -477,4 +477,14 @@
     (close)="closeAddTasksDialog()"
     (added)="onTasksAdded($event)">
   </app-sprint-add-tasks-dialog>
+  <!-- Global (root-level) calculator overlay to ensure true viewport centering -->
+  <div class="pc-overlay" *ngIf="showInlineCalcFor" (click)="closeInlineCalc()">
+    <div class="pc-inner" (click)="$event.stopPropagation()">
+      <app-point-calculator
+        [initialPoints]="originalPointsForCalc"
+        [resetToken]="inlineCalcReset"
+        (pointsChange)="onInlineCalcPoints($event, {id: showInlineCalcFor})"
+        (closed)="closeInlineCalc()"></app-point-calculator>
+    </div>
+  </div>
 </div>
