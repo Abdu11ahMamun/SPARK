@@ -380,12 +380,14 @@
                     </div>
                   </td>
                 </tr>
-                <tr *ngIf="filteredTasks.length === 0">
+                    <div class="task-assignee" *ngIf="task.assigneeId || task.assigneeUserId || task.assignedto; else unassigned">
                   <td colspan="12" class="empty-state">
                     <div class="empty-content">
                       <svg width="48" height="48" fill="none" stroke="currentColor" stroke-width="1" viewBox="0 0 24 24">
                         <path d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
                       </svg>
+                  <td>{{ getTaskTypeLabel(task.taskType || task.tasktypeid) }}</td>
+                  <td>{{ getModuleName(task.productModuleId || task.productmoduleid) }}</td>
                       <p>No tasks found</p>
                     </div>
                   </td>

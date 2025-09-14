@@ -71,6 +71,8 @@ export class SprintDetailsComponent implements OnInit, AfterViewInit, OnDestroy 
   productModules: ProductModule[] = [];
   sprintCapacities: SprintCapacity[] = [];
   userProgress: UserProgress[] = [];
+  // Cached job types/modules (will lazily load when first needed)
+  jobTypes: { id: number; type: string }[] = [];
 
   // Inline edit state
   editingTaskId: number | null = null;
@@ -550,6 +552,33 @@ export class SprintDetailsComponent implements OnInit, AfterViewInit, OnDestroy 
     return 'User ' + id;
   }
 
+  // Map taskType id/string to human readable (Design, QA, RND, etc.) reused from tasks module logic
+  getTaskTypeLabel(taskType?: string | number): string {
+    if (!taskType) return '—';
+    if (typeof taskType === 'string' && isNaN(Number(taskType))) return taskType; // already a label
+    const id = typeof taskType === 'string' ? Number(taskType) : taskType;
+    const jt = this.jobTypes.find(j => j.id === id);
+    return jt?.type || this.fallbackTaskType(id);
+  }
+
+  private fallbackTaskType(id: number): string {
+    // Provide graceful labels if jobTypes not loaded yet (common conventions)
+    const map: Record<number,string> = {
+      1: 'Design',
+      2: 'Development',
+      3: 'QA',
+      4: 'R&D',
+      5: 'Support'
+    };
+    return map[id] || 'Task';
+  }
+
+  getModuleName(moduleId?: number): string {
+    if (!moduleId) return '—';
+    const m = this.productModules.find(pm => pm.id === moduleId);
+    return m?.name || '—';
+  }
+
   // Track by function for task table performance
   trackByTaskId(index: number, task: any): any {
     return task.id || index;
@@ -612,19 +641,55 @@ export class SprintDetailsComponent implements OnInit, AfterViewInit, OnDestroy 
 
   saveInline(task: any): void {
     if (!task || this.editingTaskId !== task.id) return;
-    // Optimistic update
+    // Prepare backend payload similar to tasks.component saveTask mapping
+    const payload: any = {
+      status: task.status,
+      priority: task.priority,
+      title: task.title,
+      description: task.description,
+      deadline: task.deadline || null,
+      assignedto: this.editBuffer.assigneeId ?? task.assigneeId ?? null,
+      assigneeId: this.editBuffer.assigneeId ?? task.assigneeId ?? null,
+      points: this.editBuffer.points ?? task.points ?? 0,
+      storyPoints: this.editBuffer.points ?? task.storyPoints ?? 0,
+      taskType: task.taskType,
+      tasktypeid: task.taskType,
+      productid: task.productId ?? task.productid ?? null,
+      productModuleId: task.productModuleId ?? task.productmoduleid ?? null,
+      sprintid: this.sprintId,
+      sprintId: this.sprintId,
+      teamId: task.teamId ?? null,
+      teamid: task.teamId ?? null,
+      mitsId: task.mitsId || task.mitsNo || task.id
+    };
+
+    // Apply local optimistic changes
     task.status = this.editBuffer.status;
     task.assigneeId = this.editBuffer.assigneeId;
     task.points = this.editBuffer.points;
-    task.storyPoints = this.editBuffer.points; // unify naming
-    // TODO: persist via service (patch task) when backend endpoint is defined
-    this.editingTaskId = null;
-    this.editBuffer = {};
-    this.showInlineCalcFor = null;
-    this.groupTasksToKanban();
-    this.calculateUserProgress();
-    this.buildBurndown();
-    this.cdr.detectChanges();
+    task.storyPoints = this.editBuffer.points;
+
+    // Persist
+    this.http.put(`${environment.apiUrl}/api/tasks/${task.id}`, payload).subscribe({
+      next: () => {
+        // finalize edit state
+        this.editingTaskId = null;
+        this.editBuffer = {};
+        this.showInlineCalcFor = null;
+        this.groupTasksToKanban();
+        this.calculateUserProgress();
+        this.buildBurndown();
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        console.error('Failed to persist task inline edit', err);
+        // Optionally revert? For now keep optimistic & mark error.
+        this.editingTaskId = null;
+        this.editBuffer = {};
+        this.showInlineCalcFor = null;
+        this.cdr.detectChanges();
+      }
+    });
   }
 
   onPointsFieldFocus(task: any) {
