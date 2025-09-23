@@ -1,9 +1,7 @@
-<div class="app-layout">
-  <app-sidebar (sidebarToggled)="onSidebarToggled($event)"></app-sidebar>
-  <main class="main-content" [class.sidebar-collapsed]="sidebarCollapsed()">
+<div class="app-layout" [class.fullscreen-login]="!showLayout()">
+  <app-sidebar *ngIf="showLayout()" (sidebarToggled)="onSidebarToggled($event)"></app-sidebar>
+  <main class="main-content" [class.sidebar-collapsed]="sidebarCollapsed()" [class.fullscreen]="!showLayout()">
     <router-outlet />
   </main>
-  
-  <!-- Notifications -->
-  <app-notifications></app-notifications>
+  <app-notifications *ngIf="showLayout()"></app-notifications>
 </div>

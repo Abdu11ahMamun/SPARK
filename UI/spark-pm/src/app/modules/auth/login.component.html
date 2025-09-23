@@ -1,0 +1,31 @@
+<div class="auth-wrapper">
+  <div class="bg-anim">
+    <div class="circle c1"></div>
+    <div class="circle c2"></div>
+    <div class="circle c3"></div>
+  </div>
+  <div class="panel" [class.loading]="loading()">
+    <h1 class="brand">SPARK</h1>
+    <p class="subtitle">Sign in to continue</p>
+    <form (ngSubmit)="submit()" [formGroup]="form" novalidate>
+      <div class="form-field" [class.invalid]="form.controls.username.invalid && form.controls.username.touched">
+        <label>Username</label>
+        <input type="text" formControlName="username" autocomplete="username" />
+        <div class="error" *ngIf="form.controls.username.errors && form.controls.username.touched">
+          <span *ngIf="form.controls.username.errors['required']">Required</span>
+          <span *ngIf="form.controls.username.errors['minlength']">Min 2 chars</span>
+        </div>
+      </div>
+      <div class="form-field" [class.invalid]="form.controls.password.invalid && form.controls.password.touched">
+        <label>Password</label>
+        <input type="password" formControlName="password" autocomplete="current-password" />
+        <div class="error" *ngIf="form.controls.password.errors && form.controls.password.touched">
+          <span *ngIf="form.controls.password.errors['required']">Required</span>
+        </div>
+      </div>
+      <button type="submit" class="submit" [disabled]="loading() || form.invalid">{{ loading() ? 'Signing in...' : 'Login' }}</button>
+    </form>
+    <div class="auth-error" *ngIf="error()">{{ error() }}</div>
+  <div class="footer">&copy; {{ currentYear }} SPARK Platform</div>
+  </div>
+</div>

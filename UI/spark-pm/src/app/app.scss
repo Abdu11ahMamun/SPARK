@@ -1,3 +1,13 @@
+.app-layout.fullscreen-login {
+  display: flex;
+  min-height: 100vh;
+}
+
+.main-content.fullscreen {
+  margin-left: 0 !important;
+  width: 100%;
+  padding: 0;
+}
 .app-layout {
   display: flex;
   min-height: 100vh;
