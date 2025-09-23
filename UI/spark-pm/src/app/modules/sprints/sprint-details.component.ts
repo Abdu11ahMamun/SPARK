@@ -12,6 +12,9 @@ import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
 import { delay } from 'rxjs/operators';
 import { PointCalculatorComponent } from '../../shared/point-calculator/point-calculator.component';
+// NOTE: Importing standalone TaskCommentsDialogComponent (sibling folder '../shared').
+// If NG1010 persists, ensure no tsconfig path alias conflicts and that this file isn't duplicated.
+import { TaskCommentsDialogComponent } from '../shared/task-comments-dialog/task-comments-dialog.component';
 import Chart from 'chart.js/auto';
 
 // Interface for user progress based on points
@@ -50,7 +53,7 @@ interface SprintCapacity {
 @Component({
   selector: 'app-sprint-details',
   standalone: true,
-  imports: [CommonModule, FormsModule, SprintAddTasksDialogComponent, PointCalculatorComponent],
+  imports: [CommonModule, FormsModule, SprintAddTasksDialogComponent, PointCalculatorComponent, TaskCommentsDialogComponent],
   templateUrl: './sprint-details.component.html',
   styleUrls: ['./sprint-details.component.scss']
 })
@@ -88,6 +91,8 @@ export class SprintDetailsComponent implements OnInit, AfterViewInit, OnDestroy 
   // Prevent immediate re-open after closing (Apply / Cancel) while input still focused
   private ignoreFocusUntil = 0;
   inlineSaving: number | null = null; // task id currently saving inline
+  // Comments dialog state
+  showCommentsForTaskId: number | null = null;
   
   kanbanColumns: { key: string; title: string; tasks: any[] }[] = [
     { key: 'TODO', title: 'To-Do', tasks: [] },
@@ -626,8 +631,11 @@ export class SprintDetailsComponent implements OnInit, AfterViewInit, OnDestroy 
 
   // Open assign dialog (placeholder - to be implemented or integrated with existing user selection UI)
   openAssignDialog(task: any): void {
-    console.log('Assign clicked for task', task.id);
-    // TODO: Implement assignment dialog / modal
+    // Re-purposed for comments: open comments dialog
+    if (task?.id) {
+      this.showCommentsForTaskId = task.id;
+      this.cdr.detectChanges();
+    }
   }
 
   removeTaskFromSprint(task: any): void {
@@ -840,6 +848,12 @@ export class SprintDetailsComponent implements OnInit, AfterViewInit, OnDestroy 
 
   closeAddTasksDialog(): void {
     this.showAddTasksDialog = false;
+    this.cdr.detectChanges();
+  }
+
+  // Comments dialog handlers
+  closeCommentsDialog(): void {
+    this.showCommentsForTaskId = null;
     this.cdr.detectChanges();
   }
 

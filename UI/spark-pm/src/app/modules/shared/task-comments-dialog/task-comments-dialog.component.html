@@ -1,0 +1,28 @@
+<div class="tc-overlay" *ngIf="open" (click)="onClose()">
+  <div class="tc-panel" (click)="$event.stopPropagation()">
+    <div class="tc-header">
+      <h3>Comments (Task #{{ taskId }})</h3>
+      <button class="tc-close" (click)="onClose()" title="Close">✕</button>
+    </div>
+    <div class="tc-body">
+      <div *ngIf="loading" class="tc-loading">Loading comments...</div>
+      <div *ngIf="error" class="tc-error">{{ error }}</div>
+      <div class="tc-comments" *ngIf="!loading">
+        <div *ngIf="comments.length===0" class="tc-empty">No comments yet.</div>
+        <div *ngFor="let c of comments" class="tc-comment">
+          <div class="tc-meta">
+            <span class="tc-author">User {{ c.authorUserId || '—' }}</span>
+            <span class="tc-date">{{ c.createdAt | date:'MMM d, y HH:mm' }}</span>
+          </div>
+          <div class="tc-text">{{ c.commentText }}</div>
+        </div>
+      </div>
+    </div>
+    <div class="tc-footer">
+      <textarea [(ngModel)]="newComment" placeholder="Write a comment..." rows="3"></textarea>
+      <div class="tc-actions">
+        <button class="btn-post" (click)="add()" [disabled]="posting || !newComment.trim()">{{ posting ? 'Posting...' : 'Post' }}</button>
+      </div>
+    </div>
+  </div>
+</div>
