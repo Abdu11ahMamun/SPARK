@@ -1,0 +1,12 @@
+<component name="libraryTable">
+  <library name="Gradle: com.oracle.database.jdbc:ojdbc8:19.8.0.0" type="java-imported" external-system-id="GRADLE">
+    <properties groupId="com.oracle.database.jdbc" artifactId="ojdbc8" version="19.8.0.0" baseVersion="19.8.0.0" />
+    <CLASSES>
+      <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/com.oracle.database.jdbc/ojdbc8/19.8.0.0/df9cff9b91c47d06b9a0482d566ee2d83a03e586/ojdbc8-19.8.0.0.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES>
+      <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/com.oracle.database.jdbc/ojdbc8/19.8.0.0/bc15f00ebacbeb0669f0ed925917c177912db7af/ojdbc8-19.8.0.0-sources.jar!/" />
+    </SOURCES>
+  </library>
+</component>
