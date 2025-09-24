@@ -514,6 +514,59 @@ export class TasksComponent implements OnInit {
   
   @HostListener('document:click') onDocClick() { this.actionMenuOpenId = null; }
 
+  // New methods for Jira-style design
+  getTaskTypeIcon(taskType: string): string {
+    const type = taskType?.toLowerCase() || '';
+    if (type.includes('bug') || type.includes('issue')) return '🐛';
+    if (type.includes('story') || type.includes('feature')) return '📖';
+    if (type.includes('task') || type.includes('work')) return '✓';
+    if (type.includes('improvement') || type.includes('enhance')) return '🚀';
+    if (type.includes('epic')) return '⚡';
+    return '📋'; // default
+  }
+
+  getTaskTypeClass(taskType: string): string {
+    const type = taskType?.toLowerCase() || '';
+    if (type.includes('bug') || type.includes('issue')) return 'task-type-bug';
+    if (type.includes('story') || type.includes('feature')) return 'task-type-story';
+    if (type.includes('task') || type.includes('work')) return 'task-type-task';
+    if (type.includes('improvement') || type.includes('enhance')) return 'task-type-improvement';
+    if (type.includes('epic')) return 'task-type-epic';
+    return 'task-type-default';
+  }
+
+  getStatusDisplay(status: string): string {
+    const statusMap: { [key: string]: string } = {
+      'OPEN': 'To Do',
+      'IN_PROGRESS': 'In Progress', 
+      'BLOCKED': 'Blocked',
+      'DONE': 'Done',
+      'CANCELLED': 'Cancelled'
+    };
+    return statusMap[status] || status;
+  }
+
+  hasActiveFilters(): boolean {
+    return !!(this.searchTerm || this.statusFilter || this.priorityFilter || 
+              this.taskTypeFilter || this.productFilter || this.moduleFilter || 
+              this.assigneeFilter || this.mitsFilter || this.deadlineFrom || this.deadlineTo);
+  }
+
+  getActiveFilterCount(): number {
+    let count = 0;
+    if (this.searchTerm) count++;
+    if (this.statusFilter) count++;
+    if (this.priorityFilter) count++;
+    if (this.taskTypeFilter) count++;
+    if (this.productFilter) count++;
+    if (this.moduleFilter) count++;
+    if (this.assigneeFilter) count++;
+    if (this.mitsFilter) count++;
+    if (this.deadlineFrom) count++;
+    if (this.deadlineTo) count++;
+    return count;
+  }
+
   private ensureTeamsLoaded(): Promise<void> {
     if (this.teams && this.teams.length) return Promise.resolve();
     this.isTeamsLoading = true;
