@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.security.Principal;
 
 @RestController
 @RequestMapping("/api/users")
@@ -27,6 +28,20 @@ public class UserController {
     public List<User> getAllUsers() {
         return userService.getAllUsers();
     }
+
+    @GetMapping("/me")
+    public ResponseEntity<?> getCurrentUser(Principal principal) {
+        if (principal == null) {
+            return ResponseEntity.status(401).build();
+        }
+        return userService.getAllUsers().stream()
+                .filter(u -> u.getUsername().equalsIgnoreCase(principal.getName()))
+                .findFirst()
+                .<ResponseEntity<?>>map(u -> ResponseEntity.ok(new CurrentUserResponse(u.getUsername(), u.getRole().name())))
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    public record CurrentUserResponse(String username, String role) {}
 
     @GetMapping("/{id}")
     public ResponseEntity<User> getUserById(@PathVariable Long id) {

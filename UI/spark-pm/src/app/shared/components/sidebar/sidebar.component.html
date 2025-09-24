@@ -8,6 +8,67 @@
       </svg>
     </button>
   </div>
+
+  <!-- User Profile Section -->
+  <div class="user-profile-section" [class.collapsed]="isCollapsed()">
+    <!-- Avatar Circle -->
+    <div class="user-avatar">
+      <!-- Notification indicator -->
+      <span *ngIf="notifying()" class="notification-indicator"></span>
+      <!-- Show user icon if no image available -->
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path fill="currentColor" fill-rule="evenodd" clip-rule="evenodd" d="M12 3.5C7.30558 3.5 3.5 7.30558 3.5 12C3.5 14.1526 4.3002 16.1184 5.61936 17.616C6.17279 15.3096 8.24852 13.5955 10.7246 13.5955H13.2746C15.7509 13.5955 17.8268 15.31 18.38 17.6167C19.6996 16.119 20.5 14.153 20.5 12C20.5 7.30558 16.6944 3.5 12 3.5ZM17.0246 18.8566V18.8455C17.0246 16.7744 15.3457 15.0955 13.2746 15.0955H10.7246C8.65354 15.0955 6.97461 16.7744 6.97461 18.8455V18.856C8.38223 19.8895 10.1198 20.5 12 20.5C13.8798 20.5 15.6171 19.8898 17.0246 18.8566ZM2 12C2 6.47715 6.47715 2 12 2C17.5228 2 22 6.47715 22 12C22 17.5228 17.5228 22 12 22C6.47715 22 2 17.5228 2 12ZM11.9991 7.25C10.8847 7.25 9.98126 8.15342 9.98126 9.26784C9.98126 10.3823 10.8847 11.2857 11.9991 11.2857C13.1135 11.2857 14.0169 10.3823 14.0169 9.26784C14.0169 8.15342 13.1135 7.25 11.9991 7.25ZM8.48126 9.26784C8.48126 7.32499 10.0563 5.75 11.9991 5.75C13.9419 5.75 15.5169 7.32499 15.5169 9.26784C15.5169 11.2107 13.9419 12.7857 11.9991 12.7857C10.0563 12.7857 8.48126 11.2107 8.48126 9.26784Z"/>
+      </svg>
+    </div>
+
+    <!-- Username with Dropdown -->
+    <div class="user-info" [class.hidden]="isCollapsed()">
+      <button class="user-dropdown-btn" (click)="toggleUserMenu($event)" aria-haspopup="true" [attr.aria-expanded]="userMenuOpen()">
+        <span class="username-text">{{ username() }}</span>
+        <svg class="dropdown-arrow" [class.rotate]="userMenuOpen()" width="16" height="16" viewBox="0 0 16 16" fill="none">
+          <path d="M4 6L8 10L12 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+
+      <!-- Dropdown Menu -->
+      <div *ngIf="userMenuOpen()" class="user-dropdown-menu">
+        <div class="user-info-header">
+          <div class="full-name">{{ fullName() }}</div>
+          <div class="user-email">{{ userEmail() }}</div>
+        </div>
+        
+        <ul class="dropdown-menu-items">
+          <li>
+            <a routerLink="/profile" class="dropdown-item" (click)="closeUserMenu()">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                <path stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z"/>
+              </svg>
+              Edit profile
+            </a>
+          </li>
+          <li>
+            <a routerLink="/settings" class="dropdown-item" (click)="closeUserMenu()">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                <path stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/>
+                <circle cx="12" cy="12" r="3"/>
+              </svg>
+              Account settings
+            </a>
+          </li>
+          <li class="divider"></li>
+          <li>
+            <button class="dropdown-item logout-btn" (click)="logout()">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                <path stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/>
+              </svg>
+              Log out
+            </button>
+          </li>
+        </ul>
+      </div>
+    </div>
+
+  </div>
   
   <ul class="sidebar-menu">
     <li>
@@ -115,4 +176,5 @@
       </a>
     </li>
   </ul>
+
 </nav>
