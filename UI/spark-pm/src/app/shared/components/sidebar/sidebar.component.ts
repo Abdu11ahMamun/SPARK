@@ -27,9 +27,17 @@ export class SidebarComponent {
 
   constructor(private auth: AuthService) {
     this.username.set(this.auth.username() || 'User');
-    // Set user data - these would typically come from the backend
-    this.fullName.set('John Doe'); // TODO: Get from auth service or API
-    this.userEmail.set('john.doe@company.com'); // TODO: Get from auth service or API
+    
+    // Get enhanced user data from auth service
+    const userProfile = this.auth.userProfile();
+    if (userProfile) {
+      this.fullName.set(this.auth.getUserFullName() || 'User');
+      this.userEmail.set(this.auth.getUserEmail() || 'user@company.com');
+    } else {
+      // Fallback defaults
+      this.fullName.set('User');
+      this.userEmail.set('user@company.com');
+    }
     
     const stored = localStorage.getItem('theme-dark');
     if (stored === '1') {

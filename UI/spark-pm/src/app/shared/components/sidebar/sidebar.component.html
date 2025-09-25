@@ -112,6 +112,12 @@
       <span class="section-title">Task & Backlog</span>
     </li>
     <li>
+      <a routerLink="/my-tasks" routerLinkActive="active" [title]="isCollapsed() ? 'My Tasks' : ''">
+        <span class="menu-icon" [innerHTML]="icons.myTasks"></span>
+        <span class="menu-text" [class.hidden]="isCollapsed()">My Tasks</span>
+      </a>
+    </li>
+    <li>
       <a routerLink="/tasks" routerLinkActive="active" [title]="isCollapsed() ? 'Task Management' : ''">
         <span class="menu-icon" [innerHTML]="icons.tasks"></span>
         <span class="menu-text" [class.hidden]="isCollapsed()">Task Management</span>

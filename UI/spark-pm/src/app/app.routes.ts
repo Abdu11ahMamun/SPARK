@@ -10,6 +10,7 @@ import { UsersComponent } from './modules/users/users.component';
 import { ProductsComponent } from './modules/products/products.component';
 import { ProductModulesComponent } from './modules/product-modules/product-modules.component';
 import { TasksComponent } from './modules/tasks/tasks.component';
+import { MyTasksComponent } from './modules/tasks/my-tasks.component';
 import { BacklogComponent } from './modules/backlog/backlog.component';
 import { SprintsComponent } from './modules/sprints/sprints.component';
 import { SprintDetailsComponent } from './modules/sprints/sprint-details.component';
@@ -36,6 +37,7 @@ export const routes: Routes = [
   { path: 'products', component: ProductsComponent, canActivate: [authGuard] },
   { path: 'product-modules', component: ProductModulesComponent, canActivate: [authGuard] },
   { path: 'tasks', component: TasksComponent, canActivate: [authGuard] },
+  { path: 'my-tasks', component: MyTasksComponent, canActivate: [authGuard] },
   { path: 'backlog', component: BacklogComponent, canActivate: [authGuard] },
   { path: 'sprints', component: SprintsComponent, canActivate: [authGuard] },
   { path: 'sprints/:id', component: SprintDetailsComponent, canActivate: [authGuard] },
