@@ -107,20 +107,20 @@
       </a>
     </li>
 
-    <!-- Task Management Section -->
+    <!-- Task & Backlog Management Section -->
     <li class="menu-section-divider" [class.hidden]="isCollapsed()">
-      <span class="section-title">Task Management</span>
+      <span class="section-title">Task & Backlog</span>
     </li>
     <li>
-      <a routerLink="/tasks" routerLinkActive="active" [title]="isCollapsed() ? 'Tasks' : ''">
+      <a routerLink="/tasks" routerLinkActive="active" [title]="isCollapsed() ? 'Task Management' : ''">
         <span class="menu-icon" [innerHTML]="icons.tasks"></span>
-        <span class="menu-text" [class.hidden]="isCollapsed()">Tasks</span>
+        <span class="menu-text" [class.hidden]="isCollapsed()">Task Management</span>
       </a>
     </li>
     <li>
-      <a routerLink="/backlog" routerLinkActive="active" [title]="isCollapsed() ? 'Backlog' : ''">
+      <a routerLink="/backlog" routerLinkActive="active" [title]="isCollapsed() ? 'Backlog Management' : ''">
         <span class="menu-icon" [innerHTML]="icons.backlog"></span>
-        <span class="menu-text" [class.hidden]="isCollapsed()">Backlog</span>
+        <span class="menu-text" [class.hidden]="isCollapsed()">Backlog Management</span>
       </a>
     </li>
 

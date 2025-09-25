@@ -1,26 +1,607 @@
-import { Component } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { HttpClient } from '@angular/common/http';
+import { tap, catchError } from 'rxjs/operators';
+import { of } from 'rxjs';
+import { TeamService } from '../teams/team.service';
+import { Team, TeamMember } from '../teams/team.model';
+import { PointCalculatorComponent } from '../../shared/point-calculator/point-calculator.component';
+
+// Local minimal interfaces to decouple from model file
+interface TaskItem {
+  id?: number;
+  mitsNo: string;
+  taskType: string;
+  productId?: number; // maps backend productid
+  productModuleId?: number;
+  title: string;
+  description?: string;
+  assigneeUserId?: number;
+  status: 'OPEN' | 'IN_PROGRESS' | 'BLOCKED' | 'DONE' | 'CANCELLED';
+  priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+  deadline?: string;
+  points?: number;
+  teamId?: number;
+  dateOfDone?: string; // ISO string for completion date-time
+}
+interface ProductOption { id: number; name: string; }
+interface ModuleOption { id: number; name: string; productId: number; }
+interface UserOption { id: number; firstName?: string; lastName?: string; username: string; }
+interface JobTypeOption { id: number; type: string; description?: string; }
 
 @Component({
   selector: 'app-backlog',
   standalone: true,
-  imports: [CommonModule],
-  template: `
-    <div class="backlog-container">
-      <h1>Backlog Management</h1>
-      <p>Backlog module is under development.</p>
-    </div>
-  `,
-  styles: [`
-    .backlog-container {
-      padding: 20px;
-    }
-    h1 {
-      color: #333;
-      margin-bottom: 20px;
-    }
-  `]
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, PointCalculatorComponent],
+  templateUrl: './backlog.component.html',
+  styleUrls: ['./backlog.component.scss']
 })
-export class BacklogComponent {
+export class BacklogComponent implements OnInit {
+  // Data
+  tasks: TaskItem[] = [];
+  filtered: TaskItem[] = [];
+  filteredTasks: TaskItem[] = []; // Alias for template compatibility
+  paginated: TaskItem[] = []; // Alias for template compatibility
+  products: ProductOption[] = [];
+  modules: ModuleOption[] = [];
+  users: UserOption[] = [];
+  jobTypes: JobTypeOption[] = [];
+  jobTypeOptions: { value: number; label: string }[] = [];
+  teams: Team[] = [];
+  teamMembers: TeamMember[] = [];
+  selectedTeamId: number | '' = '';
+  isTeamsLoading = false;
+
+  // UI state
+  isLoading = false;
+  isInitialLoad = true;
+  error: string | null = null;
+  showSearchPanel = false;
+
+  // Pagination
+  currentPage = 1;
+  pageSize = 10;
+  totalTasks = 0;
+  paginatedTasks: TaskItem[] = [];
   
+  get totalPages(): number {
+    return Math.ceil(this.totalTasks / this.pageSize);
+  }
+
+  // Search filters
+  searchTerm = '';
+  statusFilter = '';
+  priorityFilter = '';
+  taskTypeFilter = '';
+  productFilter = '';
+  moduleFilter = '';
+  assigneeFilter = '';
+  mitsFilter = '';
+  deadlineFrom = '';
+  deadlineTo = '';
+
+  // Modal
+  isModalOpen = false;
+  isDeleteModalOpen = false;
+  isEditMode = false;
+  selected: TaskItem | null = null;
+  form!: FormGroup;
+  Math = Math;
+  showPointCalc = false;
+  pointCalcReset = 0; // increment to force calculator internal reset
+
+  constructor(
+    private http: HttpClient,
+    private fb: FormBuilder,
+    private cdr: ChangeDetectorRef,
+    private teamService: TeamService
+  ) { this.initForm(); }
+    actionMenuOpenId: number | null = null;
+
+  ngOnInit(): void { 
+    // Fetch teams early so modal has data quickly, then load full dataset
+    this.fetchTeamsQuick();
+    this.load(); 
+  }
+
+  private fetchTeamsQuick() {
+    // Lightweight early fetch; ignores errors silently
+    this.isTeamsLoading = true;
+    this.teamService.getTeams().subscribe({
+      next: ts => { if (!this.teams.length) { this.teams = ts || []; this.cdr.markForCheck(); } this.isTeamsLoading = false; },
+      error: () => { this.isTeamsLoading = false; }
+    });
+  }
+
+  private initForm() {
+    this.form = this.fb.group({
+      mitsNo: ['', Validators.required],
+      taskType: ['', Validators.required],
+      productId: ['', Validators.required],
+      productModuleId: ['', Validators.required],
+      title: ['', [Validators.required, Validators.minLength(3)]],
+      description: [''],
+      assigneeUserId: [''],
+      status: ['OPEN', Validators.required],
+      priority: ['MEDIUM', Validators.required],
+      deadline: [''],
+      points: [0, [Validators.min(0)]],
+      teamId: [''] // Add team selection to reactive form
+    });
+  }
+
+  private async load() {
+    this.isLoading = true; this.error = null;
+    try {
+      const base = (await import('../../../environments/environment')).environment.apiUrl;
+  const [tasks, products, modules, users, jobTypes, teams] = await Promise.all([
+        this.http.get<any[]>(`${base}/api/tasks`).toPromise(),
+        this.http.get<any[]>(`${base}/api/products`).toPromise(),
+        this.http.get<any[]>(`${base}/api/product-modules`).toPromise(),
+        this.http.get<any[]>(`${base}/api/users`).toPromise(),
+        this.http.get<JobTypeOption[]>(`${base}/api/job-types`).toPromise(),
+        this.teamService.getTeams().toPromise()
+      ]);
+      
+  // Map backend field names to frontend interface
+  this.tasks = (tasks || []).map(task => ({
+        id: task.id,
+        title: task.title,
+        description: task.description,
+        status: (task.status || 'OPEN').toUpperCase(),
+        priority: (task.priority || 'MEDIUM').toUpperCase(),
+        deadline: task.deadline || null,
+        assigneeUserId: task.assignedto,
+        sprintId: task.sprintid,
+        productId: task.productid,
+        productModuleId: task.productModuleId,
+  points: task.points,
+  dateOfDone: task.dateOfDone || task.date_of_done || null,
+        taskType: String(task.taskType || task.tasktypeid || ''),
+        mitsNo: task.mitsId ? String(task.mitsId) : (task.id?.toString() || ''),
+        // Support multiple possible backend field casings / structures
+        teamId: task.teamId ?? task.teamid ?? (typeof task.team === 'object' ? task.team?.id : task.team) ?? null
+      } as TaskItem)); 
+  // Sort newest first (assuming higher id == newer)
+  this.tasks.sort((a,b) => (b.id || 0) - (a.id || 0));
+      this.products = products || []; 
+      this.modules = modules || []; 
+      this.users = users || []; 
+      this.jobTypes = jobTypes || [];
+      this.teams = teams || [];
+      
+      // Map job types to dropdown options
+      this.jobTypeOptions = this.jobTypes.map(type => ({ 
+        value: type.id, 
+        label: type.type 
+      }));
+      
+      console.log('Loaded job types:', this.jobTypeOptions);
+      console.log('Loaded users:', this.users);
+      console.log('Loaded tasks:', this.tasks);
+      this.applyFilters();
+    } catch (e) { 
+      console.error('Error loading data:', e); 
+      this.error = 'Failed to load data. Please check if the backend is running.';
+      
+      // Fallback job types
+      this.jobTypeOptions = [
+        { value: 1, label: 'Development' },
+        { value: 2, label: 'Testing' },
+        { value: 3, label: 'Deployment' }
+      ];
+    }
+    finally { 
+      this.isLoading = false; 
+      this.isInitialLoad = false; 
+      this.cdr.detectChanges(); 
+    }
+  }
+
+  // Filters
+  toggleSearchPanel() { this.showSearchPanel = !this.showSearchPanel; }
+  onSearchChange() { setTimeout(() => this.applyFilters(), 250); }
+  
+  clearFilters() {
+    this.searchTerm = '';
+    this.statusFilter = '';
+    this.priorityFilter = '';
+    this.taskTypeFilter = '';
+    this.productFilter = '';
+    this.moduleFilter = '';
+    this.assigneeFilter = '';
+    this.mitsFilter = '';
+    this.deadlineFrom = '';
+    this.deadlineTo = '';
+    this.applyFilters();
+  }
+
+  applyFilters() {
+    let list = [...this.tasks]; const term = this.searchTerm.toLowerCase();
+    if (term) {
+      list = list.filter(t =>
+        t.mitsNo?.toLowerCase().includes(term) ||
+        t.title?.toLowerCase().includes(term) ||
+        t.description?.toLowerCase().includes(term)
+      );
+    }
+    if (this.mitsFilter) {
+      list = list.filter(t => t.mitsNo?.toLowerCase().includes(this.mitsFilter.toLowerCase()));
+    }
+    if (this.statusFilter) list = list.filter(t => t.status === this.statusFilter);
+    if (this.priorityFilter) list = list.filter(t => t.priority === this.priorityFilter);
+    if (this.taskTypeFilter) {
+      list = list.filter(t => this.getJobTypeName(t.taskType) === this.taskTypeFilter);
+    }
+    if (this.productFilter) list = list.filter(t => t.productId === +this.productFilter);
+    if (this.moduleFilter) list = list.filter(t => t.productModuleId === +this.moduleFilter);
+    if (this.assigneeFilter) list = list.filter(t => t.assigneeUserId === +this.assigneeFilter);
+    if (this.deadlineFrom) list = list.filter(t => t.deadline && t.deadline >= this.deadlineFrom);
+    if (this.deadlineTo) list = list.filter(t => t.deadline && t.deadline <= this.deadlineTo);
+    this.filtered = list; 
+    this.filteredTasks = list; // Sync with template alias
+    this.updatePagination();
+  }
+
+  onProductChangeForFilter() { this.moduleFilter = ''; }
+  onProductChangeInForm() { this.form.patchValue({ productModuleId: '' }); }
+
+  // Template helpers
+  getModulesForProduct(productId: string | number | undefined) {
+    const pid = typeof productId === 'string' ? +productId : productId;
+    if (!pid) return this.modules;
+    return this.modules.filter(m => m.productId === pid);
+  }
+  getProductName(productId?: number): string {
+    if (!productId) return '—';
+    const p = this.products.find(x => x.id === productId);
+    return p?.name || '—';
+  }
+  getModuleName(moduleId?: number): string {
+    if (!moduleId) return '—';
+    const m = this.modules.find(x => x.id === moduleId);
+    return m?.name || '—';
+  }
+
+  getJobTypeName(taskType?: string | number): string {
+    if (!taskType) return '—';
+    // If taskType is already a string (type name), return it
+    if (typeof taskType === 'string' && isNaN(Number(taskType))) {
+      return taskType;
+    }
+    // If taskType is an ID, find the corresponding type name
+    const jobTypeId = typeof taskType === 'string' ? Number(taskType) : taskType;
+    const jobType = this.jobTypes.find(x => x.id === jobTypeId);
+    return jobType?.type || '—';
+  }
+
+  // Pagination helpers
+  private updatePagination() {
+    this.totalTasks = this.filtered.length;
+    const totalPages = Math.ceil(this.totalTasks / this.pageSize) || 1;
+    if (this.currentPage > totalPages) this.currentPage = totalPages;
+    this.updatePaginatedTasks();
+  }
+  
+  private updatePaginatedTasks() {
+    const start = (this.currentPage - 1) * this.pageSize;
+    this.paginatedTasks = this.filtered.slice(start, start + this.pageSize);
+    this.paginated = this.paginatedTasks; // Sync with template alias
+  }
+  getStartIndex(): number {
+    return (this.currentPage - 1) * this.pageSize + 1;
+  }
+
+  getEndIndex(): number {
+    return Math.min(this.currentPage * this.pageSize, this.totalTasks);
+  }
+
+  getVisiblePages(): number[] {
+    const pages = [];
+    for (let i = 1; i <= Math.ceil(this.totalTasks / this.pageSize); i++) {
+      pages.push(i);
+    }
+    return pages;
+  }
+
+  goToPage(page: number): void {
+    if (page >= 1 && page <= this.totalPages) {
+      this.currentPage = page;
+      this.updatePaginatedTasks();
+    }
+  }
+
+  onPageSizeChange(): void {
+    this.currentPage = 1;
+    this.updatePagination();
+  }
+
+  // CRUD
+  async addTask() { 
+    this.isEditMode = false; this.selected = null; 
+    this.form.reset({ status: 'OPEN', priority: 'MEDIUM', points: 0, teamId: '' }); 
+    this.selectedTeamId=''; this.teamMembers=[]; 
+    await this.ensureTeamsLoaded();
+    this.pointCalcReset++; // ensure calculator resets defaults for new task
+    this.isModalOpen = true; 
+    this.cdr.detectChanges();
+  }
+  editTask(t: TaskItem) {
+    this.isEditMode = true; this.selected = t; this.form.patchValue({...t, teamId: t.teamId || ''});
+    this.selectedTeamId = t.teamId || '';
+    this.ensureTeamsLoaded().then(() => {
+      if (this.selectedTeamId) { this.onTeamChange(); }
+      this.cdr.detectChanges();
+    });
+    this.isModalOpen = true;
+  }
+  async saveTask() {
+    if (this.form.invalid) { Object.values(this.form.controls).forEach(c => c.markAsTouched()); return; }
+    const data: TaskItem = this.form.value;
+    
+    // Use form value for team ID
+    const formTeamId = this.form.get('teamId')?.value;
+    
+    // Convert team ID to number, handling union type properly
+    let teamIdValue: number | undefined;
+    if (typeof formTeamId === 'number') {
+      teamIdValue = formTeamId;
+    } else if (typeof formTeamId === 'string' && formTeamId !== '') {
+      teamIdValue = Number(formTeamId);
+    } else {
+      teamIdValue = undefined;
+    }
+    
+    // Map frontend field names to backend field names
+    const backendData: any = {
+      id: this.isEditMode ? this.selected?.id : undefined,
+      title: data.title,
+      description: data.description,
+      status: data.status,
+      priority: data.priority,
+      deadline: data.deadline || null,
+      assignedto: data.assigneeUserId || null,
+      productid: data.productId ? Number(data.productId) : null,
+      productModuleId: data.productModuleId ? Number(data.productModuleId) : null,
+      points: data.points || 0,
+      taskType: typeof data.taskType === 'string' ? Number(data.taskType) : data.taskType,
+      tasktypeid: typeof data.taskType === 'string' ? Number(data.taskType) : data.taskType,
+      mitsId: data.mitsNo ? Number(data.mitsNo) : null,
+      // Send both variants to maximize backend compatibility
+      teamId: teamIdValue ?? null,
+      teamid: teamIdValue ?? null
+    };
+    
+    try {
+      const base = (await import('../../../environments/environment')).environment.apiUrl;
+      if (this.isEditMode && this.selected?.id) {
+        const updated = { ...backendData };
+        await this.http.put<any>(`${base}/api/tasks/${this.selected.id}`, updated).toPromise();
+        Object.assign(this.selected!, {
+          ...data,
+          productId: data.productId,
+          productModuleId: data.productModuleId,
+          assigneeUserId: data.assigneeUserId,
+          points: data.points,
+          // Use our sent value since backend might not echo teamId correctly
+          teamId: teamIdValue || undefined
+        });
+        // Move updated task to top (treat as recently modified)
+        this.tasks = [this.selected!, ...this.tasks.filter(t => t.id !== this.selected!.id)];
+      } else {
+        const created = await this.http.post<any>(`${base}/api/tasks`, backendData as any).toPromise();
+        if (created) {
+          const mappedTask: TaskItem = {
+            id: created.id,
+            title: created.title,
+            description: created.description,
+            status: (created.status || 'OPEN').toUpperCase(),
+            priority: (created.priority || 'MEDIUM').toUpperCase(),
+            deadline: created.deadline || null,
+            dateOfDone: created.dateOfDone || created.date_of_done || null,
+            assigneeUserId: created.assignedto,
+            productId: created.productid,
+            productModuleId: created.productModuleId,
+            points: created.points,
+            taskType: String(created.taskType || created.tasktypeid || ''),
+            mitsNo: created.mitsId ? String(created.mitsId) : (created.id?.toString() || ''),
+            // Use our sent value since backend returns null 
+            teamId: teamIdValue || undefined
+          };
+          this.tasks.unshift(mappedTask);
+        }
+      }
+      this.applyFilters(); this.closeModal();
+    } catch (e) { console.error(e); this.error = 'Failed to save task'; }
+  }
+  // Point calculator integration
+  openPointCalc() { 
+    // If form points is 0 or undefined we reset to default factors fresh
+    if (!this.isEditMode || !this.form.value.points) { this.pointCalcReset++; }
+    this.showPointCalc = true; 
+  }
+  onPointsCalculated(val: number) { this.form.patchValue({ points: val }); this.showPointCalc = false; }
+  onPointCalcClosed() { this.showPointCalc = false; }
+  askDelete(t: TaskItem) { this.selected = t; this.isDeleteModalOpen = true; }
+  async confirmDelete() {
+    if (!this.selected?.id) return; try {
+      const base = (await import('../../../environments/environment')).environment.apiUrl;
+      await this.http.delete<void>(`${base}/api/tasks/${this.selected.id}`).toPromise();
+      this.tasks = this.tasks.filter(x => x.id !== this.selected!.id); this.applyFilters(); this.closeDelete();
+    } catch (e) { console.error(e); this.error = 'Failed to delete task'; }
+  }
+
+  // Modal helpers
+  closeModal() { this.isModalOpen = false; this.isEditMode = false; this.selected = null; }
+  closeDelete() { this.isDeleteModalOpen = false; this.selected = null; }
+
+  // View helpers
+  getAssigneeName(id?: number): string {
+    if (this.selectedTeamId && this.teamMembers.length) {
+      const tm = this.teamMembers.find(m => m.userId === id);
+      if (tm) return tm.userName;
+    }
+    const u = this.users.find(x => x.id === id); if (!u) return '—';
+    const full = [u.firstName, u.lastName].filter(Boolean).join(' ').trim();
+    return full || u.username;
+  }
+
+  getAssigneeInitials(id?: number): string {
+    const u = this.users.find(x => x.id === id);
+    if (!u) return '?';
+    
+    const fullName = [u.firstName, u.lastName].filter(Boolean).join(' ').trim();
+    if (fullName) {
+      const parts = fullName.split(' ');
+      if (parts.length >= 2) {
+        return (parts[0][0] + parts[1][0]).toUpperCase();
+      }
+      return parts[0][0].toUpperCase();
+    }
+    
+    return u.username ? u.username[0].toUpperCase() : '?';
+  }
+
+  isOverdue(deadline?: string): boolean {
+    if (!deadline) return false;
+    const today = new Date();
+    const deadlineDate = new Date(deadline);
+    return deadlineDate < today;
+  }
+
+  onTeamChange() {
+    if (!this.selectedTeamId) { this.teamMembers = []; this.form.patchValue({ assigneeUserId: '' }); return; }
+    this.teamService.getTeamMembers(Number(this.selectedTeamId)).subscribe({
+      next: members => { 
+        this.teamMembers = members || []; 
+        this.form.patchValue({ assigneeUserId: '' }); 
+      },
+      error: () => { this.teamMembers = []; }
+    });
+  }
+
+  onTeamFormChange() {
+    const teamIdFromForm = this.form.get('teamId')?.value;
+    this.selectedTeamId = teamIdFromForm;
+    this.onTeamChange();
+  }
+
+  getAssignableUsers(): { id: number; name: string }[] {
+    if (this.selectedTeamId && this.teamMembers.length) {
+      return this.teamMembers.map(m => ({ id: m.userId, name: m.userName }));
+    }
+    return this.users.map(u => ({ id: u.id, name: this.getAssigneeName(u.id) }));
+  }
+
+  getSelectedTeamName(): string {
+    if (!this.selectedTeamId) return '';
+    const team = this.teams.find(t => t.id === Number(this.selectedTeamId));
+    return team?.teamName || '';
+  }
+  
+  getTeamName(teamId?: number): string {
+    if (!teamId) return '—';
+    const t = this.teams.find(x => x.id === teamId);
+    return t?.teamName || '—';
+  }
+  
+  toggleActionMenu(taskId: number | undefined, event: Event) {
+    event.stopPropagation();
+    if (!taskId) return;
+    this.actionMenuOpenId = this.actionMenuOpenId === taskId ? null : taskId;
+  }
+  
+  @HostListener('document:click') onDocClick() { this.actionMenuOpenId = null; }
+
+  // New methods for Jira-style design
+  getTaskTypeIcon(taskType: string): string {
+    const type = taskType?.toLowerCase() || '';
+    if (type.includes('bug') || type.includes('issue')) return '🐛';
+    if (type.includes('story') || type.includes('feature')) return '📖';
+    if (type.includes('task') || type.includes('work')) return '✓';
+    if (type.includes('improvement') || type.includes('enhance')) return '🚀';
+    if (type.includes('epic')) return '⚡';
+    return '📋'; // default
+  }
+
+  getTaskTypeClass(taskType: string): string {
+    const type = taskType?.toLowerCase() || '';
+    if (type.includes('bug') || type.includes('issue')) return 'task-type-bug';
+    if (type.includes('story') || type.includes('feature')) return 'task-type-story';
+    if (type.includes('task') || type.includes('work')) return 'task-type-task';
+    if (type.includes('improvement') || type.includes('enhance')) return 'task-type-improvement';
+    if (type.includes('epic')) return 'task-type-epic';
+    return 'task-type-default';
+  }
+
+  getStatusDisplay(status: string): string {
+    const statusMap: { [key: string]: string } = {
+      'OPEN': 'To Do',
+      'IN_PROGRESS': 'In Progress', 
+      'BLOCKED': 'Blocked',
+      'DONE': 'Done',
+      'CANCELLED': 'Cancelled'
+    };
+    return statusMap[status] || status;
+  }
+
+  hasActiveFilters(): boolean {
+    return !!(this.searchTerm || this.statusFilter || this.priorityFilter || 
+              this.taskTypeFilter || this.productFilter || this.moduleFilter || 
+              this.assigneeFilter || this.mitsFilter || this.deadlineFrom || this.deadlineTo);
+  }
+
+  getActiveFilterCount(): number {
+    let count = 0;
+    if (this.searchTerm) count++;
+    if (this.statusFilter) count++;
+    if (this.priorityFilter) count++;
+    if (this.taskTypeFilter) count++;
+    if (this.productFilter) count++;
+    if (this.moduleFilter) count++;
+    if (this.assigneeFilter) count++;
+    if (this.mitsFilter) count++;
+    if (this.deadlineFrom) count++;
+    if (this.deadlineTo) count++;
+    return count;
+  }
+
+  private ensureTeamsLoaded(): Promise<void> {
+    if (this.teams && this.teams.length) return Promise.resolve();
+    this.isTeamsLoading = true;
+    return new Promise(resolve => {
+      this.teamService.getTeams().subscribe({
+        next: ts => { 
+          this.teams = ts || []; 
+          this.isTeamsLoading = false; 
+          // Trigger change detection immediately for modal select
+          this.cdr.detectChanges(); 
+          resolve(); 
+        },
+        error: () => { this.isTeamsLoading = false; resolve(); }
+      });
+    });
+  }
+
+  // Task summary methods
+  getStatusCount(status: string): number {
+    return this.filteredTasks.filter(task => task.status === status).length;
+  }
+
+  getCompletionPercentage(): number {
+    if (this.totalTasks === 0) return 0;
+    const completedTasks = this.getStatusCount('DONE');
+    return Math.round((completedTasks / this.totalTasks) * 100);
+  }
+
+  getPriorityCount(priority: string): number {
+    return this.filteredTasks.filter(task => task.priority === priority).length;
+  }
+
+  getPriorityPercentage(priority: string): number {
+    if (this.totalTasks === 0) return 0;
+    const priorityCount = this.getPriorityCount(priority);
+    return Math.round((priorityCount / this.totalTasks) * 100);
+  }
 }
