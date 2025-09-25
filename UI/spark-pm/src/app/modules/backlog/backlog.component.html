@@ -38,145 +38,6 @@
     </div>
   </div>
 
-  <!-- Task Summary Bar -->
-  <div class="task-summary-bar" *ngIf="!isLoading && !error">
-    <div class="summary-cards">
-      <!-- Total Tasks -->
-      <div class="summary-card">
-        <div class="summary-icon total">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M9 12l2 2 4-4"/>
-            <path d="M21 12c0 5.523-4.477 10-10 10s-10-4.477-10-10 4.477-10 10-10s10-4.477-10 10z"/>
-          </svg>
-        </div>
-        <div class="summary-content">
-          <div class="summary-value">{{ totalTasks }}</div>
-          <div class="summary-label">Total Items</div>
-        </div>
-      </div>
-
-      <!-- Status Breakdown -->
-      <div class="summary-card">
-        <div class="summary-icon open">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="12" cy="12" r="10"/>
-            <path d="M8 12l4 4 8-8"/>
-          </svg>
-        </div>
-        <div class="summary-content">
-          <div class="summary-value">{{ getStatusCount('OPEN') }}</div>
-          <div class="summary-label">To Do</div>
-        </div>
-      </div>
-
-      <div class="summary-card">
-        <div class="summary-icon in-progress">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="12" cy="12" r="10"/>
-            <polyline points="12,6 12,12 16,14"/>
-          </svg>
-        </div>
-        <div class="summary-content">
-          <div class="summary-value">{{ getStatusCount('IN_PROGRESS') }}</div>
-          <div class="summary-label">In Progress</div>
-        </div>
-      </div>
-
-      <div class="summary-card">
-        <div class="summary-icon done">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="12" cy="12" r="10"/>
-            <path d="M9 12l2 2 4-4"/>
-          </svg>
-        </div>
-        <div class="summary-content">
-          <div class="summary-value">{{ getStatusCount('DONE') }}</div>
-          <div class="summary-label">Done</div>
-        </div>
-      </div>
-
-      <div class="summary-card">
-        <div class="summary-icon blocked">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="12" cy="12" r="10"/>
-            <path d="M15 9l-6 6"/>
-            <path d="M9 9l6 6"/>
-          </svg>
-        </div>
-        <div class="summary-content">
-          <div class="summary-value">{{ getStatusCount('BLOCKED') }}</div>
-          <div class="summary-label">Blocked</div>
-        </div>
-      </div>
-
-      <!-- Progress Bar -->
-      <div class="summary-card progress-card">
-        <div class="progress-content">
-          <div class="progress-header">
-            <span class="progress-label">Completion Progress</span>
-            <span class="progress-percentage">{{ getCompletionPercentage() }}%</span>
-          </div>
-          <div class="progress-bar">
-            <div class="progress-fill" [style.width.%]="getCompletionPercentage()"></div>
-          </div>
-          <div class="progress-stats">
-            <span>{{ getStatusCount('DONE') }} of {{ totalTasks }} completed</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- Priority Summary -->
-      <div class="summary-card priority-card">
-        <div class="priority-content">
-          <div class="priority-header">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-            </svg>
-            <span class="priority-label">Priority Breakdown</span>
-          </div>
-          <div class="priority-bars">
-            <div class="priority-bar">
-              <div class="priority-info">
-                <span class="priority-name critical">Critical</span>
-                <span class="priority-count">{{ getPriorityCount('CRITICAL') }}</span>
-              </div>
-              <div class="priority-progress">
-                <div class="priority-fill critical" [style.width.%]="getPriorityPercentage('CRITICAL')"></div>
-              </div>
-            </div>
-            <div class="priority-bar">
-              <div class="priority-info">
-                <span class="priority-name high">High</span>
-                <span class="priority-count">{{ getPriorityCount('HIGH') }}</span>
-              </div>
-              <div class="priority-progress">
-                <div class="priority-fill high" [style.width.%]="getPriorityPercentage('HIGH')"></div>
-              </div>
-            </div>
-            <div class="priority-bar">
-              <div class="priority-info">
-                <span class="priority-name medium">Medium</span>
-                <span class="priority-count">{{ getPriorityCount('MEDIUM') }}</span>
-              </div>
-              <div class="priority-progress">
-                <div class="priority-fill medium" [style.width.%]="getPriorityPercentage('MEDIUM')"></div>
-              </div>
-            </div>
-            <div class="priority-bar">
-              <div class="priority-info">
-                <span class="priority-name low">Low</span>
-                <span class="priority-count">{{ getPriorityCount('LOW') }}</span>
-              </div>
-              <div class="priority-progress">
-                <div class="priority-fill low" [style.width.%]="getPriorityPercentage('LOW')"></div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
   <!-- Advanced Search Panel -->
   <div *ngIf="showSearchPanel" class="search-panel">
     <div class="search-panel-header">
@@ -312,7 +173,146 @@
     <div class="loading-spinner"></div>
     <p>Loading backlog items...</p>
   </div>
+  <div class="task-summary-bar" *ngIf="!isLoading && !error">
+    <div class="summary-cards">
+      <!-- Total Tasks -->
+      <div class="summary-card">
+        <div class="summary-icon total">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M9 12l2 2 4-4"/>
+            <path d="M21 12c0 5.523-4.477 10-10 10s-10-4.477-10-10 4.477-10 10-10s10-4.477-10 10z"/>
+          </svg>
+        </div>
+        <div class="summary-content">
+          <div class="summary-value">{{ totalTasks }}</div>
+          <div class="summary-label">Total Items</div>
+        </div>
+      </div>
 
+      <!-- To Do -->
+      <div class="summary-card">
+        <div class="summary-icon open">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/>
+            <path d="M8 12l4 4 8-8"/>
+          </svg>
+        </div>
+        <div class="summary-content">
+          <div class="summary-value">{{ getStatusCount('OPEN') }}</div>
+          <div class="summary-label">To Do</div>
+        </div>
+      </div>
+
+      <!-- In Progress -->
+      <div class="summary-card">
+        <div class="summary-icon in-progress">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/>
+            <polyline points="12,6 12,12 16,14"/>
+          </svg>
+        </div>
+        <div class="summary-content">
+          <div class="summary-value">{{ getStatusCount('IN_PROGRESS') }}</div>
+          <div class="summary-label">In Progress</div>
+        </div>
+      </div>
+
+      <!-- Done -->
+      <div class="summary-card">
+        <div class="summary-icon done">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/>
+            <path d="M9 12l2 2 4-4"/>
+          </svg>
+        </div>
+        <div class="summary-content">
+          <div class="summary-value">{{ getStatusCount('DONE') }}</div>
+          <div class="summary-label">Done</div>
+        </div>
+      </div>
+
+      <!-- Blocked -->
+      <div class="summary-card">
+        <div class="summary-icon blocked">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/>
+            <path d="M15 9l-6 6"/>
+            <path d="M9 9l6 6"/>
+          </svg>
+        </div>
+        <div class="summary-content">
+          <div class="summary-value">{{ getStatusCount('BLOCKED') }}</div>
+          <div class="summary-label">Blocked</div>
+        </div>
+      </div>
+
+      <!-- Progress Bar -->
+      <div class="summary-card progress-card">
+        <div class="progress-content">
+          <div class="progress-header">
+            <span class="progress-label">Completion Progress</span>
+            <span class="progress-percentage">{{ getCompletionPercentage() }}%</span>
+          </div>
+          <div class="progress-bar">
+            <div class="progress-fill" [style.width.%]="getCompletionPercentage()"></div>
+          </div>
+          <div class="progress-stats">
+            <span>{{ getStatusCount('DONE') }} of {{ totalTasks }} completed</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Priority Summary -->
+      <div class="summary-card priority-card">
+        <div class="priority-content">
+          <div class="priority-header">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+            </svg>
+            <span class="priority-label">Priority Breakdown</span>
+          </div>
+          <div class="priority-bars">
+            <div class="priority-bar">
+              <div class="priority-info">
+                <span class="priority-name critical">Critical</span>
+                <span class="priority-count">{{ getPriorityCount('CRITICAL') }}</span>
+              </div>
+              <div class="priority-progress">
+                <div class="priority-fill critical" [style.width.%]="getPriorityPercentage('CRITICAL')"></div>
+              </div>
+            </div>
+            <div class="priority-bar">
+              <div class="priority-info">
+                <span class="priority-name high">High</span>
+                <span class="priority-count">{{ getPriorityCount('HIGH') }}</span>
+              </div>
+              <div class="priority-progress">
+                <div class="priority-fill high" [style.width.%]="getPriorityPercentage('HIGH')"></div>
+              </div>
+            </div>
+            <div class="priority-bar">
+              <div class="priority-info">
+                <span class="priority-name medium">Medium</span>
+                <span class="priority-count">{{ getPriorityCount('MEDIUM') }}</span>
+              </div>
+              <div class="priority-progress">
+                <div class="priority-fill medium" [style.width.%]="getPriorityPercentage('MEDIUM')"></div>
+              </div>
+            </div>
+            <div class="priority-bar">
+              <div class="priority-info">
+                <span class="priority-name low">Low</span>
+                <span class="priority-count">{{ getPriorityCount('LOW') }}</span>
+              </div>
+              <div class="priority-progress">
+                <div class="priority-fill low" [style.width.%]="getPriorityPercentage('LOW')"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
   <!-- Task Cards Grid -->
   <div *ngIf="!isLoading" class="tasks-grid">
     <div class="task-card" *ngFor="let task of paginated" (click)="editTask(task)">
