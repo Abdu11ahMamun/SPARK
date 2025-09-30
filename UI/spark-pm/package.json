@@ -5,8 +5,12 @@
     "ng": "ng",
     "start": "ng serve",
     "build": "ng build",
+    "build:prod": "ng build --configuration production",
     "watch": "ng build --watch --configuration development",
-    "test": "ng test"
+    "test": "ng test",
+    "docker:build": "docker build -t spark-ui:latest .",
+    "docker:run": "docker run -p 80:80 spark-ui:latest",
+    "docker:compose": "docker-compose up --build"
   },
   "prettier": {
     "overrides": [

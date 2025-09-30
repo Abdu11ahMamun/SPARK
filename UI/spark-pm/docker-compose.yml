@@ -1,0 +1,19 @@
+version: '3.8'
+
+services:
+  spark-ui:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "80:80"
+    environment:
+      - NGINX_HOST=localhost
+      - NGINX_PORT=80
+    restart: unless-stopped
+    networks:
+      - spark-network
+
+networks:
+  spark-network:
+    driver: bridge

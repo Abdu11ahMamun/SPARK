@@ -1,0 +1,18 @@
+.git
+.gitignore
+.gradle
+build
+bin
+out
+.idea
+*.iml
+Dockerfile~
+README*.md
+**/.DS_Store
+# Logs
+*.log
+# Node (if ever added)
+node_modules
+# Test reports
+reports
+
