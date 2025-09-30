@@ -1,3 +1,4 @@
+import { environment } from '../../core/config/api.config';
 import { Component, Input, Output, EventEmitter, OnInit, OnChanges, SimpleChanges, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -70,7 +71,9 @@ export class SprintAddTasksDialogComponent implements OnInit, OnChanges {
 			return; 
 		}
 		
-		const url = `http://localhost:8080/api/tasks/team/${effectiveTeam}/undone`;
+		// Build URL from central API base
+		const apiBase = (environment as any)?.apiBaseUrl || (environment as any)?.apiUrl || 'http://192.168.1.172:16090/api';
+		const url = `${apiBase}/tasks/team/${effectiveTeam}/undone`;
 		console.log('Fetching from URL:', url);
 		
 		this.http.get<DialogTaskItem[]>(url).subscribe({
@@ -157,7 +160,8 @@ export class SprintAddTasksDialogComponent implements OnInit, OnChanges {
 		if (!this.sprintId || !this.selectedIds.size) return;
 		this.assigning = true;
 		// Use direct HTTP to avoid potential template type-checking mismatch with service method
-		const url = `http://localhost:8080/api/tasks/assign-to-sprint?sprintId=${this.sprintId}`;
+		const apiBase = (environment as any)?.apiBaseUrl || (environment as any)?.apiUrl || 'http://192.168.1.172:16090/api';
+		const url = `${apiBase}/tasks/assign-to-sprint?sprintId=${this.sprintId}`;
 		this.http.post<any[]>(url, Array.from(this.selectedIds)).subscribe({
 			next: (_response: any) => { this.assigning=false; this.added.emit(Array.from(this.selectedIds)); this.selectedIds.clear(); this.close.emit(); },
 			error: (err: any) => { console.error(err); this.assigning=false; this.error='Failed to assign tasks'; }

@@ -1,4 +1,5 @@
 export const environment = {
   production: false,
-  apiUrl: 'http://localhost:8080'
+  // Base root of backend (without trailing /api)
+  apiUrl: 'http://192.168.1.172:16090'
 };

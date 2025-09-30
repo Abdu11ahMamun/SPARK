@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { environment } from '../../core/config/api.config';
 import { tap } from 'rxjs/operators';
 import { TeamMember } from '../teams/team.model';
 
@@ -116,8 +117,10 @@ export interface SprintUserProgress {
   providedIn: 'root'
 })
 export class SprintService {
-  private baseUrl = 'http://localhost:8080/api/sprints';
-  private capacityUrl = 'http://localhost:8080/api/sprint-capacity';
+  // Central base (with /api) from shared config
+  private readonly apiBase = environment.apiBaseUrl;
+  private baseUrl = `${this.apiBase}/sprints`;
+  private capacityUrl = `${this.apiBase}/sprint-capacity`;
 
   constructor(private http: HttpClient) {}
 
@@ -188,11 +191,11 @@ export class SprintService {
 
   // Backlog undone tasks (team scoped, excluding already in sprint)
   getUndoneTasksByTeam(teamId: number) {
-    return this.http.get<any[]>(`http://localhost:8080/api/tasks/team/${teamId}/undone`);
+    return this.http.get<any[]>(`${this.apiBase}/tasks/team/${teamId}/undone`);
   }
 
   // Assign selected tasks to sprint
   assignTasksToSprint(sprintId: number, taskIds: number[]) {
-    return this.http.post<any[]>(`http://localhost:8080/api/tasks/assign-to-sprint?sprintId=${sprintId}`, taskIds);
+    return this.http.post<any[]>(`${this.apiBase}/tasks/assign-to-sprint?sprintId=${sprintId}`, taskIds);
   }
 }
