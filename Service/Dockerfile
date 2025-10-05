@@ -31,7 +31,7 @@ COPY --from=build /workspace/build/libs/*SNAPSHOT.jar app.jar
 EXPOSE 8080
 
 # Healthcheck uses Actuator (ensure management endpoints enabled)
-HEALTHCHECK --interval=30s --timeout=3s --retries=3 CMD curl -fsS http://localhost:8080/actuator/health || exit 1
+#HEALTHCHECK --interval=30s --timeout=3s --retries=3 CMD curl -fsS http://localhost:8080/actuator/health || exit 1
 
 # Allow passing JVM opts (memory tuning, etc.)
 ENV JAVA_OPTS=""
