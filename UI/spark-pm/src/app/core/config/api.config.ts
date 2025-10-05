@@ -1,4 +1,6 @@
+declare const window: any;
+const runtimeApi = (typeof window !== 'undefined' && window.__env && window.__env.API_BASE_URL) ? window.__env.API_BASE_URL : (window?.location?.origin || '');
 export const environment = {
   production: false,
-  apiBaseUrl: 'http://192.168.1.172:16090/api',
+  apiBaseUrl: runtimeApi ? `${runtimeApi.replace(/\/$/, '')}/api` : '/api'
 };

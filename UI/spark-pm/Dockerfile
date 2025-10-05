@@ -26,11 +26,17 @@ FROM nginx:alpine
 # For Angular 17+, the output is typically in dist/[project-name]/browser
 COPY --from=build /app/dist/spark-pm/browser /usr/share/nginx/html
 
+# Copy runtime environment template & default file
+COPY public/runtime-env.template.js /usr/share/nginx/html/
+COPY public/runtime-env.js /usr/share/nginx/html/
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
 # Copy custom nginx configuration
 COPY nginx.conf /etc/nginx/nginx.conf
 
 # Expose port 80
 EXPOSE 80
 
-# Start nginx
-CMD ["nginx", "-g", "daemon off;"]
+# Start with custom entrypoint that injects runtime env
+ENTRYPOINT ["/entrypoint.sh"]

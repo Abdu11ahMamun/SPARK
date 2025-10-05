@@ -1,5 +1,6 @@
+declare const window: any;
+const runtimeApi = (typeof window !== 'undefined' && window.__env && window.__env.API_BASE_URL) ? window.__env.API_BASE_URL : 'http://localhost:8080';
 export const environment = {
   production: false,
-  // Base root of backend (without trailing /api)
-  apiUrl: 'http://192.168.1.172:16090'
+  apiUrl: runtimeApi
 };

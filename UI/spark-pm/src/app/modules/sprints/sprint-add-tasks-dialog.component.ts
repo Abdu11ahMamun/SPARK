@@ -72,7 +72,7 @@ export class SprintAddTasksDialogComponent implements OnInit, OnChanges {
 		}
 		
 		// Build URL from central API base
-		const apiBase = (environment as any)?.apiBaseUrl || (environment as any)?.apiUrl || 'http://192.168.1.172:16090/api';
+		const apiBase = (environment as any)?.apiBaseUrl || (environment as any)?.apiUrl || '/api';
 		const url = `${apiBase}/tasks/team/${effectiveTeam}/undone`;
 		console.log('Fetching from URL:', url);
 		
@@ -160,7 +160,7 @@ export class SprintAddTasksDialogComponent implements OnInit, OnChanges {
 		if (!this.sprintId || !this.selectedIds.size) return;
 		this.assigning = true;
 		// Use direct HTTP to avoid potential template type-checking mismatch with service method
-		const apiBase = (environment as any)?.apiBaseUrl || (environment as any)?.apiUrl || 'http://192.168.1.172:16090/api';
+		const apiBase = (environment as any)?.apiBaseUrl || (environment as any)?.apiUrl || '/api';
 		const url = `${apiBase}/tasks/assign-to-sprint?sprintId=${this.sprintId}`;
 		this.http.post<any[]>(url, Array.from(this.selectedIds)).subscribe({
 			next: (_response: any) => { this.assigning=false; this.added.emit(Array.from(this.selectedIds)); this.selectedIds.clear(); this.close.emit(); },
