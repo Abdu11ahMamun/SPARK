@@ -1,36 +1,299 @@
 <div class="dashboard-content">
-  <div class="dashboard-header">
-    <h1>Welcome to SPARK</h1>
-    <p class="dashboard-subtitle">Sprint Planning and Resource Keeper</p>
+  <!-- Loading State -->
+  <div *ngIf="isLoading()" class="loading-container">
+    <div class="loading-spinner"></div>
+    <p>Loading your dashboard...</p>
   </div>
-  
-  <div class="dashboard-stats">
-    <div class="stat-card">
-      <h3>Active Projects</h3>
-      <div class="stat-number">12</div>
+
+  <!-- Dashboard Content -->
+  <div *ngIf="!isLoading()" class="dashboard-main">
+    <!-- Header with User Greeting -->
+    <div class="dashboard-header">
+      <div class="header-content">
+        <div class="greeting">
+          <h1>Good {{ getTimeOfDay() }}, {{ userInfo().fullName || userInfo().username }}! 👋</h1>
+          <p class="dashboard-subtitle">Here's your productivity overview and upcoming priorities</p>
+        </div>
+        <button class="refresh-btn" (click)="refreshDashboard()" title="Refresh Dashboard">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/>
+            <path d="M21 3v5h-5"/>
+            <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/>
+            <path d="M3 21v-5h5"/>
+          </svg>
+        </button>
+      </div>
     </div>
-    <div class="stat-card">
-      <h3>Team Members</h3>
-      <div class="stat-number">8</div>
+
+    <!-- Quick Stats Grid -->
+    <div class="stats-grid">
+      <div class="stat-card primary">
+        <div class="stat-icon">📋</div>
+        <div class="stat-info">
+          <div class="stat-number">{{ stats().totalTasks }}</div>
+          <div class="stat-label">Total Tasks</div>
+        </div>
+        <div class="stat-trend positive" *ngIf="stats().totalTasks > 0">
+          <span class="trend-icon">↗️</span>
+          <span class="trend-text">Active</span>
+        </div>
+      </div>
+
+      <div class="stat-card success">
+        <div class="stat-icon">✅</div>
+        <div class="stat-info">
+          <div class="stat-number">{{ stats().completedTasks }}</div>
+          <div class="stat-label">Completed</div>
+        </div>
+        <div class="stat-trend positive">
+          <span class="trend-icon">📈</span>
+          <span class="trend-text">{{ stats().completionRate }}%</span>
+        </div>
+      </div>
+
+      <div class="stat-card warning">
+        <div class="stat-icon">🔄</div>
+        <div class="stat-info">
+          <div class="stat-number">{{ stats().inProgressTasks }}</div>
+          <div class="stat-label">In Progress</div>
+        </div>
+        <div class="stat-trend neutral">
+          <span class="trend-icon">⚡</span>
+          <span class="trend-text">Active</span>
+        </div>
+      </div>
+
+      <div class="stat-card danger">
+        <div class="stat-icon">⚠️</div>
+        <div class="stat-info">
+          <div class="stat-number">{{ stats().overdueTasks }}</div>
+          <div class="stat-label">Overdue</div>
+        </div>
+        <div class="stat-trend negative" *ngIf="stats().overdueTasks > 0">
+          <span class="trend-icon">🚨</span>
+          <span class="trend-text">Urgent</span>
+        </div>
+      </div>
     </div>
-    <div class="stat-card">
-      <h3>Tasks Completed</h3>
-      <div class="stat-number">156</div>
-    </div>
-    <div class="stat-card">
-      <h3>Active Sprints</h3>
-      <div class="stat-number">3</div>
-    </div>
-  </div>
-  
-  <div class="dashboard-widgets">
-    <div class="widget">
-      <h3>Recent Activity</h3>
-      <p>Your latest project updates will appear here.</p>
-    </div>
-    <div class="widget">
-      <h3>Upcoming Deadlines</h3>
-      <p>Important dates and milestones will be shown here.</p>
+
+    <!-- Main Dashboard Grid -->
+    <div class="dashboard-grid">
+      
+      <!-- Task Distribution Chart -->
+      <div class="widget chart-widget">
+        <div class="widget-header">
+          <h3>Task Distribution</h3>
+          <div class="widget-actions">
+            <span class="completion-rate">{{ stats().completionRate }}% Complete</span>
+          </div>
+        </div>
+        <div class="chart-container">
+          <div class="donut-chart">
+            <svg viewBox="0 0 200 200" class="donut-svg">
+              <circle cx="100" cy="100" r="80" fill="none" stroke="#f3f4f6" stroke-width="16"/>
+              <circle 
+                *ngFor="let segment of taskDistributionData(); let i = index"
+                cx="100" cy="100" r="80" 
+                fill="none" 
+                [attr.stroke]="segment.color" 
+                stroke-width="16"
+                [attr.stroke-dasharray]="getCircumference(segment.value, stats().totalTasks)"
+                [attr.stroke-dashoffset]="getCircumferenceOffset(i)"
+                transform="rotate(-90 100 100)"
+              />
+              <text x="100" y="95" text-anchor="middle" class="chart-center-number">{{ stats().totalTasks }}</text>
+              <text x="100" y="115" text-anchor="middle" class="chart-center-label">Tasks</text>
+            </svg>
+          </div>
+          <div class="chart-legend">
+            <div class="legend-item" *ngFor="let item of taskDistributionData()">
+              <div class="legend-color" [style.background-color]="item.color"></div>
+              <span class="legend-label">{{ item.label }} ({{ item.value }})</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- KPI Metrics -->
+      <div class="widget kpi-widget">
+        <div class="widget-header">
+          <h3>Key Performance Indicators</h3>
+          <div class="widget-actions">
+            <span class="time-period">This Month</span>
+          </div>
+        </div>
+        <div class="kpi-grid">
+          <div class="kpi-card" *ngFor="let kpi of kpis()">
+            <div class="kpi-header">
+              <span class="kpi-icon">{{ kpi.icon }}</span>
+              <span class="kpi-trend" [class]="'trend-' + kpi.trend">{{ getTrendIcon(kpi.trend) }}</span>
+            </div>
+            <div class="kpi-value">
+              <span class="kpi-current">{{ kpi.current }}</span>
+              <span class="kpi-unit">{{ kpi.unit }}</span>
+            </div>
+            <div class="kpi-label">{{ kpi.label }}</div>
+            <div class="kpi-progress">
+              <div class="progress-bar">
+                <div 
+                  class="progress-fill" 
+                  [style.width.%]="(kpi.current / kpi.target) * 100"
+                  [style.background-color]="kpi.color">
+                </div>
+              </div>
+              <span class="kpi-target">Target: {{ kpi.target }}{{ kpi.unit }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Upcoming Deadlines -->
+      <div class="widget deadlines-widget">
+        <div class="widget-header">
+          <h3>Upcoming Deadlines</h3>
+          <div class="widget-actions">
+            <a routerLink="/my-tasks" class="view-all-link">View All</a>
+          </div>
+        </div>
+        <div class="deadlines-list">
+          <div class="deadline-item" *ngFor="let deadline of deadlines().slice(0, 6)" 
+               [class.overdue]="deadline.isOverdue"
+               [class.urgent]="deadline.daysLeft <= 2 && !deadline.isOverdue">
+            <div class="deadline-priority" [style.background-color]="getPriorityColor(deadline.priority)">
+              {{ getPriorityIcon(deadline.priority) }}
+            </div>
+            <div class="deadline-content">
+              <div class="deadline-title">{{ deadline.title }}</div>
+              <div class="deadline-meta">
+                <span class="deadline-team">{{ deadline.teamName }}</span>
+                <span class="deadline-date">{{ formatDeadline(deadline.deadline) }}</span>
+              </div>
+            </div>
+            <div class="deadline-status" 
+                 [class.overdue]="deadline.isOverdue"
+                 [class.urgent]="deadline.daysLeft <= 2 && !deadline.isOverdue">
+              {{ getDeadlineStatus(deadline.daysLeft) }}
+            </div>
+          </div>
+          <div *ngIf="deadlines().length === 0" class="empty-state">
+            <div class="empty-icon">🎉</div>
+            <div class="empty-text">No upcoming deadlines!</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Growth & Productivity Chart -->
+      <div class="widget growth-widget">
+        <div class="widget-header">
+          <h3>Growth & Productivity</h3>
+          <div class="widget-actions">
+            <select class="metric-selector">
+              <option value="tasks">Tasks Completed</option>
+              <option value="productivity">Productivity Score</option>
+              <option value="contribution">Team Contribution</option>
+            </select>
+          </div>
+        </div>
+        <div class="growth-chart">
+          <div class="chart-area">
+            <svg viewBox="0 0 400 200" class="line-chart">
+              <!-- Grid lines -->
+              <defs>
+                <pattern id="grid" width="40" height="20" patternUnits="userSpaceOnUse">
+                  <path d="M 40 0 L 0 0 0 20" fill="none" stroke="#f3f4f6" stroke-width="1"/>
+                </pattern>
+              </defs>
+              <rect width="400" height="200" fill="url(#grid)" />
+              
+              <!-- Data line -->
+              <polyline
+                fill="none"
+                stroke="#3b82f6"
+                stroke-width="3"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                [attr.points]="getGrowthChartPoints()"
+              />
+              
+              <!-- Data points -->
+              <circle 
+                *ngFor="let point of growthData(); let i = index"
+                [attr.cx]="50 + (i * 70)"
+                [attr.cy]="180 - (point.tasksCompleted * 3)"
+                r="5"
+                fill="#3b82f6"
+                class="chart-point"
+              />
+            </svg>
+          </div>
+          <div class="chart-labels">
+            <div class="month-label" *ngFor="let point of growthData()">
+              {{ point.month }}
+            </div>
+          </div>
+        </div>
+        <div class="growth-summary">
+          <div class="summary-item">
+            <span class="summary-label">Avg Tasks/Month</span>
+            <span class="summary-value">{{ getAverageTasksPerMonth() }}</span>
+          </div>
+          <div class="summary-item">
+            <span class="summary-label">Productivity Trend</span>
+            <span class="summary-value positive">+{{ getProductivityTrend() }}%</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Team Activity & Collaboration -->
+      <div class="widget team-widget">
+        <div class="widget-header">
+          <h3>Team Activity</h3>
+        </div>
+        <div class="team-stats">
+          <div class="team-item" *ngFor="let team of userInfo().teams">
+            <div class="team-info">
+              <div class="team-name">{{ team.name }}</div>
+              <div class="team-role">{{ team.role }}</div>
+            </div>
+            <div class="team-activity">
+              <div class="activity-bar">
+                <div class="activity-fill" [style.width.%]="team.activityLevel"></div>
+              </div>
+              <span class="activity-score">{{ team.activityLevel }}%</span>
+            </div>
+          </div>
+          <div *ngIf="userInfo().teams.length === 0" class="empty-state">
+            <div class="empty-icon">👥</div>
+            <div class="empty-text">No teams assigned</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Actions -->
+      <div class="widget actions-widget">
+        <div class="widget-header">
+          <h3>Quick Actions</h3>
+        </div>
+        <div class="actions-grid">
+          <a routerLink="/my-tasks" class="action-btn primary">
+            <div class="action-icon">📋</div>
+            <div class="action-label">My Tasks</div>
+          </a>
+          <a routerLink="/sprints" class="action-btn secondary">
+            <div class="action-icon">🚀</div>
+            <div class="action-label">Sprints</div>
+          </a>
+          <a routerLink="/backlog" class="action-btn tertiary">
+            <div class="action-icon">📝</div>
+            <div class="action-label">Backlog</div>
+          </a>
+          <a routerLink="/teams" class="action-btn quaternary">
+            <div class="action-icon">👥</div>
+            <div class="action-label">Teams</div>
+          </a>
+        </div>
+      </div>
+
     </div>
   </div>
 </div>
