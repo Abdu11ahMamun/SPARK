@@ -119,7 +119,8 @@ export class AuthService {
   }
   
   getUserTeams(): { id: number; name: string; }[] {
-    return this._userProfile()?.teams || [];
+    // Ensure we always expose `name`
+    return (this._userProfile()?.teams || []).map(t => ({ id: t.id, name: (t as any).name || (t as any).teamName }));
   }
   
   getUserTeamIds(): number[] {
@@ -132,5 +133,44 @@ export class AuthService {
   
   isInTeam(teamId: number): boolean {
     return this.getUserTeamIds().includes(teamId);
+  }
+
+  /**
+   * Refresh teams for current logged-in user by calling backend teams endpoint.
+   * Assumes we have a user id stored inside profile (extend if missing).
+   */
+  async refreshUserTeams(userId?: number) {
+    const profile = this._userProfile();
+    if (!profile) return;
+
+    // If profile doesn't have id we cannot fetch teams yet
+    // (Backend /api/users/me currently returns only username & role).
+    // Optionally could add new endpoint to return id.
+    const effectiveUserId = userId || (profile as any).id;
+    if (!effectiveUserId) {
+      return; // Cannot resolve id; skip silently
+    }
+
+    try {
+      const teams = await this.http.get<any[]>(`${environment.apiUrl}/api/users/${effectiveUserId}/teams`).toPromise();
+      if (teams) {
+        // Normalize property name to `name` used in UI components
+        const normalized = teams.map(t => ({
+          id: t.id,
+            // backend returns teamName
+          name: t.teamName || t.name,
+          teamName: t.teamName || t.name,
+          description: t.description,
+          status: t.status,
+          pOwner: t.pOwner,
+          sMaster: t.sMaster
+        }));
+        const updated = { ...profile, teams: normalized } as any;
+        this._userProfile.set(updated);
+        localStorage.setItem(this.profileKey, JSON.stringify(updated));
+      }
+    } catch (e) {
+      console.error('Failed to refresh user teams', e);
+    }
   }
 }

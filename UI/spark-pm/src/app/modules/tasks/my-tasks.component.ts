@@ -79,7 +79,24 @@ export class MyTasksComponent implements OnInit {
   ) {}
 
   ngOnInit() {
-    this.loadMyTasks();
+    this.initializeData();
+  }
+
+  private async initializeData() {
+    await this.loadMyTasks();
+    // Attempt to refresh user teams if teams array empty
+    if (this.userInfo().teams.length === 0) {
+      // Try to resolve user id by calling /api/users and matching username (temporary workaround)
+      try {
+  const allUsers = (await this.http.get<any[]>(`${environment.apiUrl}/api/users`).toPromise()) || [];
+  const me = (allUsers as any[]).find(u => u.username?.toLowerCase() === this.userInfo().username?.toLowerCase());
+        if (me?.id) {
+          await (this.authService as any).refreshUserTeams(me.id);
+        }
+      } catch (e) {
+        console.warn('Could not resolve user id for team refresh', e);
+      }
+    }
   }
 
   private async loadMyTasks() {

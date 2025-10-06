@@ -18,6 +18,9 @@
         <div class="user-details">
           <span class="user-name">{{ userInfo().fullName || userInfo().username }}</span>
           <span class="user-email">{{ userInfo().email }}</span>
+          <ng-template #noTeam>
+            <span class="user-team no-team" *ngIf="userInfo().teams.length === 0">No Team</span>
+          </ng-template>
         </div>
         <div class="user-teams" *ngIf="userInfo().teams.length > 0">
           <span class="teams-label">Teams:</span>
