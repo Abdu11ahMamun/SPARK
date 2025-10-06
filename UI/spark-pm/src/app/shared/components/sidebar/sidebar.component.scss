@@ -1,17 +1,17 @@
 .sidebar {
   width: 290px;
   height: 100vh;
-  background: white;
-  border-right: 1px solid var(--color-gray-200);
-  color: var(--color-gray-700);
+  background: var(--color-surface);
+  border-right: 1px solid var(--color-border-light);
+  color: var(--color-text-secondary);
   display: flex;
   flex-direction: column;
   position: fixed;
   left: 0;
   top: 0;
   z-index: 1000;
-  box-shadow: var(--shadow-sm);
-  transition: width 0.3s ease;
+  box-shadow: var(--shadow-lg);
+  transition: var(--transition-normal);
   overflow-y: auto;
   
   &.collapsed {
@@ -20,39 +20,43 @@
 }
 
 .sidebar-header {
-  padding: 2rem 1.25rem 1.5rem;
-  border-bottom: 1px solid var(--color-gray-100);
+  padding: var(--space-8) var(--space-5) var(--space-6);
+  border-bottom: 1px solid var(--color-border-light);
   position: relative;
+  background: var(--color-surface-soft);
   
   .sidebar.collapsed & {
-    padding: 1rem 0.75rem;
+    padding: var(--space-4) var(--space-3);
     text-align: center;
   }
 }
 
 .sidebar-toggle {
   position: absolute;
-  top: 1rem;
-  right: 1rem;
+  top: var(--space-4);
+  right: var(--space-4);
   background: var(--color-gray-100);
   border: none;
-  border-radius: 0.375rem;
+  border-radius: var(--radius-lg);
   width: 32px;
   height: 32px;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: all 0.2s ease;
-  color: var(--color-gray-600);
+  transition: var(--transition-fast);
+  color: var(--color-text-tertiary);
+  box-shadow: var(--shadow-xs);
   
   &:hover {
-    background: var(--color-gray-200);
-    color: var(--color-gray-900);
+    background: var(--color-primary-100);
+    color: var(--color-primary-600);
+    box-shadow: var(--shadow-sm);
+    transform: translateY(-1px);
   }
   
   svg {
-    transition: transform 0.3s ease;
+    transition: var(--transition-normal);
     
     &.rotated {
       transform: rotate(180deg);
@@ -60,18 +64,18 @@
   }
   
   .sidebar.collapsed & {
-    right: 0.5rem;
-    top: 0.75rem;
+    right: var(--space-2);
+    top: var(--space-3);
   }
 }
 
 .sidebar-title {
-  font-size: 1.5rem;
+  font-size: var(--text-2xl);
   font-weight: 700;
   letter-spacing: -0.025em;
-  color: var(--color-gray-900);
-  margin-bottom: 0.25rem;
-  transition: opacity 0.3s ease;
+  color: var(--color-text-primary);
+  margin-bottom: var(--space-1);
+  transition: var(--transition-normal);
   
   &.hidden {
     opacity: 0;
@@ -80,12 +84,12 @@
 }
 
 .sidebar-subtitle {
-  font-size: 0.75rem;
-  color: var(--color-gray-500);
-  font-weight: 500;
+  font-size: var(--text-xs);
+  color: var(--color-text-tertiary);
+  font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.1em;
-  transition: opacity 0.3s ease;
+  transition: var(--transition-normal);
   
   &.hidden {
     opacity: 0;
@@ -95,42 +99,44 @@
 
 .sidebar-menu {
   list-style: none;
-  padding: 1.5rem 1.25rem;
+  padding: var(--space-6) var(--space-5);
   margin: 0;
   flex: 1;
   
   .sidebar.collapsed & {
-    padding: 1.5rem 0.75rem;
+    padding: var(--space-6) var(--space-3);
   }
 }
 
 .sidebar-menu li {
-  margin-bottom: 0.25rem;
+  margin-bottom: var(--space-1);
 }
 
 .sidebar-menu a {
   position: relative;
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  padding: 0.75rem;
-  color: var(--color-gray-700);
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  color: var(--color-text-secondary);
   text-decoration: none;
-  font-size: 0.875rem;
+  font-size: var(--text-sm);
   font-weight: 500;
-  border-radius: 0.5rem;
-  transition: all 0.2s ease;
+  border-radius: var(--radius-lg);
+  transition: var(--transition-fast);
+  line-height: 1.4;
   
   .sidebar.collapsed & {
     justify-content: center;
-    padding: 0.75rem 0.5rem;
+    padding: var(--space-3) var(--space-2);
   }
 }
 
 .sidebar-menu a:hover {
-  background-color: var(--color-gray-100);
-  color: var(--color-gray-900);
+  background-color: var(--color-primary-50);
+  color: var(--color-primary-700);
   transform: translateX(2px);
+  box-shadow: var(--shadow-sm);
   
   .sidebar.collapsed & {
     transform: translateX(0) scale(1.05);
@@ -138,40 +144,43 @@
 }
 
 .sidebar-menu a.active {
-  background-color: var(--color-brand-50);
-  color: var(--color-brand-600);
-  border-left: 3px solid var(--color-brand-500);
-  padding-left: calc(0.75rem - 3px);
+  background-color: var(--color-primary-100);
+  color: var(--color-primary-700);
+  border-left: 3px solid var(--color-primary-600);
+  padding-left: calc(var(--space-4) - 3px);
+  box-shadow: var(--shadow-sm);
+  font-weight: 600;
   
   .sidebar.collapsed & {
     border-left: none;
-    border-bottom: 3px solid var(--color-brand-500);
-    padding-left: 0.5rem;
-    padding-bottom: calc(0.75rem - 3px);
+    border-bottom: 3px solid var(--color-primary-600);
+    padding-left: var(--space-2);
+    padding-bottom: calc(var(--space-3) - 3px);
   }
 }
 
 /* User Profile Section */
 .user-profile-section {
-  padding: 1rem;
-  border-top: 1px solid var(--color-gray-200);
-  background: var(--color-gray-50);
+  padding: var(--space-4);
+  border-top: 1px solid var(--color-border-light);
+  background: var(--color-surface-soft);
   margin-top: auto; /* Push to bottom */
 }
 
 .user-profile-section.collapsed {
-  padding: 0.75rem;
+  padding: var(--space-3);
   text-align: center;
 }
 
 .user-avatar {
   width: 48px;
   height: 48px;
-  border-radius: 50%;
-  background: var(--color-gray-200);
+  border-radius: var(--radius-full);
+  background: var(--color-primary-100);
   display: flex;
   align-items: center;
   justify-content: center;
+  box-shadow: var(--shadow-sm);
   margin: 0 auto 0.75rem;
   color: var(--color-gray-600);
   border: 2px solid var(--color-gray-300);

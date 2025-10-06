@@ -5,9 +5,9 @@ public enum TaskType {
     Development,
     Testing,
     Deployment,
-            Design,
+    Design,
     RnD,
     Support,
-            Milestone,
+    Milestone,
     Web_Development
 }

@@ -3,7 +3,7 @@ package com.mislbd.spark.entity.types;
 public enum Roles {
     ADMIN,
     DEVELOPER,
-    TESTER,
+    QA,
     MANAGER,
     DESIGNER,
     DEVOPS,
