@@ -65,17 +65,18 @@
   height: 44px;
   border: none;
   border-radius: 12px;
-  background: rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.9);
   backdrop-filter: blur(10px);
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  color: white;
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #667eea;
+  border: 1px solid rgba(255, 255, 255, 0.8);
   position: relative;
   overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .action-btn::before {
@@ -499,7 +500,6 @@
 .users-title {
   font-size: 1.875rem;
   font-weight: 700;
-  color: var(--color-gray-900);
   margin: 0;
   letter-spacing: -0.025em;
 }
@@ -614,14 +614,20 @@
 }
 
 .action-btn {
-  padding: 0.5rem;
-  border: none;
-  background: none;
+  width: 44px;
+  height: 44px;
+  border: 2px solid #e5e7eb;
+  border-radius: 10px;
+  background: white;
   cursor: pointer;
-  border-radius: 0.375rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   transition: all 0.2s ease;
-  color: var(--color-gray-500);
+  color: #6b7280;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
+
 
 .action-btn:hover {
   background-color: var(--color-gray-100);

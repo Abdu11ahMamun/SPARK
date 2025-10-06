@@ -377,11 +377,11 @@
       }
       
       .kpi-trend {
-        font-size: 1.25rem;
+        font-size: var(--text-xl);
         
-        &.trend-up { color: #10b981; }
-        &.trend-down { color: #ef4444; }
-        &.trend-stable { color: #f59e0b; }
+        &.trend-up { color: var(--color-success-600); }
+        &.trend-down { color: var(--color-error-600); }
+        &.trend-stable { color: var(--color-warning-600); }
       }
     }
     
@@ -392,21 +392,21 @@
       margin-bottom: 0.5rem;
       
       .kpi-current {
-        font-size: 1.75rem;
+        font-size: var(--text-2xl);
         font-weight: 700;
-        color: var(--color-gray-900);
+        color: var(--color-text-primary);
       }
       
       .kpi-unit {
-        font-size: 0.875rem;
-        color: var(--color-gray-600);
+        font-size: var(--text-sm);
+        color: var(--color-text-secondary);
         font-weight: 500;
       }
     }
     
     .kpi-label {
-      font-size: 0.75rem;
-      color: var(--color-gray-600);
+      font-size: var(--text-xs);
+      color: var(--color-text-secondary);
       font-weight: 600;
       text-transform: uppercase;
       letter-spacing: 0.05em;
@@ -417,20 +417,20 @@
       .progress-bar {
         height: 6px;
         background: var(--color-gray-200);
-        border-radius: 3px;
+        border-radius: var(--radius-sm);
         overflow: hidden;
-        margin-bottom: 0.5rem;
+        margin-bottom: var(--space-2);
         
         .progress-fill {
           height: 100%;
-          border-radius: 3px;
-          transition: width 0.3s ease;
+          border-radius: var(--radius-sm);
+          transition: var(--transition-normal);
         }
       }
       
       .kpi-target {
-        font-size: 0.75rem;
-        color: var(--color-gray-500);
+        font-size: var(--text-xs);
+        color: var(--color-text-tertiary);
       }
     }
   }
@@ -449,26 +449,27 @@
   .deadline-item {
     display: flex;
     align-items: center;
-    gap: 1rem;
-    padding: 1rem;
-    border: 1px solid var(--color-gray-200);
-    border-radius: 0.75rem;
-    margin-bottom: 0.75rem;
-    transition: all 0.2s ease;
+    gap: var(--space-4);
+    padding: var(--space-4);
+    border: 1px solid var(--color-border-light);
+    border-radius: var(--radius-xl);
+    margin-bottom: var(--space-3);
+    transition: var(--transition-fast);
     
     &:hover {
-      background: var(--color-gray-50);
+      background: var(--color-surface-soft);
       transform: translateY(-1px);
+      box-shadow: var(--shadow-sm);
     }
     
     &.overdue {
-      border-color: #fecaca;
-      background: #fef2f2;
+      border-color: var(--color-error-200);
+      background: var(--color-error-50);
     }
     
     &.urgent {
-      border-color: #fed7aa;
-      background: #fffbeb;
+      border-color: var(--color-warning-200);
+      background: var(--color-warning-50);
     }
     
     .deadline-priority {
@@ -489,8 +490,8 @@
       
       .deadline-title {
         font-weight: 600;
-        color: var(--color-gray-900);
-        margin-bottom: 0.25rem;
+        color: var(--color-text-primary);
+        margin-bottom: var(--space-1);
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
@@ -498,9 +499,9 @@
       
       .deadline-meta {
         display: flex;
-        gap: 0.5rem;
-        font-size: 0.75rem;
-        color: var(--color-gray-600);
+        gap: var(--space-2);
+        font-size: var(--text-xs);
+        color: var(--color-text-secondary);
         
         .deadline-team {
           font-weight: 500;
@@ -509,12 +510,12 @@
     }
     
     .deadline-status {
-      font-size: 0.75rem;
+      font-size: var(--text-xs);
       font-weight: 600;
-      padding: 0.25rem 0.75rem;
-      border-radius: 1rem;
+      padding: var(--space-1) var(--space-3);
+      border-radius: var(--radius-full);
       background: var(--color-gray-100);
-      color: var(--color-gray-700);
+      color: var(--color-text-primary);
       
       &.overdue {
         background: #fee2e2;
