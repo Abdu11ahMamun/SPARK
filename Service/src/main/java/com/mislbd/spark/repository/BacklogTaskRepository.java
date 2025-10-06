@@ -35,4 +35,11 @@ public interface BacklogTaskRepository extends JpaRepository<BacklogTask, Intege
     @Query("SELECT t FROM BacklogTask t WHERE t.assignedto = :userId AND t.teamId IN :teamIds AND " +
            "(t.status IS NULL OR UPPER(t.status) NOT IN ('DONE','COMPLETED','CANCELLED'))")
     List<BacklogTask> findActiveTasksByUserAndTeams(@Param("userId") Integer userId, @Param("teamIds") List<Integer> teamIds);
+
+    // Find active tasks assigned to a user across multiple teams limited to specific sprint IDs
+    @Query("SELECT t FROM BacklogTask t WHERE t.assignedto = :userId AND t.teamId IN :teamIds AND t.sprintid IN :sprintIds AND " +
+           "(t.status IS NULL OR UPPER(t.status) NOT IN ('DONE','COMPLETED','CANCELLED'))")
+    List<BacklogTask> findActiveTasksByUserTeamsAndSprints(@Param("userId") Integer userId,
+                                                           @Param("teamIds") List<Integer> teamIds,
+                                                           @Param("sprintIds") List<Integer> sprintIds);
 }

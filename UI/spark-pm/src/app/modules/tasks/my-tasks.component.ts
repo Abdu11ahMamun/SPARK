@@ -92,12 +92,9 @@ export class MyTasksComponent implements OnInit {
         return;
       }
 
-      // Get user ID - you might need to adjust this based on your user API
-      const userId = await this.getCurrentUserId();
+      // Use new session-based endpoint
+      await this.fetchMyTasksFromSession();
       
-      if (userId) {
-        await this.fetchTasksByUser(userId);
-      }
     } catch (error) {
       console.error('Error loading my tasks:', error);
     } finally {
@@ -105,27 +102,17 @@ export class MyTasksComponent implements OnInit {
     }
   }
 
-  private async getCurrentUserId(): Promise<number | null> {
+  private async fetchMyTasksFromSession() {
     try {
-      const response = await this.http.get<{id: number}>(`${environment.apiUrl}/api/users/me/id`).toPromise();
-      return response?.id || null;
-    } catch (error) {
-      console.warn('Could not fetch user ID, using username-based filtering');
-      return null;
-    }
-  }
-
-  private async fetchTasksByUser(userId: number) {
-    try {
-      // Fetch tasks assigned to the current user
-      const allTasks = await this.http.get<TaskItem[]>(`${environment.apiUrl}/api/tasks/by-assignee/${userId}`).toPromise();
+      // Use new session-based endpoint that derives user from authentication
+      const myTasks = await this.http.get<TaskItem[]>(`${environment.apiUrl}/api/my-tasks`).toPromise();
       
-      if (allTasks) {
-        this._tasks.set(allTasks);
+      if (myTasks) {
+        this._tasks.set(myTasks);
         this.updateKanbanColumns();
       }
     } catch (error) {
-      console.error('Error fetching user tasks:', error);
+      console.error('Error fetching my tasks from session:', error);
       // Fallback: load all tasks and filter client-side
       await this.fallbackLoadTasks();
     }
@@ -196,8 +183,8 @@ export class MyTasksComponent implements OnInit {
 
   private async updateTaskStatus(taskId: number, newStatus: TaskItem['status']) {
     try {
-      // Update task status on server
-      await this.http.put(`${environment.apiUrl}/api/tasks/${taskId}/status`, { status: newStatus }).toPromise();
+      // Use new PATCH endpoint for status updates
+      await this.http.patch(`${environment.apiUrl}/api/my-tasks/${taskId}/status`, { status: newStatus }).toPromise();
       
       // Update local state
       const currentTasks = this._tasks();

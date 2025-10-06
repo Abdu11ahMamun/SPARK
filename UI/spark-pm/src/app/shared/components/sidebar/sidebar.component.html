@@ -118,33 +118,15 @@
       </a>
     </li>
     <li>
-      <a routerLink="/tasks" routerLinkActive="active" [title]="isCollapsed() ? 'Task Management' : ''">
-        <span class="menu-icon" [innerHTML]="icons.tasks"></span>
-        <span class="menu-text" [class.hidden]="isCollapsed()">Task Management</span>
-      </a>
-    </li>
-    <li>
       <a routerLink="/backlog" routerLinkActive="active" [title]="isCollapsed() ? 'Backlog Management' : ''">
         <span class="menu-icon" [innerHTML]="icons.backlog"></span>
         <span class="menu-text" [class.hidden]="isCollapsed()">Backlog Management</span>
       </a>
     </li>
 
-    <!-- Project Management Section -->
+    <!-- Sprint Management Section -->
     <li class="menu-section-divider" [class.hidden]="isCollapsed()">
-      <span class="section-title">Project Management</span>
-    </li>
-    <li>
-      <a routerLink="/backlog-mits" routerLinkActive="active" [title]="isCollapsed() ? 'Backlog to MITS' : ''">
-        <span class="menu-icon" [innerHTML]="icons.backlogToMITS"></span>
-        <span class="menu-text" [class.hidden]="isCollapsed()">Backlog to MITS</span>
-      </a>
-    </li>
-    <li>
-      <a routerLink="/sprint-declare" routerLinkActive="active" [title]="isCollapsed() ? 'Sprint Planning' : ''">
-        <span class="menu-icon" [innerHTML]="icons.sprintDeclare"></span>
-        <span class="menu-text" [class.hidden]="isCollapsed()">Sprint Planning</span>
-      </a>
+      <span class="section-title">Sprint Management</span>
     </li>
     <li>
       <a routerLink="/sprints" routerLinkActive="active" [title]="isCollapsed() ? 'Sprint Management' : ''">
@@ -157,29 +139,33 @@
     <li class="menu-section-divider" [class.hidden]="isCollapsed()">
       <span class="section-title">Reports</span>
     </li>
-    <li>
-      <a routerLink="/comparative-statement" routerLinkActive="active" [title]="isCollapsed() ? 'Comparative Statement' : ''">
-        <span class="menu-icon" [innerHTML]="icons.comparativeStatement"></span>
-        <span class="menu-text" [class.hidden]="isCollapsed()">Comparative Statement</span>
-      </a>
+    <li class="menu-item-disabled">
+      <span class="menu-icon" [innerHTML]="icons.comparativeStatement"></span>
+      <span class="menu-text" [class.hidden]="isCollapsed()">
+        Comparative Statement
+        <small class="dev-badge">Under Development</small>
+      </span>
     </li>
-    <li>
-      <a routerLink="/summary-report" routerLinkActive="active" [title]="isCollapsed() ? 'Summary Report' : ''">
-        <span class="menu-icon" [innerHTML]="icons.summaryReport"></span>
-        <span class="menu-text" [class.hidden]="isCollapsed()">Summary Report</span>
-      </a>
+    <li class="menu-item-disabled">
+      <span class="menu-icon" [innerHTML]="icons.summaryReport"></span>
+      <span class="menu-text" [class.hidden]="isCollapsed()">
+        Summary Report
+        <small class="dev-badge">Under Development</small>
+      </span>
     </li>
-    <li>
-      <a routerLink="/user-comparative" routerLinkActive="active" [title]="isCollapsed() ? 'User Comparative' : ''">
-        <span class="menu-icon" [innerHTML]="icons.userComparative"></span>
-        <span class="menu-text" [class.hidden]="isCollapsed()">User Comparative</span>
-      </a>
+    <li class="menu-item-disabled">
+      <span class="menu-icon" [innerHTML]="icons.userComparative"></span>
+      <span class="menu-text" [class.hidden]="isCollapsed()">
+        User Comparative
+        <small class="dev-badge">Under Development</small>
+      </span>
     </li>
-    <li>
-      <a routerLink="/backlog-task-assigned" routerLinkActive="active" [title]="isCollapsed() ? 'Backlog Task Assigned' : ''">
-        <span class="menu-icon" [innerHTML]="icons.backlogTaskAssigned"></span>
-        <span class="menu-text" [class.hidden]="isCollapsed()">Backlog Task Assigned</span>
-      </a>
+    <li class="menu-item-disabled">
+      <span class="menu-icon" [innerHTML]="icons.backlogTaskAssigned"></span>
+      <span class="menu-text" [class.hidden]="isCollapsed()">
+        Backlog Task Assigned
+        <small class="dev-badge">Under Development</small>
+      </span>
     </li>
   </ul>
 

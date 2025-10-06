@@ -11,7 +11,9 @@ import com.mislbd.spark.repository.SprintRepository;
 import com.mislbd.spark.repository.TeamMembershipRepository;
 import com.mislbd.spark.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
@@ -46,38 +48,41 @@ public class MyTasksController {
         this.backlogTaskMapper = backlogTaskMapper;
     }
 
-    /**
-     * Get all tasks assigned to a user based on their current sprints across all teams
-     * @param username The username to find tasks for
-     * @return List of BacklogTaskDto assigned to the user
-     */
+    // Deprecated username-based endpoint kept temporarily for backward compatibility
     @GetMapping("/user/{username}")
-    public ResponseEntity<List<BacklogTaskDto>> getMyTasks(@PathVariable String username) {
+    @Deprecated
+    public ResponseEntity<List<BacklogTaskDto>> getMyTasksByUsername(@PathVariable String username) {
+        return getTasksForResolvedUser(username);
+    }
+
+    /**
+     * New session-based endpoint: derive the username from the authenticated principal
+     * GET /api/my-tasks
+     */
+    @GetMapping
+    public ResponseEntity<List<BacklogTaskDto>> getMyTasks(Authentication authentication) {
+        if (authentication == null || authentication.getName() == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(new ArrayList<>());
+        }
+        return getTasksForResolvedUser(authentication.getName());
+    }
+
+    private ResponseEntity<List<BacklogTaskDto>> getTasksForResolvedUser(String username) {
         try {
-            // Find user by username
             User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("User not found: " + username));
 
-            // Find all team memberships for this user
             List<TeamMembership> memberships = teamMembershipRepository.findByUserId(user.getId());
-            
             if (memberships.isEmpty()) {
                 return ResponseEntity.ok(new ArrayList<>());
             }
 
-            // Get current sprints for all user's teams
             List<Sprint> currentSprints = getCurrentSprintsForUserTeams(memberships);
-            
-            // Find all tasks assigned to this user in current sprints
             List<BacklogTask> myTasks = findTasksForUserInSprints(user.getId(), currentSprints);
-            
-            // Convert to DTOs and return
             List<BacklogTaskDto> taskDtos = myTasks.stream()
                 .map(backlogTaskMapper::toDto)
                 .collect(Collectors.toList());
-                
             return ResponseEntity.ok(taskDtos);
-            
         } catch (Exception e) {
             e.printStackTrace();
             return ResponseEntity.internalServerError().body(new ArrayList<>());
@@ -90,10 +95,23 @@ public class MyTasksController {
      * @param statusUpdate Map containing the new status
      * @return Updated task DTO
      */
+    // Legacy PUT endpoint (will be superseded by PATCH)
     @PutMapping("/task/{taskId}/status")
-    public ResponseEntity<BacklogTaskDto> updateTaskStatus(
-            @PathVariable Integer taskId, 
+    public ResponseEntity<BacklogTaskDto> updateTaskStatusPut(
+            @PathVariable Integer taskId,
             @RequestBody Map<String, String> statusUpdate) {
+        return updateTaskStatusInternal(taskId, statusUpdate);
+    }
+
+    // Preferred PATCH endpoint (idempotent status change)
+    @PatchMapping("/{taskId}/status")
+    public ResponseEntity<BacklogTaskDto> updateTaskStatus(
+            @PathVariable Integer taskId,
+            @RequestBody Map<String, String> statusUpdate) {
+        return updateTaskStatusInternal(taskId, statusUpdate);
+    }
+
+    private ResponseEntity<BacklogTaskDto> updateTaskStatusInternal(Integer taskId, Map<String, String> statusUpdate) {
         try {
             String newStatus = statusUpdate.get("status");
             if (newStatus == null || newStatus.trim().isEmpty()) {
@@ -106,7 +124,7 @@ public class MyTasksController {
 
             // Update the status
             task.setStatus(newStatus.toUpperCase());
-            BacklogTask updatedTask = backlogTaskRepository.save(task);
+            BacklogTask updatedTask = backlogTaskRepository.save(task); // TODO: optionally set modifieddate / dateOfDone
 
             // Convert to DTO and return
             BacklogTaskDto taskDto = backlogTaskMapper.toDto(updatedTask);
