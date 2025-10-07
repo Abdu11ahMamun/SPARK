@@ -28,6 +28,46 @@ export class TeamsComponent implements OnInit {
   showDeleteConfirm = false;
   teamToDelete: Team | null = null;
 
+  // UI state (Jira-like enhancements)
+  searchTerm: string = '';
+  statusFilter: string = 'ALL';
+  viewMode: 'grid' | 'table' = 'grid';
+  memberSearchTerm: string = '';
+
+  get filteredTeamMembers(): TeamMember[] {
+    if (!this.memberSearchTerm) return this.teamMembers;
+    const q = this.memberSearchTerm.toLowerCase();
+    return this.teamMembers.filter(m =>
+      m.userName?.toLowerCase().includes(q) ||
+      m.userEmail?.toLowerCase().includes(q) ||
+      m.role?.toLowerCase().includes(q)
+    );
+  }
+
+  // Users not yet part of the selected team (for add form)
+  get availableUsersForAdd(): User[] {
+    if (!this.selectedTeam) return this.users;
+    const memberIds = new Set(this.teamMembers.map(m => m.userId));
+  return this.users.filter(u => typeof u.id === 'number' && !memberIds.has(u.id!));
+  }
+
+  get filteredTeams(): Team[] {
+    return this.teams
+      .filter(t => {
+        if (!this.searchTerm) return true;
+        const q = this.searchTerm.toLowerCase();
+        return (
+          t.teamName?.toLowerCase().includes(q) ||
+          (t.description?.toLowerCase().includes(q))
+        );
+      })
+      .filter(t => {
+        if (this.statusFilter === 'ALL') return true;
+        // status numeric mapping: 1 active, 0 inactive, 2 completed (as seen earlier)
+        return String(t.status) === this.statusFilter;
+      });
+  }
+
   // Form data
   teamForm: CreateTeamRequest = {
     teamName: '',
@@ -51,169 +91,60 @@ export class TeamsComponent implements OnInit {
   ) {}
 
   ngOnInit() {
-    this.loadTeams();
-    this.loadUsers();
-  }
-
-  refreshTeams() {
-    this.loadTeams();
-  }
-
-  loadTeams() {
-    console.log('Starting to load teams...');
+    // Initial parallel loading of users and teams
     this.isLoading = true;
-    this.error = null;
-    
-    this.teamService.getTeams().subscribe({
-      next: (teams) => {
-        console.log('Teams received:', teams);
-        this.teams = teams;
-        // Normalize/ensure required fields
-        this.teams.forEach(t => {
-          if (!t.createdAt) {
-            (t as any).createdAt = new Date().toISOString();
-          }
-        });
-        
-        // Load member counts for each team
-        this.teams.forEach(team => {
-          this.teamService.getTeamMembers(team.id).subscribe({
-            next: (members) => {
-              team.members = members;
-              this.cdr.detectChanges();
-            },
-            error: (error) => {
-              console.error(`Error loading members for team ${team.id}:`, error);
-              team.members = []; // Set empty array if error
-            }
-          });
-        });
-        
+    Promise.all([this.loadUsers(), this.loadTeams()])
+      .catch(err => console.error('Initialization error:', err))
+      .finally(() => {
         this.isLoading = false;
-        console.log('Loading state set to false');
-        this.assignLeadNames();
-        this.cdr.detectChanges(); // Force change detection
-      },
-      error: (error) => {
-        console.error('Error loading teams:', error);
-        
-        // For development: Add mock data when API is not available
-        if (!environment.production) {
-          console.log('Loading mock teams data for development...');
-          this.teams = [
-            {
-              id: 1,
-              teamName: 'Frontend Development',
-              description: 'Responsible for UI/UX development and frontend architecture',
-              status: 1,
-              pOwner: 1,
-              sMaster: 2,
-              createdAt: '2024-01-15T10:30:00Z',
-              leadName: 'John Smith',
-              members: [
-                {
-                  id: 1,
-                  userId: 1,
-                  teamId: 1,
-                  userName: 'John Smith',
-                  userEmail: 'john.smith@company.com',
-                  role: 'lead',
-                  joinedDate: '2024-01-15T10:30:00Z'
-                },
-                {
-                  id: 2,
-                  userId: 2,
-                  teamId: 1,
-                  userName: 'Sarah Johnson',
-                  userEmail: 'sarah.johnson@company.com',
-                  role: 'member',
-                  joinedDate: '2024-01-20T09:15:00Z'
-                },
-                {
-                  id: 3,
-                  userId: 3,
-                  teamId: 1,
-                  userName: 'Mike Wilson',
-                  userEmail: 'mike.wilson@company.com',
-                  role: 'member',
-                  joinedDate: '2024-01-25T14:45:00Z'
+        this.cdr.detectChanges();
+      });
+  }
+
+  private loadTeams(): Promise<void> {
+    return new Promise((resolve) => {
+      this.teamService.getTeams().subscribe({
+        next: (teams) => {
+          this.teams = teams;
+          // For each team load members (lightweight approach; could be optimized later)
+          this.teams.forEach(team => {
+            this.teamService.getTeamMembers(team.id).subscribe({
+              next: members => {
+                team.members = members;
+                // If currently selected team, sync members array
+                if (this.selectedTeam && this.selectedTeam.id === team.id) {
+                  this.teamMembers = members;
                 }
-              ]
-            },
-            {
-              id: 2,
-              teamName: 'Backend API',
-              description: 'Server-side development and API design',
-              status: 1,
-              pOwner: 3,
-              sMaster: 4,
-              createdAt: '2024-01-10T08:00:00Z',
-              leadName: 'Emily Davis',
-              members: [
-                {
-                  id: 4,
-                  userId: 4,
-                  teamId: 2,
-                  userName: 'Emily Davis',
-                  userEmail: 'emily.davis@company.com',
-                  role: 'lead',
-                  joinedDate: '2024-01-10T08:00:00Z'
-                },
-                {
-                  id: 5,
-                  userId: 5,
-                  teamId: 2,
-                  userName: 'Alex Brown',
-                  userEmail: 'alex.brown@company.com',
-                  role: 'member',
-                  joinedDate: '2024-01-18T11:30:00Z'
-                }
-              ]
-            },
-            {
-              id: 3,
-              teamName: 'DevOps & Infrastructure',
-              description: 'Cloud infrastructure and deployment automation',
-              status: 1,
-              pOwner: 5,
-              sMaster: 6,
-              createdAt: '2024-01-05T16:20:00Z',
-              leadName: 'David Chen',
-              members: [
-                {
-                  id: 6,
-                  userId: 6,
-                  teamId: 3,
-                  userName: 'David Chen',
-                  userEmail: 'david.chen@company.com',
-                  role: 'lead',
-                  joinedDate: '2024-01-05T16:20:00Z'
-                }
-              ]
-            }
-          ];
-          
-          // Also load mock users
-          this.users = [
-            { id: 1, firstName: 'John', lastName: 'Smith', email: 'john.smith@company.com', username: 'jsmith', role: UserRole.DEVELOPER, activeStatus: undefined, createdate: '2024-01-01T00:00:00Z', employeeId: 'EMP001' },
-            { id: 2, firstName: 'Sarah', lastName: 'Johnson', email: 'sarah.johnson@company.com', username: 'sjohnson', role: UserRole.DEVELOPER, activeStatus: undefined, createdate: '2024-01-02T00:00:00Z', employeeId: 'EMP002' },
-            { id: 3, firstName: 'Mike', lastName: 'Wilson', email: 'mike.wilson@company.com', username: 'mwilson', role: UserRole.DEVELOPER, activeStatus: undefined, createdate: '2024-01-03T00:00:00Z', employeeId: 'EMP003' },
-            { id: 4, firstName: 'Emily', lastName: 'Davis', email: 'emily.davis@company.com', username: 'edavis', role: UserRole.MANAGER, activeStatus: undefined, createdate: '2024-01-04T00:00:00Z', employeeId: 'EMP004' },
-            { id: 5, firstName: 'Alex', lastName: 'Brown', email: 'alex.brown@company.com', username: 'abrown', role: UserRole.DEVELOPER, activeStatus: undefined, createdate: '2024-01-05T00:00:00Z', employeeId: 'EMP005' },
-            { id: 6, firstName: 'David', lastName: 'Chen', email: 'david.chen@company.com', username: 'dchen', role: UserRole.ADMIN, activeStatus: undefined, createdate: '2024-01-06T00:00:00Z', employeeId: 'EMP006' }
-          ];
-          
-          this.isLoading = false;
+                this.cdr.detectChanges();
+              },
+              error: error => {
+                console.error(`Error loading members for team ${team.id}:`, error);
+                team.members = [];
+              }
+            });
+          });
           this.assignLeadNames();
           this.cdr.detectChanges();
-          return;
+          resolve();
+        },
+        error: (error) => {
+          console.error('Error loading teams:', error);
+          if (!environment.production) {
+            // Fallback mock data (shortened to essentials)
+            this.teams = [
+              { id: 1, teamName: 'Frontend Development', description: 'UI/UX development and frontend architecture', status: 1, pOwner: 1, sMaster: 2, createdAt: '2024-01-15T10:30:00Z', leadName: 'John Smith', members: [] },
+              { id: 2, teamName: 'Backend API', description: 'Server-side development and API design', status: 1, pOwner: 3, sMaster: 4, createdAt: '2024-01-10T08:00:00Z', leadName: 'Emily Davis', members: [] }
+            ];
+            this.assignLeadNames();
+            this.cdr.detectChanges();
+            resolve();
+            return;
+          }
+          this.error = 'Failed to load teams. Please try again.';
+          this.cdr.detectChanges();
+          resolve();
         }
-        
-        this.error = 'Failed to load teams. Please try again.';
-        this.isLoading = false;
-        console.log('Loading state set to false due to error');
-        this.cdr.detectChanges(); // Force change detection
-      }
+      });
     });
   }
 
@@ -446,6 +377,10 @@ export class TeamsComponent implements OnInit {
 
   addTeamMember() {
     if (!this.selectedTeam || !this.newMemberForm.userId) return;
+    if (this.teamMembers.some(m => m.userId === this.newMemberForm.userId)) {
+      this.notificationService.error('Duplicate', 'This user is already a member.');
+      return;
+    }
 
     this.isLoading = true;
     this.teamService.addTeamMember(
@@ -455,34 +390,49 @@ export class TeamsComponent implements OnInit {
     ).subscribe({
       next: (member) => {
         this.teamMembers.push(member);
-        
-        // Update the team's member count in the main list
         const team = this.teams.find(t => t.id === this.selectedTeam!.id);
         if (team) {
           if (!team.members) team.members = [];
           team.members.push(member);
         }
-        
         this.newMemberForm = { userId: 0, role: 'member' };
-        this.notificationService.success('Success', 'Team member added successfully!');
-        this.showMemberModal = false;
+        this.notificationService.success('Success', 'Member added');
         this.isLoading = false;
         this.cdr.detectChanges();
       },
       error: (error) => {
         this.isLoading = false;
         console.error('Error adding team member:', error);
-        
-        // Handle specific error messages
         if (error.status === 409 || error.error?.message?.includes('already a member')) {
-          this.notificationService.error('Error', 'User is already a member of this team.');
+          this.notificationService.error('Error', 'User already a member.');
         } else if (error.status === 404) {
           this.notificationService.error('Error', 'Team or user not found.');
         } else {
-          this.notificationService.error('Error', 'Failed to add team member. Please try again.');
+          this.notificationService.error('Error', 'Failed to add member.');
         }
       }
     });
+  }
+
+  // UI Helpers referenced in template
+  refreshTeams() {
+    this.isLoading = true;
+    this.loadTeams()
+      .then(() => this.notificationService.success('Refreshed', 'Teams list updated'))
+      .catch(() => this.notificationService.error('Error', 'Failed to refresh teams'))
+      .finally(() => {
+        this.isLoading = false;
+        this.cdr.detectChanges();
+      });
+  }
+
+  clearFilters() {
+    this.searchTerm = '';
+    this.statusFilter = 'ALL';
+  }
+
+  setViewMode(mode: 'grid' | 'table') {
+    this.viewMode = mode;
   }
 
   updateMemberRole(member: TeamMember, newRole: string) {

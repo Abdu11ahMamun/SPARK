@@ -20,6 +20,35 @@
     </div>
   </div>
 
+  <!-- Filters / Controls Bar (Jira-like) -->
+  <div class="teams-filters" *ngIf="!isAdd && !isEdit">
+    <div class="filter-left">
+      <div class="search-box">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+        <input type="text" placeholder="Search teams..." [(ngModel)]="searchTerm" />
+      </div>
+      <div class="status-filter">
+        <select [(ngModel)]="statusFilter">
+          <option value="ALL">All Statuses</option>
+          <option value="1">Active</option>
+          <option value="0">Inactive</option>
+          <option value="2">Completed</option>
+        </select>
+      </div>
+      <button class="btn btn-secondary btn-compact" (click)="clearFilters()" *ngIf="searchTerm || statusFilter !== 'ALL'">Reset</button>
+    </div>
+    <div class="filter-right">
+      <div class="view-toggle" role="tablist">
+        <button type="button" class="toggle-btn" [class.active]="viewMode==='grid'" (click)="setViewMode('grid')" title="Grid View">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+        </button>
+        <button type="button" class="toggle-btn" [class.active]="viewMode==='table'" (click)="setViewMode('table')" title="Table View">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 10h18"/><path d="M3 6h18"/><path d="M3 14h18"/><path d="M3 18h18"/></svg>
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- Error Message -->
   <div *ngIf="error" class="alert alert-error">
     {{ error }}
@@ -98,8 +127,50 @@
     </form>
   </div>
 
+  <!-- Grid View -->
+  <div *ngIf="!isLoading && filteredTeams.length > 0 && viewMode==='grid'" class="teams-grid">
+    <div class="team-card" *ngFor="let team of filteredTeams">
+      <div class="team-card-header">
+        <div class="team-avatar">{{ team.teamName.charAt(0).toUpperCase() }}</div>
+        <div class="team-card-title-group">
+          <div class="team-card-name" [title]="team.teamName">{{ team.teamName }}</div>
+          <div class="team-card-meta">
+            <span class="meta-item">{{ team.members?.length ?? 0 }} member{{ (team.members?.length ?? 0) !== 1 ? 's' : '' }}</span>
+            <span class="meta-sep">•</span>
+            <span class="meta-item">{{ getStatusLabel(team.status) }}</span>
+          </div>
+        </div>
+        <div class="team-card-actions">
+          <button class="icon-btn" (click)="editTeam(team)" title="Edit">
+            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="m18.5 2.5 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          </button>
+          <button class="icon-btn" (click)="viewTeamMembers(team)" title="Members">
+            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+          </button>
+          <button class="icon-btn danger" (click)="confirmDeleteTeam(team)" title="Delete">
+            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/></svg>
+          </button>
+        </div>
+      </div>
+      <div class="team-card-body">
+        <p class="team-card-desc">{{ team.description || 'No description provided.' }}</p>
+        <div class="team-card-tags">
+          <span class="status-chip" [class]="getStatusBadgeClass(team.status)">{{ getStatusLabel(team.status) }}</span>
+          <span class="created-chip" *ngIf="team.createdAt">Created {{ team.createdAt | date:'mediumDate' }}</span>
+        </div>
+      </div>
+      <div class="team-card-footer">
+        <button class="text-link" (click)="viewTeamMembers(team)">View Members</button>
+        <span class="divider"></span>
+        <button class="text-link" (click)="editTeam(team)">Edit</button>
+        <span class="divider"></span>
+        <button class="text-link danger" (click)="confirmDeleteTeam(team)">Delete</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Teams Table -->
-  <div class="common-table-container" *ngIf="!isLoading && teams && teams.length > 0">
+  <div class="common-table-container" *ngIf="!isLoading && filteredTeams.length > 0 && viewMode==='table'">
     <table class="common-table">
       <thead>
         <tr>
@@ -112,7 +183,7 @@
         </tr>
       </thead>
       <tbody>
-        <tr *ngFor="let team of teams">
+        <tr *ngFor="let team of filteredTeams">
           <td>
             <div class="team-info">
               <div class="team-avatar">
@@ -176,7 +247,7 @@
   </div>
 
   <!-- Empty State -->
-  <div *ngIf="teams.length === 0 && !isLoading" class="empty-state">
+  <div *ngIf="filteredTeams.length === 0 && !isLoading" class="empty-state">
     <svg width="64" height="64" fill="none" stroke="currentColor" stroke-width="1" viewBox="0 0 24 24">
       <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
       <circle cx="9" cy="7" r="4"/>
@@ -195,72 +266,71 @@
 
 <!-- Team Members Modal -->
 <div *ngIf="showMemberModal" class="modal-overlay" (click)="closeMemberModal()">
-  <div class="modal-content" (click)="$event.stopPropagation()">
-    <div class="modal-header">
-      <h3>{{ selectedTeam?.teamName }} - Team Members</h3>
-      <button class="modal-close" (click)="closeMemberModal()">×</button>
+  <div class="modal-content members-panel" (click)="$event.stopPropagation()">
+    <div class="panel-header">
+      <div class="panel-title-group">
+        <h3 class="panel-title">{{ selectedTeam?.teamName }}</h3>
+        <span class="panel-subtitle">Team Members • {{ teamMembers.length }}</span>
+      </div>
+      <div class="panel-header-actions">
+        <div class="member-search-box">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+          <input type="text" placeholder="Search members" [(ngModel)]="memberSearchTerm" />
+        </div>
+        <button class="icon-btn compact" (click)="closeMemberModal()" title="Close">
+          ×
+        </button>
+      </div>
     </div>
-    
-    <div class="modal-body">
-      <!-- Add Member Form -->
-      <div class="add-member-form">
-        <h4>Add New Member</h4>
-        <div class="member-form-grid">
-          <select class="form-control" [(ngModel)]="newMemberForm.userId" [disabled]="users.length === 0">
-            <option value="0">{{ users.length === 0 ? 'Loading users...' : 'Select User' }}</option>
-            <option *ngFor="let user of users" [value]="user.id">
-              {{ user.firstName }} {{ user.lastName }} ({{ user.email }})
+
+    <div class="panel-body">
+      <div class="panel-section add-member-bar">
+        <div class="add-form-inline">
+          <select [(ngModel)]="newMemberForm.userId" [disabled]="availableUsersForAdd.length === 0">
+            <option value="0">
+              {{ availableUsersForAdd.length === 0 ? 'No available users' : 'Select user to add' }}
             </option>
+            <option *ngFor="let user of availableUsersForAdd" [value]="user.id">{{ user.firstName }} {{ user.lastName }} ({{ user.email }})</option>
           </select>
-          <select class="form-control" [(ngModel)]="newMemberForm.role">
+          <select [(ngModel)]="newMemberForm.role">
             <option value="member">Member</option>
             <option value="lead">Lead</option>
             <option value="admin">Admin</option>
           </select>
-          <button class="btn btn-primary" (click)="addTeamMember()" [disabled]="!newMemberForm.userId || isLoading">
-            <span *ngIf="isLoading" class="spinner-border spinner-border-sm me-2"></span>
-            {{ isLoading ? 'Adding...' : 'Add Member' }}
-          </button>
+          <button class="btn btn-primary" (click)="addTeamMember()" [disabled]="!newMemberForm.userId || isLoading">{{ isLoading ? 'Adding...' : 'Add' }}</button>
         </div>
       </div>
 
-      <!-- Current Members -->
-      <div class="current-members">
-        <h4>Current Members ({{ teamMembers.length }})</h4>
-        <div class="members-list">
-          <div *ngFor="let member of teamMembers" class="member-item">
-            <div class="member-info">
-              <div class="member-avatar">
-                {{ member.userName.charAt(0).toUpperCase() }}
+      <div class="panel-section members-list-wrapper" *ngIf="filteredTeamMembers.length > 0; else noMembers">
+        <div class="member-row" *ngFor="let member of filteredTeamMembers">
+          <div class="member-left">
+            <div class="avatar">{{ member.userName.charAt(0).toUpperCase() }}</div>
+            <div class="details">
+              <div class="name-line">
+                <span class="name">{{ member.userName }}</span>
+                <span class="role-badge" [ngClass]="member.role">{{ member.role }}</span>
               </div>
-              <div class="member-details">
-                <div class="member-name">{{ member.userName }}</div>
-                <div class="member-email">{{ member.userEmail }}</div>
-                <div class="member-joined">Joined: {{ member.joinedDate | date:'short' }}</div>
-              </div>
+              <div class="email">{{ member.userEmail }}</div>
+              <div class="joined">Joined {{ member.joinedDate | date:'mediumDate' }}</div>
             </div>
-            <div class="member-role">
-              <select 
-                class="form-control-sm" 
-                [value]="member.role" 
-                (change)="updateMemberRole(member, $any($event.target).value)"
-              >
-                <option value="member">Member</option>
-                <option value="lead">Lead</option>
-                <option value="admin">Admin</option>
-              </select>
-            </div>
-            <div class="member-actions">
-              <button class="action-btn delete" (click)="removeTeamMember(member)" title="Remove Member">
-                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                  <path d="M3 6h18"/>
-                  <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/>
-                </svg>
-              </button>
-            </div>
+          </div>
+          <div class="member-right">
+            <select class="role-select" [value]="member.role" (change)="updateMemberRole(member, $any($event.target).value)">
+              <option value="member">Member</option>
+              <option value="lead">Lead</option>
+              <option value="admin">Admin</option>
+            </select>
+            <button class="icon-btn danger" (click)="removeTeamMember(member)" title="Remove">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/></svg>
+            </button>
           </div>
         </div>
       </div>
+      <ng-template #noMembers>
+        <div class="empty-inline">
+          <p>No members yet. Add someone to get started.</p>
+        </div>
+      </ng-template>
     </div>
   </div>
 </div>
