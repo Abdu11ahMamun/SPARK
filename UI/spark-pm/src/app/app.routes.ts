@@ -13,6 +13,8 @@ import { MyTasksComponent } from './modules/tasks/my-tasks.component';
 import { BacklogComponent } from './modules/backlog/backlog.component';
 import { SprintsComponent } from './modules/sprints/sprints.component';
 import { SprintDetailsComponent } from './modules/sprints/sprint-details.component';
+import { RolesComponent } from './modules/admin/roles/roles.component';
+import { TaskTypesComponent } from './modules/admin/task-types/task-types.component';
 
 
 // Prevent authenticated users from revisiting /login
@@ -39,5 +41,7 @@ export const routes: Routes = [
   { path: 'backlog', component: BacklogComponent, canActivate: [authGuard] },
   { path: 'sprints', component: SprintsComponent, canActivate: [authGuard] },
   { path: 'sprints/:id', component: SprintDetailsComponent, canActivate: [authGuard] },
+  { path: 'roles', component: RolesComponent, canActivate: [authGuard] },
+  { path: 'task-types', component: TaskTypesComponent, canActivate: [authGuard] },
   { path: '**', redirectTo: '' }
 ];
