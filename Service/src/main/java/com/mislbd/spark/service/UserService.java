@@ -1,7 +1,6 @@
 package com.mislbd.spark.service;
 
 import com.mislbd.spark.entity.User;
-import com.mislbd.spark.entity.types.Roles;
 import com.mislbd.spark.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CacheEvict;
@@ -76,8 +75,8 @@ public class UserService {
     }
 
     // Additional user management methods
-    public List<User> getUsersByRole(Roles role) {
-        return userRepository.findByRole(role);
+    public List<User> getUsersByRoleName(String roleName) {
+        return userRepository.findByRoleIgnoreCase(roleName);
     }
 
     public List<User> getUsersByStatus(String status) {

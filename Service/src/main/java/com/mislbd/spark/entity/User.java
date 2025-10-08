@@ -1,7 +1,6 @@
 package com.mislbd.spark.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.mislbd.spark.entity.types.Roles;
 import com.mislbd.spark.repository.schema.SchemaConstant;
 import jakarta.persistence.*;
 import lombok.*;
@@ -37,8 +36,8 @@ public class User {
     @Column(nullable = false, unique = true)
     private String email;
 
-    @Enumerated(EnumType.STRING)
-    private Roles role;
+    @Column(name = "ROLE")
+    private String role;
 
     @Column(name = "ACTIVESTATUS")
     private String activeStatus;

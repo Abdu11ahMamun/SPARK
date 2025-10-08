@@ -1,7 +1,6 @@
 package com.mislbd.spark.controller;
 
 import com.mislbd.spark.entity.User;
-import com.mislbd.spark.entity.types.Roles;
 import com.mislbd.spark.service.UserService;
 import com.mislbd.spark.service.TeamMembershipService;
 import com.mislbd.spark.dto.TeamDto;
@@ -37,7 +36,10 @@ public class UserController {
         return userService.getAllUsers().stream()
                 .filter(u -> u.getUsername().equalsIgnoreCase(principal.getName()))
                 .findFirst()
-                .<ResponseEntity<?>>map(u -> ResponseEntity.ok(new CurrentUserResponse(u.getUsername(), u.getRole().name())))
+                .<ResponseEntity<?>>map(u -> ResponseEntity.ok(new CurrentUserResponse(
+                        u.getUsername(),
+                        u.getRole() // role is now a String, no need for .getName()
+                )))
                 .orElse(ResponseEntity.notFound().build());
     }
 
@@ -87,14 +89,9 @@ public class UserController {
     }
 
     // Additional user management endpoints
-    @GetMapping("/role/{role}")
-    public List<User> getUsersByRole(@PathVariable String role) {
-        try {
-            Roles roleEnum = Roles.valueOf(role.toUpperCase());
-            return userService.getUsersByRole(roleEnum);
-        } catch (IllegalArgumentException e) {
-            return List.of(); // Return empty list for invalid role
-        }
+    @GetMapping("/role/{roleName}")
+    public List<User> getUsersByRole(@PathVariable String roleName) {
+        return userService.getUsersByRoleName(roleName);
     }
 
     @GetMapping("/status/{status}")

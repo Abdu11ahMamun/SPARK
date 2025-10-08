@@ -1,7 +1,6 @@
 package com.mislbd.spark.repository;
 
 import com.mislbd.spark.entity.User;
-import com.mislbd.spark.entity.types.Roles;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -18,7 +17,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
     Optional<User> findByIdWithMemberships(@Param("id") Long id);
 
     // Additional query methods for user management
-    List<User> findByRole(Roles role);
+    List<User> findByRoleIgnoreCase(String roleName);
     List<User> findByActiveStatus(String activeStatus);
 
     // Search methods

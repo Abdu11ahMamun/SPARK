@@ -26,6 +26,6 @@ public interface UserMapper {
     @Mapping(target = "createdate", ignore = true)
     @Mapping(target = "updatedate", ignore = true)
     @Mapping(target = "memberships", ignore = true)
+    @Mapping(target = "role", ignore = true)
     User toEntity(UserDTO dto);
 }
-
