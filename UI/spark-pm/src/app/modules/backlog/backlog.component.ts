@@ -7,6 +7,8 @@ import { of } from 'rxjs';
 import { TeamService } from '../teams/team.service';
 import { Team, TeamMember } from '../teams/team.model';
 import { PointCalculatorComponent } from '../../shared/point-calculator/point-calculator.component';
+import { TaskTypeService } from '../../core/services/task-type.service';
+import { TaskTypeModel } from '../../core/models/task-type.model';
 
 // Local minimal interfaces to decouple from model file
 interface TaskItem {
@@ -28,7 +30,7 @@ interface TaskItem {
 interface ProductOption { id: number; name: string; }
 interface ModuleOption { id: number; name: string; productId: number; }
 interface UserOption { id: number; firstName?: string; lastName?: string; username: string; }
-interface JobTypeOption { id: number; type: string; description?: string; }
+// Remove local JobTypeOption interface as we'll use TaskTypeModel from service
 
 @Component({
   selector: 'app-backlog',
@@ -46,8 +48,9 @@ export class BacklogComponent implements OnInit {
   products: ProductOption[] = [];
   modules: ModuleOption[] = [];
   users: UserOption[] = [];
-  jobTypes: JobTypeOption[] = [];
-  jobTypeOptions: { value: number; label: string }[] = [];
+  jobTypes: TaskTypeModel[] = [];
+  jobTypeOptions: { value: number; label: string; description?: string }[] = [];
+  taskTypesLoading = false;
   teams: Team[] = [];
   teamMembers: TeamMember[] = [];
   selectedTeamId: number | '' = '';
@@ -95,7 +98,8 @@ export class BacklogComponent implements OnInit {
     private http: HttpClient,
     private fb: FormBuilder,
     private cdr: ChangeDetectorRef,
-    private teamService: TeamService
+    private teamService: TeamService,
+    private taskTypeService: TaskTypeService
   ) { this.initForm(); }
     actionMenuOpenId: number | null = null;
 
@@ -112,6 +116,40 @@ export class BacklogComponent implements OnInit {
       next: ts => { if (!this.teams.length) { this.teams = ts || []; this.cdr.markForCheck(); } this.isTeamsLoading = false; },
       error: () => { this.isTeamsLoading = false; }
     });
+  }
+
+  private loadTaskTypes() {
+    this.taskTypesLoading = true;
+    this.taskTypeService.getAll().subscribe({
+      next: (types) => {
+        this.jobTypes = types || [];
+        this.jobTypeOptions = this.jobTypes
+          .filter(type => type.active !== false) // Include if active is true or undefined
+          .map(type => ({ 
+            value: type.id!, 
+            label: type.name,
+            description: type.description 
+          }));
+        console.log('Loaded task types:', this.jobTypeOptions);
+        this.taskTypesLoading = false;
+        this.cdr.detectChanges();
+      },
+      error: (error) => {
+        console.error('Error loading task types:', error);
+        this.taskTypesLoading = false;
+        // Fallback task types
+        this.jobTypeOptions = [
+          { value: 1, label: 'Development', description: 'Software development tasks' },
+          { value: 2, label: 'Testing', description: 'Quality assurance and testing' },
+          { value: 3, label: 'Deployment', description: 'Deployment and release tasks' }
+        ];
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  refreshTaskTypes() {
+    this.loadTaskTypes();
   }
 
   private initForm() {
@@ -133,6 +171,7 @@ export class BacklogComponent implements OnInit {
 
   private async load() {
     this.isLoading = true; this.error = null;
+    this.taskTypesLoading = true;
     try {
       const base = (await import('../../../environments/environment')).environment.apiUrl;
   const [tasks, products, modules, users, jobTypes, teams] = await Promise.all([
@@ -140,7 +179,7 @@ export class BacklogComponent implements OnInit {
         this.http.get<any[]>(`${base}/api/products`).toPromise(),
         this.http.get<any[]>(`${base}/api/product-modules`).toPromise(),
         this.http.get<any[]>(`${base}/api/users`).toPromise(),
-        this.http.get<JobTypeOption[]>(`${base}/api/job-types`).toPromise(),
+        this.taskTypeService.getAll().toPromise(),
         this.teamService.getTeams().toPromise()
       ]);
       
@@ -171,11 +210,14 @@ export class BacklogComponent implements OnInit {
       this.jobTypes = jobTypes || [];
       this.teams = teams || [];
       
-      // Map job types to dropdown options
-      this.jobTypeOptions = this.jobTypes.map(type => ({ 
-        value: type.id, 
-        label: type.type 
-      }));
+      // Map job types to dropdown options - filter only active ones (default to true if not specified)
+      this.jobTypeOptions = this.jobTypes
+        .filter(type => type.active !== false) // Include if active is true or undefined
+        .map(type => ({ 
+          value: type.id!, 
+          label: type.name,
+          description: type.description
+        }));
       
       console.log('Loaded job types:', this.jobTypeOptions);
       console.log('Loaded users:', this.users);
@@ -187,14 +229,15 @@ export class BacklogComponent implements OnInit {
       
       // Fallback job types
       this.jobTypeOptions = [
-        { value: 1, label: 'Development' },
-        { value: 2, label: 'Testing' },
-        { value: 3, label: 'Deployment' }
+        { value: 1, label: 'Development', description: 'Software development tasks' },
+        { value: 2, label: 'Testing', description: 'Quality assurance and testing' },
+        { value: 3, label: 'Deployment', description: 'Deployment and release tasks' }
       ];
     }
     finally { 
       this.isLoading = false; 
       this.isInitialLoad = false; 
+      this.taskTypesLoading = false;
       this.cdr.detectChanges(); 
     }
   }
@@ -273,7 +316,7 @@ export class BacklogComponent implements OnInit {
     // If taskType is an ID, find the corresponding type name
     const jobTypeId = typeof taskType === 'string' ? Number(taskType) : taskType;
     const jobType = this.jobTypes.find(x => x.id === jobTypeId);
-    return jobType?.type || '—';
+    return jobType?.name || '—';
   }
 
   // Pagination helpers

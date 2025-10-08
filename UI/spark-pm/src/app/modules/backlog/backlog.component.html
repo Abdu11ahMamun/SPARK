@@ -535,18 +535,35 @@
             
             <div class="form-group">
               <label for="taskType">Task Type *</label>
-              <select 
-                id="taskType"
-                class="form-control" 
-                formControlName="taskType"
-                [class.error]="form.get('taskType')?.invalid && form.get('taskType')?.touched"
-              >
-                <option value="" disabled>Select task type</option>
-                <option *ngFor="let option of jobTypeOptions" [value]="option.value">{{ option.label }}</option>
-              </select>
+              <div class="select-wrapper">
+                <select 
+                  id="taskType"
+                  class="form-control" 
+                  formControlName="taskType"
+                  [class.error]="form.get('taskType')?.invalid && form.get('taskType')?.touched"
+                  [disabled]="taskTypesLoading"
+                >
+                  <option value="" disabled>
+                    {{ taskTypesLoading ? 'Loading task types...' : 'Select task type' }}
+                  </option>
+                  <option *ngFor="let option of jobTypeOptions" [value]="option.value">
+                    {{ option.label }}{{ option.description ? ' - ' + option.description : '' }}
+                  </option>
+                  <!-- Fallback options if dynamic loading fails -->
+                  <ng-container *ngIf="!taskTypesLoading && jobTypeOptions.length === 0">
+                    <option value="1">Development</option>
+                    <option value="2">Testing</option>
+                    <option value="3">Deployment</option>
+                  </ng-container>
+                </select>
+                <div *ngIf="taskTypesLoading" class="loading-spinner">⟳</div>
+              </div>
               <div *ngIf="form.get('taskType')?.invalid && form.get('taskType')?.touched" class="error-message">
                 Task type is required
               </div>
+              <small *ngIf="!taskTypesLoading && jobTypeOptions.length === 0" class="text-warning">
+                Failed to load task types. Using fallback options.
+              </small>
             </div>
             
             <div class="form-group">

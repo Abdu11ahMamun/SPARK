@@ -3239,3 +3239,39 @@
     border: 1px solid #ddd !important;
   }
 }
+
+// Task Type Selection Enhancements
+.select-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  
+  .loading-spinner {
+    position: absolute;
+    right: 2rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #3b82f6;
+    font-size: 1.2rem;
+    animation: spin 1s linear infinite;
+    pointer-events: none;
+    z-index: 1;
+  }
+}
+
+@keyframes spin {
+  from { transform: translateY(-50%) rotate(0deg); }
+  to { transform: translateY(-50%) rotate(360deg); }
+}
+
+.text-muted {
+  color: #6b7280;
+  font-size: 0.875rem;
+}
+
+.text-warning {
+  color: #f59e0b;
+  font-size: 0.875rem;
+  margin-top: 0.25rem;
+  display: block;
+}
