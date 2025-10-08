@@ -8,7 +8,7 @@ export interface User {
   email: string;
   phone?: string;
   employeeId?: string;
-  role: UserRole;
+  role: UserRole | string;
   activeStatus?: UserStatus;
   createdate?: string;
   updatedate?: string;
@@ -25,7 +25,7 @@ export interface CreateUserRequest {
   email: string;
   phone?: string;
   employeeId?: string;
-  role: UserRole;
+  role: UserRole | string;
   activeStatus?: UserStatus;
 }
 
@@ -38,7 +38,7 @@ export interface UpdateUserRequest {
   email: string;
   phone?: string;
   employeeId?: string;
-  role: UserRole;
+  role: UserRole | string;
   activeStatus?: UserStatus;
 }
 

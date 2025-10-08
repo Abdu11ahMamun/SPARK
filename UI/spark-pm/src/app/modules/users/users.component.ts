@@ -6,6 +6,8 @@ import { User, CreateUserRequest, UpdateUserRequest, UserRole, UserStatus } from
 import { NotificationService } from '../../core/services/notification.service';
 import { TeamService } from '../teams/team.service';
 import { Team } from '../teams/team.model';
+import { RoleService } from '../../core/services/role.service';
+import { RoleModel } from '../../core/models/role.model';
 
 @Component({
   selector: 'app-users',
@@ -26,6 +28,10 @@ export class UsersComponent implements OnInit {
   userToDelete: User | null = null;
   showSearchPanel = false;
   userTeamsMap = new Map<number, Team[]>(); // Map to store user teams
+  
+  // Dynamic roles from API
+  dynamicRoles: RoleModel[] = [];
+  rolesLoading = false;
 
   // Search and filter
   searchTerm = '';
@@ -52,7 +58,7 @@ export class UsersComponent implements OnInit {
     email: '',
     phone: '',
     employeeId: '',
-    role: UserRole.DEVELOPER,
+    role: 'DEVELOPER',
     activeStatus: UserStatus.ACTIVE
   };
 
@@ -64,12 +70,14 @@ export class UsersComponent implements OnInit {
     private userService: UserService, 
     private cdr: ChangeDetectorRef, 
     private notificationService: NotificationService,
-    private teamService: TeamService
+    private teamService: TeamService,
+    private roleService: RoleService
   ) {}
 
   ngOnInit() {
     this.loadUsers();
     this.loadUserTeams();
+    this.loadDynamicRoles();
   }
 
   loadUsers() {
@@ -94,6 +102,28 @@ export class UsersComponent implements OnInit {
         console.error('Error loading users:', error);
         this.error = 'Failed to load users. Please try again.';
         this.isLoading = false;
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  loadDynamicRoles() {
+    this.rolesLoading = true;
+    this.roleService.getAll().subscribe({
+      next: (roles) => {
+        this.dynamicRoles = roles.filter(role => role.active);
+        // If form role is empty or using default enum value, set to first dynamic role
+        if (this.dynamicRoles.length > 0 && (!this.userForm.role || this.userForm.role === 'DEVELOPER')) {
+          this.userForm.role = this.dynamicRoles[0].name;
+        }
+        this.rolesLoading = false;
+        this.cdr.detectChanges();
+      },
+      error: (error) => {
+        console.error('Error loading roles:', error);
+        this.rolesLoading = false;
+        // Fallback to static roles if API fails
+        this.dynamicRoles = [];
         this.cdr.detectChanges();
       }
     });
@@ -139,6 +169,7 @@ export class UsersComponent implements OnInit {
   refreshUsers() {
     this.loadUsers();
     this.loadUserTeams(); // Also refresh team data
+    this.loadDynamicRoles(); // Also refresh roles data
     this.notificationService.success('Success', 'Users refreshed successfully');
   }
 
@@ -329,7 +360,7 @@ export class UsersComponent implements OnInit {
       email: '',
       phone: '',
       employeeId: '',
-      role: UserRole.DEVELOPER,
+      role: this.dynamicRoles.length > 0 ? this.dynamicRoles[0].name : UserRole.DEVELOPER,
       activeStatus: UserStatus.ACTIVE
     };
     this.isAdd = true;
@@ -448,7 +479,7 @@ export class UsersComponent implements OnInit {
       email: '',
       phone: '',
       employeeId: '',
-      role: UserRole.DEVELOPER,
+      role: this.dynamicRoles.length > 0 ? this.dynamicRoles[0].name : 'DEVELOPER',
       activeStatus: UserStatus.ACTIVE
     };
   }
@@ -457,8 +488,9 @@ export class UsersComponent implements OnInit {
     return user.firstName && user.lastName ? `${user.firstName} ${user.lastName}` : user.username;
   }
 
-  getRoleBadgeClass(role: UserRole): string {
-    return `role-${role.toLowerCase().replace('_', '-')}`;
+  getRoleBadgeClass(role: UserRole | string): string {
+    const roleString = String(role);
+    return `role-${roleString.toLowerCase().replace('_', '-')}`;
   }
 
   getStatusBadgeClass(status: UserStatus | undefined): string {
