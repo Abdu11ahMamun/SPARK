@@ -3,7 +3,7 @@ package com.mislbd.spark.controller;
 import com.mislbd.spark.dto.RoleDto;
 import com.mislbd.spark.entity.RoleEntity;
 import com.mislbd.spark.mapper.RoleMapper;
-import com.mislbd.spark.service.RoleEntityService;
+import com.mislbd.spark.service.RoleService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -11,13 +11,13 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @RestController
-@RequestMapping("/api/roles-dynamic")
+@RequestMapping("/api/roles")
 @CrossOrigin(origins = "*", allowCredentials = "false")
-public class RoleEntityController {
-    private final RoleEntityService service;
+public class RoleController {
+    private final RoleService service;
     private final RoleMapper mapper;
 
-    public RoleEntityController(RoleEntityService service, RoleMapper mapper) {
+    public RoleController(RoleService service, RoleMapper mapper) {
         this.service = service;
         this.mapper = mapper;
     }

@@ -8,6 +8,6 @@ import lombok.*;
 @Builder
 public class JobTypeDto {
     private Integer id;
-    private String type;
+    private String name;
     private String description;
 }

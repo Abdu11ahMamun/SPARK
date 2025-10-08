@@ -106,6 +106,18 @@
         <span class="menu-text" [class.hidden]="isCollapsed()">Product Modules</span>
       </a>
     </li>
+    <li>
+      <a routerLink="/roles" routerLinkActive="active" [title]="isCollapsed() ? 'Roles' : ''">
+        <span class="menu-icon" [innerHTML]="icons.roles"></span>
+        <span class="menu-text" [class.hidden]="isCollapsed()">Roles</span>
+      </a>
+    </li>
+    <li>
+      <a routerLink="/task-types" routerLinkActive="active" [title]="isCollapsed() ? 'Task Types' : ''">
+        <span class="menu-icon" [innerHTML]="icons.taskTypes"></span>
+        <span class="menu-text" [class.hidden]="isCollapsed()">Task Types</span>
+      </a>
+    </li>
 
     <!-- Task & Backlog Management Section -->
     <li class="menu-section-divider" [class.hidden]="isCollapsed()">

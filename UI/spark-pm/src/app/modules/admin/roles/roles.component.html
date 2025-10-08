@@ -1,0 +1,89 @@
+<div class="roles-container fade-in">
+  <div class="header">
+    <h1 class="title">Roles</h1>
+    <div class="actions">
+      <div class="search-box">
+        <input type="text" placeholder="Search roles..." [(ngModel)]="search" (ngModelChange)="applyFilter()" />
+      </div>
+      <button class="btn btn-primary" (click)="addNew()">Add Role</button>
+    </div>
+  </div>
+
+  <div *ngIf="isLoading" class="loading"><div class="spinner"></div> Loading roles...</div>
+
+  <div *ngIf="errorMessage && !isLoading" class="error-panel">
+    <p>{{ errorMessage }}</p>
+    <button class="btn btn-secondary" (click)="retry()">Retry</button>
+  </div>
+
+  <div *ngIf="!isLoading && !isAddEdit" class="list-wrapper" >
+    <table class="common-table" *ngIf="filtered.length; else empty">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Description</th>
+          <th>Status</th>
+          <th style="width:140px">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngIf="isSkeleton">
+          <td colspan="4">
+            <div class="skeleton-row" *ngFor="let s of [1,2,3]">
+              <div class="sk-bar w40"></div>
+              <div class="sk-bar w60"></div>
+            </div>
+          </td>
+        </tr>
+        <tr *ngFor="let r of filtered" [class.fade-in-row]="!isSkeleton">
+          <td>{{ r.name }}</td>
+          <td>{{ r.description || '—' }}</td>
+          <td>
+            <span class="status-chip" [class.active]="r.active" [class.inactive]="!r.active">{{ r.active? 'Active':'Inactive' }}</span>
+          </td>
+          <td>
+            <button class="icon-btn" (click)="edit(r)" title="Edit">✏️</button>
+            <button class="icon-btn danger" (click)="confirmDelete(r)" title="Delete">🗑</button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+    <ng-template #empty>
+      <div class="empty-state">
+        <p>No roles found.</p>
+      </div>
+    </ng-template>
+  </div>
+
+  <div *ngIf="isAddEdit" class="form-card">
+    <h3>{{ editTarget? 'Edit Role':'Add Role' }}</h3>
+    <form (ngSubmit)="save()" class="form-grid">
+      <label>
+        <span>Name *</span>
+        <input [(ngModel)]="form.name" name="name" required maxlength="80" />
+      </label>
+      <label>
+        <span>Description</span>
+        <textarea [(ngModel)]="form.description" name="description" rows="3" maxlength="255"></textarea>
+      </label>
+      <label class="inline">
+        <input type="checkbox" [(ngModel)]="form.active" name="active" /> Active
+      </label>
+      <div class="form-actions">
+        <button type="button" class="btn btn-secondary" (click)="cancel()">Cancel</button>
+        <button type="submit" class="btn btn-primary">{{ editTarget? 'Update':'Create' }}</button>
+      </div>
+    </form>
+  </div>
+
+  <div *ngIf="showDeleteConfirm" class="modal-overlay">
+    <div class="modal-content confirm">
+      <h3>Delete Role</h3>
+      <p>Are you sure you want to delete <strong>{{ deleting?.name }}</strong> ?</p>
+      <div class="modal-actions">
+        <button class="btn btn-secondary" (click)="showDeleteConfirm=false">Cancel</button>
+        <button class="btn btn-danger" (click)="deleteConfirmed()">Delete</button>
+      </div>
+    </div>
+  </div>
+</div>

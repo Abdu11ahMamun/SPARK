@@ -17,7 +17,7 @@ public class JobType {
     private Integer id;
 
     @Column(length = 255, nullable = false)
-    private String type;
+    private String name;
 
     @Column(length = 500)
     private String description;
