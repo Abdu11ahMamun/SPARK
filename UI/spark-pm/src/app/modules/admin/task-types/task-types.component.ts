@@ -88,4 +88,8 @@ export class TaskTypesComponent implements OnInit {
 
   private afterSave() { this.applyFilter(); this.isAddEdit=false; this.editTarget=null; this.form={ name:'', description:'', active:true }; }
   retry() { this.load(true); }
+  
+  trackByFn(index: number, item: TaskTypeModel): any {
+    return item.id || index;
+  }
 }

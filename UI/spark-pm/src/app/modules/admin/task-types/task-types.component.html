@@ -1,78 +1,189 @@
-<div class="types-container fade-in">
-  <div class="header">
-    <h1 class="title">Task Types</h1>
-    <div class="actions">
-      <div class="search-box">
+<div class="task-types-container fade-in">
+  <!-- Task Types Header -->
+  <div class="task-types-header">
+    <div class="header-left">
+      <h1 class="task-types-title">Task Type Management</h1>
+      <span class="results-count" *ngIf="!isAddEdit && !isLoading">{{ filtered.length }} task type{{ filtered.length !== 1 ? 's' : '' }}</span>
+    </div>
+    <div class="task-types-actions">
+      <div class="search-box" *ngIf="!isAddEdit">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="11" cy="11" r="8"/>
+          <path d="m21 21-4.35-4.35"/>
+        </svg>
         <input type="text" placeholder="Search task types..." [(ngModel)]="search" (ngModelChange)="applyFilter()" />
       </div>
-      <button class="btn btn-primary" (click)="addNew()">Add Type</button>
+      <button class="btn btn-secondary btn-compact" (click)="search=''; applyFilter()" *ngIf="search && !isAddEdit">Clear</button>
+      <button class="action-btn refresh-btn" (click)="retry()" [disabled]="isLoading" title="Refresh Task Types">
+        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/>
+          <path d="M21 3v5h-5"/>
+          <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/>
+          <path d="M3 21v-5h5"/>
+        </svg>
+      </button>
+      <button class="btn btn-primary" (click)="addNew()">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path d="M12 5v14M5 12h14"/>
+        </svg>
+        Add Task Type
+      </button>
     </div>
   </div>
 
-  <div *ngIf="isLoading" class="loading"><div class="spinner"></div> Loading...</div>
-
-  <div *ngIf="errorMessage && !isLoading" class="error-panel">
-    <p>{{ errorMessage }}</p>
-    <button class="btn btn-secondary" (click)="retry()">Retry</button>
+  <!-- Error Message -->
+  <div *ngIf="errorMessage && !isLoading" class="alert alert-error">
+    {{ errorMessage }}
+    <button class="alert-close" (click)="errorMessage = null">×</button>
   </div>
 
-  <div *ngIf="!isLoading && !isAddEdit" class="list-wrapper">
-    <table class="common-table" *ngIf="filtered.length; else empty">
-      <thead>
-        <tr>
-          <th>Name</th>
-          <th>Description</th>
-          <th>Status</th>
-          <th style="width:140px">Actions</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr *ngIf="isSkeleton">
-          <td colspan="4">
-            <div class="skeleton-row" *ngFor="let s of [1,2,3]">
-              <div class="sk-bar w40"></div>
-              <div class="sk-bar w60"></div>
-            </div>
-          </td>
-        </tr>
-        <tr *ngFor="let t of filtered">
-          <td>{{ t.name }}</td>
-          <td>{{ t.description || '—' }}</td>
-          <td>
-            <span class="status-chip" [class.active]="t.active" [class.inactive]="!t.active">{{ t.active? 'Active':'Inactive' }}</span>
-          </td>
-          <td>
-            <button class="icon-btn" (click)="edit(t)" title="Edit">✏️</button>
-            <button class="icon-btn danger" (click)="confirmDelete(t)" title="Delete">🗑</button>
-          </td>
-        </tr>
-      </tbody>
-    </table>
+  <!-- Loading Spinner -->
+  <div *ngIf="isLoading" class="loading">
+    <div class="spinner"></div>
+    <p>Loading task types...</p>
+  </div>
+
+  <!-- Task Types Table -->
+  <div *ngIf="!isLoading && !isAddEdit" class="task-types-table-container">
+    <div class="table-wrapper" *ngIf="filtered.length; else empty">
+      <table class="common-table">
+        <thead>
+          <tr>
+            <th class="sortable">Task Type Name</th>
+            <th>Description</th>
+            <th class="text-center">Status</th>
+            <th class="text-center actions-col">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngIf="isSkeleton" class="skeleton-row">
+            <td colspan="4">
+              <div class="skeleton-item" *ngFor="let s of [1,2,3]">
+                <div class="skeleton-bar w-40"></div>
+                <div class="skeleton-bar w-60"></div>
+                <div class="skeleton-bar w-20"></div>
+              </div>
+            </td>
+          </tr>
+          <tr *ngFor="let t of filtered; trackBy: trackByFn" [class.fade-in-row]="!isSkeleton" class="data-row">
+            <td class="font-medium">
+              <div class="task-type-info">
+                <div class="task-type-avatar">{{ t.name.charAt(0).toUpperCase() }}</div>
+                <span class="task-type-name">{{ t.name }}</span>
+              </div>
+            </td>
+            <td class="text-gray-600">{{ t.description || '—' }}</td>
+            <td class="text-center">
+              <span class="status-chip" [class.active]="t.active" [class.inactive]="!t.active">
+                {{ t.active ? 'Active' : 'Inactive' }}
+              </span>
+            </td>
+            <td class="text-center">
+              <div class="action-buttons">
+                <button class="icon-btn" (click)="edit(t)" title="Edit Task Type">
+                  <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path d="m18.5 2.5 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                  </svg>
+                </button>
+                <button class="icon-btn danger" (click)="confirmDelete(t)" title="Delete Task Type">
+                  <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path d="M3 6h18M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6m3 0V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>
+                  </svg>
+                </button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    
     <ng-template #empty>
-      <div class="empty-state"><p>No task types found.</p></div>
+      <div class="empty-state">
+        <div class="empty-state-icon">
+          <svg width="64" height="64" fill="none" stroke="currentColor" stroke-width="1" viewBox="0 0 24 24">
+            <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+          </svg>
+        </div>
+        <h3>{{ search ? 'No task types match your search' : 'No task types found' }}</h3>
+        <p>{{ search ? 'Try adjusting your search criteria.' : 'Get started by adding your first task type to the system.' }}</p>
+        <button *ngIf="!search" class="btn btn-primary" (click)="addNew()">Add First Task Type</button>
+      </div>
     </ng-template>
   </div>
 
-  <div *ngIf="isAddEdit" class="form-card">
-    <h3>{{ editTarget? 'Edit Task Type':'Add Task Type' }}</h3>
-    <form (ngSubmit)="save()" class="form-grid">
-      <label><span>Name *</span><input [(ngModel)]="form.name" name="name" required maxlength="100" /></label>
-      <label><span>Description</span><textarea [(ngModel)]="form.description" name="description" rows="3" maxlength="255"></textarea></label>
-      <label class="inline"><input type="checkbox" [(ngModel)]="form.active" name="active" /> Active</label>
+  <!-- Task Type Form (Add/Edit) -->
+  <div *ngIf="isAddEdit" class="task-type-form">
+    <h3 class="card-title">{{ editTarget ? 'Edit Task Type' : 'Add New Task Type' }}</h3>
+    <form (ngSubmit)="save()">
+      <div class="form-grid">
+        <div class="form-group span-2">
+          <label class="form-label">Task Type Name *:</label>
+          <input 
+            class="form-control" 
+            [(ngModel)]="form.name" 
+            name="name" 
+            required 
+            maxlength="100"
+            placeholder="Enter task type name"
+          />
+        </div>
+        
+        <div class="form-group span-2">
+          <label class="form-label">Description:</label>
+          <textarea 
+            class="form-control" 
+            [(ngModel)]="form.description" 
+            name="description" 
+            rows="3"
+            maxlength="255"
+            placeholder="Enter task type description"
+          ></textarea>
+        </div>
+
+        <div class="form-group span-2">
+          <div class="checkbox-group">
+            <label class="checkbox-label">
+              <input type="checkbox" [(ngModel)]="form.active" name="active" />
+              <span class="checkmark"></span>
+              <span class="checkbox-text">Active Task Type</span>
+            </label>
+            <small class="form-help">Inactive task types will not be available for selection</small>
+          </div>
+        </div>
+      </div>
+      
       <div class="form-actions">
         <button type="button" class="btn btn-secondary" (click)="cancel()">Cancel</button>
-        <button type="submit" class="btn btn-primary">{{ editTarget? 'Update':'Create' }}</button>
+        <button type="submit" class="btn btn-primary" [disabled]="isLoading">
+          {{ editTarget ? 'Update Task Type' : 'Create Task Type' }}
+        </button>
       </div>
     </form>
   </div>
 
-  <div *ngIf="showDeleteConfirm" class="modal-overlay">
-    <div class="modal-content confirm">
-      <h3>Delete Task Type</h3>
-      <p>Are you sure you want to delete <strong>{{ deleting?.name }}</strong> ?</p>
+  <!-- Delete Confirmation Modal -->
+  <div *ngIf="showDeleteConfirm" class="modal-overlay" (click)="showDeleteConfirm=false">
+    <div class="modal-dialog confirm-dialog" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <div class="modal-icon danger">
+          <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path d="M12 9v4m0 4h.01M21 12c0 4.97-4.03 9-9 9s-9-4.03-9-9 4.03-9 9-9 9 4.03 9 9z"/>
+          </svg>
+        </div>
+        <h3 class="modal-title">Delete Task Type</h3>
+      </div>
+      <div class="modal-body">
+        <p>Are you sure you want to delete the task type <strong>"{{ deleting?.name }}"</strong>?</p>
+        <p class="text-warning">This action cannot be undone.</p>
+      </div>
       <div class="modal-actions">
         <button class="btn btn-secondary" (click)="showDeleteConfirm=false">Cancel</button>
-        <button class="btn btn-danger" (click)="deleteConfirmed()">Delete</button>
+        <button class="btn btn-danger" (click)="deleteConfirmed()">
+          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path d="M3 6h18M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6m3 0V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>
+          </svg>
+          Delete Task Type
+        </button>
       </div>
     </div>
   </div>

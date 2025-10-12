@@ -98,4 +98,8 @@ export class RolesComponent implements OnInit {
 
   private afterSave() { this.applyFilter(); this.isAddEdit=false; this.editTarget=null; this.form={ name:'', description:'', active:true }; }
   retry() { this.load(true); }
+  
+  trackByFn(index: number, item: RoleModel): any {
+    return item.id || index;
+  }
 }

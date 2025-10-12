@@ -1,88 +1,191 @@
 <div class="roles-container fade-in">
-  <div class="header">
-    <h1 class="title">Roles</h1>
-    <div class="actions">
-      <div class="search-box">
+  <!-- Roles Header -->
+  <div class="roles-header">
+    <div class="header-left">
+      <h1 class="roles-title">Role Management</h1>
+      <span class="results-count" *ngIf="!isAddEdit && !isLoading">{{ filtered.length }} role{{ filtered.length !== 1 ? 's' : '' }}</span>
+    </div>
+    <div class="roles-actions">
+      <div class="search-box" *ngIf="!isAddEdit">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="11" cy="11" r="8"/>
+          <path d="m21 21-4.35-4.35"/>
+        </svg>
         <input type="text" placeholder="Search roles..." [(ngModel)]="search" (ngModelChange)="applyFilter()" />
       </div>
-      <button class="btn btn-primary" (click)="addNew()">Add Role</button>
+      <button class="btn btn-secondary btn-compact" (click)="search=''; applyFilter()" *ngIf="search && !isAddEdit">Clear</button>
+      <button class="action-btn refresh-btn" (click)="retry()" [disabled]="isLoading" title="Refresh Roles">
+        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/>
+          <path d="M21 3v5h-5"/>
+          <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/>
+          <path d="M3 21v-5h5"/>
+        </svg>
+      </button>
+      <button class="btn btn-primary" (click)="addNew()">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path d="M12 5v14M5 12h14"/>
+        </svg>
+        Add Role
+      </button>
     </div>
   </div>
 
-  <div *ngIf="isLoading" class="loading"><div class="spinner"></div> Loading roles...</div>
-
-  <div *ngIf="errorMessage && !isLoading" class="error-panel">
-    <p>{{ errorMessage }}</p>
-    <button class="btn btn-secondary" (click)="retry()">Retry</button>
+  <!-- Error Message -->
+  <div *ngIf="errorMessage && !isLoading" class="alert alert-error">
+    {{ errorMessage }}
+    <button class="alert-close" (click)="errorMessage = null">×</button>
   </div>
 
-  <div *ngIf="!isLoading && !isAddEdit" class="list-wrapper" >
-    <table class="common-table" *ngIf="filtered.length; else empty">
-      <thead>
-        <tr>
-          <th>Name</th>
-          <th>Description</th>
-          <th>Status</th>
-          <th style="width:140px">Actions</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr *ngIf="isSkeleton">
-          <td colspan="4">
-            <div class="skeleton-row" *ngFor="let s of [1,2,3]">
-              <div class="sk-bar w40"></div>
-              <div class="sk-bar w60"></div>
-            </div>
-          </td>
-        </tr>
-        <tr *ngFor="let r of filtered" [class.fade-in-row]="!isSkeleton">
-          <td>{{ r.name }}</td>
-          <td>{{ r.description || '—' }}</td>
-          <td>
-            <span class="status-chip" [class.active]="r.active" [class.inactive]="!r.active">{{ r.active? 'Active':'Inactive' }}</span>
-          </td>
-          <td>
-            <button class="icon-btn" (click)="edit(r)" title="Edit">✏️</button>
-            <button class="icon-btn danger" (click)="confirmDelete(r)" title="Delete">🗑</button>
-          </td>
-        </tr>
-      </tbody>
-    </table>
+  <!-- Loading Spinner -->
+  <div *ngIf="isLoading" class="loading">
+    <div class="spinner"></div>
+    <p>Loading roles...</p>
+  </div>
+
+  <!-- Roles Table -->
+  <div *ngIf="!isLoading && !isAddEdit" class="roles-table-container">
+    <div class="table-wrapper" *ngIf="filtered.length; else empty">
+      <table class="common-table">
+        <thead>
+          <tr>
+            <th class="sortable">Role Name</th>
+            <th>Description</th>
+            <th class="text-center">Status</th>
+            <th class="text-center actions-col">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngIf="isSkeleton" class="skeleton-row">
+            <td colspan="4">
+              <div class="skeleton-item" *ngFor="let s of [1,2,3]">
+                <div class="skeleton-bar w-40"></div>
+                <div class="skeleton-bar w-60"></div>
+                <div class="skeleton-bar w-20"></div>
+              </div>
+            </td>
+          </tr>
+          <tr *ngFor="let r of filtered; trackBy: trackByFn" [class.fade-in-row]="!isSkeleton" class="data-row">
+            <td class="font-medium">
+              <div class="role-info">
+                <div class="role-avatar">{{ r.name.charAt(0).toUpperCase() }}</div>
+                <span class="role-name">{{ r.name }}</span>
+              </div>
+            </td>
+            <td class="text-gray-600">{{ r.description || '—' }}</td>
+            <td class="text-center">
+              <span class="status-chip" [class.active]="r.active" [class.inactive]="!r.active">
+                {{ r.active ? 'Active' : 'Inactive' }}
+              </span>
+            </td>
+            <td class="text-center">
+              <div class="action-buttons">
+                <button class="icon-btn" (click)="edit(r)" title="Edit Role">
+                  <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path d="m18.5 2.5 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                  </svg>
+                </button>
+                <button class="icon-btn danger" (click)="confirmDelete(r)" title="Delete Role">
+                  <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path d="M3 6h18M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6m3 0V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>
+                  </svg>
+                </button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    
     <ng-template #empty>
       <div class="empty-state">
-        <p>No roles found.</p>
+        <div class="empty-state-icon">
+          <svg width="64" height="64" fill="none" stroke="currentColor" stroke-width="1" viewBox="0 0 24 24">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+            <circle cx="9" cy="7" r="4"/>
+            <path d="m22 9-3 3-3-3"/>
+          </svg>
+        </div>
+        <h3>{{ search ? 'No roles match your search' : 'No roles found' }}</h3>
+        <p>{{ search ? 'Try adjusting your search criteria.' : 'Get started by adding your first role to the system.' }}</p>
+        <button *ngIf="!search" class="btn btn-primary" (click)="addNew()">Add First Role</button>
       </div>
     </ng-template>
   </div>
 
-  <div *ngIf="isAddEdit" class="form-card">
-    <h3>{{ editTarget? 'Edit Role':'Add Role' }}</h3>
-    <form (ngSubmit)="save()" class="form-grid">
-      <label>
-        <span>Name *</span>
-        <input [(ngModel)]="form.name" name="name" required maxlength="80" />
-      </label>
-      <label>
-        <span>Description</span>
-        <textarea [(ngModel)]="form.description" name="description" rows="3" maxlength="255"></textarea>
-      </label>
-      <label class="inline">
-        <input type="checkbox" [(ngModel)]="form.active" name="active" /> Active
-      </label>
+  <!-- Role Form (Add/Edit) -->
+  <div *ngIf="isAddEdit" class="role-form">
+    <h3 class="card-title">{{ editTarget ? 'Edit Role' : 'Add New Role' }}</h3>
+    <form (ngSubmit)="save()">
+      <div class="form-grid">
+        <div class="form-group span-2">
+          <label class="form-label">Role Name *:</label>
+          <input 
+            class="form-control" 
+            [(ngModel)]="form.name" 
+            name="name" 
+            required 
+            maxlength="80"
+            placeholder="Enter role name"
+          />
+        </div>
+        
+        <div class="form-group span-2">
+          <label class="form-label">Description:</label>
+          <textarea 
+            class="form-control" 
+            [(ngModel)]="form.description" 
+            name="description" 
+            rows="3"
+            maxlength="255"
+            placeholder="Enter role description"
+          ></textarea>
+        </div>
+
+        <div class="form-group span-2">
+          <div class="checkbox-group">
+            <label class="checkbox-label">
+              <input type="checkbox" [(ngModel)]="form.active" name="active" />
+              <span class="checkmark"></span>
+              <span class="checkbox-text">Active Role</span>
+            </label>
+            <small class="form-help">Inactive roles will not be available for selection</small>
+          </div>
+        </div>
+      </div>
+      
       <div class="form-actions">
         <button type="button" class="btn btn-secondary" (click)="cancel()">Cancel</button>
-        <button type="submit" class="btn btn-primary">{{ editTarget? 'Update':'Create' }}</button>
+        <button type="submit" class="btn btn-primary" [disabled]="isLoading">
+          {{ editTarget ? 'Update Role' : 'Create Role' }}
+        </button>
       </div>
     </form>
   </div>
 
-  <div *ngIf="showDeleteConfirm" class="modal-overlay">
-    <div class="modal-content confirm">
-      <h3>Delete Role</h3>
-      <p>Are you sure you want to delete <strong>{{ deleting?.name }}</strong> ?</p>
+  <!-- Delete Confirmation Modal -->
+  <div *ngIf="showDeleteConfirm" class="modal-overlay" (click)="showDeleteConfirm=false">
+    <div class="modal-dialog confirm-dialog" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <div class="modal-icon danger">
+          <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path d="M12 9v4m0 4h.01M21 12c0 4.97-4.03 9-9 9s-9-4.03-9-9 4.03-9 9-9 9 4.03 9 9z"/>
+          </svg>
+        </div>
+        <h3 class="modal-title">Delete Role</h3>
+      </div>
+      <div class="modal-body">
+        <p>Are you sure you want to delete the role <strong>"{{ deleting?.name }}"</strong>?</p>
+        <p class="text-warning">This action cannot be undone.</p>
+      </div>
       <div class="modal-actions">
         <button class="btn btn-secondary" (click)="showDeleteConfirm=false">Cancel</button>
-        <button class="btn btn-danger" (click)="deleteConfirmed()">Delete</button>
+        <button class="btn btn-danger" (click)="deleteConfirmed()">
+          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path d="M3 6h18M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6m3 0V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>
+          </svg>
+          Delete Role
+        </button>
       </div>
     </div>
   </div>
