@@ -113,6 +113,12 @@
       </a>
     </li>
     <li>
+      <a routerLink="/permissions" routerLinkActive="active" [title]="isCollapsed() ? 'Permission Management' : ''">
+        <span class="menu-icon" [innerHTML]="icons.permissions"></span>
+        <span class="menu-text" [class.hidden]="isCollapsed()">Permission Management</span>
+      </a>
+    </li>
+    <li>
       <a routerLink="/task-types" routerLinkActive="active" [title]="isCollapsed() ? 'Task Types' : ''">
         <span class="menu-icon" [innerHTML]="icons.taskTypes"></span>
         <span class="menu-text" [class.hidden]="isCollapsed()">Task Types</span>

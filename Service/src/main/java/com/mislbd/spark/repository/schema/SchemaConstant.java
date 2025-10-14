@@ -2,6 +2,8 @@ package com.mislbd.spark.repository.schema;
 
 public class SchemaConstant {
     private static final String TABLE_NAME_PREFIX = "SPARK_";
+    
+    // Existing tables
     public static final String USER_TABLE_NAME = TABLE_NAME_PREFIX + "USER";
     public static final String CLIENT_TABLE_NAME = TABLE_NAME_PREFIX + "CLIENT";
     public static final String TEAM_TABLE_NAME = TABLE_NAME_PREFIX + "TEAM";
@@ -15,8 +17,14 @@ public class SchemaConstant {
     public static final String APP_CONFIG_TABLE_NAME = TABLE_NAME_PREFIX + "APP_CONFIG";
     public static final String MITS_DOCUMENTS_TABLE_NAME = TABLE_NAME_PREFIX + "MITS_DOCUMENTS";
     public static final String ROLE_TABLE_NAME = TABLE_NAME_PREFIX + "ROLE";
-
     public static final String TEAM_MEMBERSHIP_TABLE_NAME = TABLE_NAME_PREFIX + "TEAM_MEMBERSHIP";
     public static final String SPRINT_TABLE_NAME = TABLE_NAME_PREFIX + "SPRINT";
-    // Add more as needed
+    
+    // RBAC System Tables
+    public static final String PERMISSION_TABLE_NAME = TABLE_NAME_PREFIX + "PERMISSION";
+    public static final String ROLE_PERMISSION_TABLE_NAME = TABLE_NAME_PREFIX + "ROLE_PERMISSION";
+    public static final String USER_ROLE_TABLE_NAME = TABLE_NAME_PREFIX + "USER_ROLE";
+    
+    // Future expansion
+    // Add more table names as needed
 }

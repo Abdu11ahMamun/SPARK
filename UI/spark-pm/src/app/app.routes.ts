@@ -15,6 +15,7 @@ import { SprintsComponent } from './modules/sprints/sprints.component';
 import { SprintDetailsComponent } from './modules/sprints/sprint-details.component';
 import { RolesComponent } from './modules/admin/roles/roles.component';
 import { TaskTypesComponent } from './modules/admin/task-types/task-types.component';
+import { PermissionManagementComponent } from './modules/admin/permissions/permission-management.component';
 
 
 // Prevent authenticated users from revisiting /login
@@ -42,6 +43,7 @@ export const routes: Routes = [
   { path: 'sprints', component: SprintsComponent, canActivate: [authGuard] },
   { path: 'sprints/:id', component: SprintDetailsComponent, canActivate: [authGuard] },
   { path: 'roles', component: RolesComponent, canActivate: [authGuard] },
+  { path: 'permissions', component: PermissionManagementComponent, canActivate: [authGuard] },
   { path: 'task-types', component: TaskTypesComponent, canActivate: [authGuard] },
   { path: '**', redirectTo: '' }
 ];

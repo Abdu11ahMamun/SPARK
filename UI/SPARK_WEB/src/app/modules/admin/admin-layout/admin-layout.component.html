@@ -1,0 +1,64 @@
+<div class="admin-layout">
+  <!-- Admin Navigation Sidebar -->
+  <div class="admin-sidebar">
+    <div class="admin-header">
+      <div class="admin-logo">
+        <i class="ri-settings-3-line"></i>
+        <span class="admin-title">Administration</span>
+      </div>
+    </div>
+    
+    <nav class="admin-nav">
+      <div class="nav-section">
+        <h3 class="nav-section-title">RBAC Management</h3>
+        <ul class="nav-items">
+          <li 
+            *ngFor="let item of navItems" 
+            class="nav-item"
+            [class.active]="item.active">
+            <a 
+              class="nav-link"
+              [routerLink]="item.route"
+              routerLinkActive="active">
+              <div class="nav-icon">
+                <i [class]="item.icon"></i>
+              </div>
+              <div class="nav-content">
+                <div class="nav-title">{{item.title}}</div>
+                <div class="nav-description">{{item.description}}</div>
+              </div>
+            </a>
+          </li>
+        </ul>
+      </div>
+    </nav>
+  </div>
+
+  <!-- Main Content Area -->
+  <div class="admin-content">
+    <!-- Breadcrumb -->
+    <div class="admin-breadcrumb">
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+          <li class="breadcrumb-item">
+            <a routerLink="/dashboard">
+              <i class="ri-home-line"></i>
+              Dashboard
+            </a>
+          </li>
+          <li class="breadcrumb-item">
+            <a routerLink="/admin">Administration</a>
+          </li>
+          <li class="breadcrumb-item active" aria-current="page">
+            {{getCurrentPageTitle()}}
+          </li>
+        </ol>
+      </nav>
+    </div>
+
+    <!-- Router Outlet for Admin Pages -->
+    <div class="admin-page-content">
+      <router-outlet></router-outlet>
+    </div>
+  </div>
+</div>
