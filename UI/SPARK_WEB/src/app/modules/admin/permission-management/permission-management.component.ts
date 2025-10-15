@@ -11,6 +11,7 @@ import {
   RolePermissionRequest,
   BulkRolePermissionRequest 
 } from '../../../core/models/permission.model';
+import { HasPermissionDirective, HasRoleDirective } from '../../../core/directives/permission.directive';
 
 interface PermissionMatrixCell {
   roleId: number;

@@ -73,7 +73,7 @@ interface PermissionStats {
   providedIn: 'root'
 })
 export class PermissionService {
-  private readonly baseUrl = `${environment.apiUrl}/api/v1/admin`;
+  private readonly baseUrl = `${environment.apiUrl}/api`;
   private readonly permissionsSubject = new BehaviorSubject<Permission[]>([]);
   private readonly rolesSubject = new BehaviorSubject<Role[]>([]);
   private readonly loadingSubject = new BehaviorSubject<boolean>(false);
@@ -97,11 +97,24 @@ export class PermissionService {
    * Initialize service by loading basic data
    */
   private initializeData(): void {
-    // For development, load mock data if API is not available
-    const mockData = this.loadMockData();
-    // Uncomment when backend is ready:
-    // this.loadPermissions().subscribe();
-    // this.loadRoles().subscribe();
+    // Load real data from backend API
+    this.loadPermissions().subscribe({
+      next: (permissions) => console.log('Permissions loaded:', permissions.length),
+      error: (error) => {
+        console.error('Failed to load permissions:', error);
+        // Fallback to mock data if API fails
+        this.loadMockData();
+      }
+    });
+    
+    this.loadRoles().subscribe({
+      next: (roles) => console.log('Roles loaded:', roles.length),
+      error: (error) => {
+        console.error('Failed to load roles:', error);
+        // Fallback to mock data if API fails
+        this.loadMockData();
+      }
+    });
   }
 
   /**
@@ -189,21 +202,24 @@ export class PermissionService {
    * Get all permissions
    */
   getAllPermissions(): Observable<Permission[]> {
+    console.log('🔍 getAllPermissions called, API URL:', `${this.baseUrl}/permissions`);
     this.loadingSubject.next(true);
     
-    // For development, return current mock data
-    return of(this.permissionsSubject.value).pipe(
-      tap(() => this.loadingSubject.next(false))
-    );
-    
-    // Uncomment when backend is ready:
-    // return this.http.get<ApiResponse<Permission[]>>(`${this.baseUrl}/permissions`, this.httpOptions)
-    //   .pipe(
-    //     map(response => response.data || []),
-    //     tap(permissions => this.permissionsSubject.next(permissions)),
-    //     catchError(this.handleError<Permission[]>('getAllPermissions', [])),
-    //     finalize(() => this.loadingSubject.next(false))
-    //   );
+    // Call the real API - handle direct array response
+    return this.http.get<Permission[]>(`${this.baseUrl}/permissions`, this.httpOptions)
+      .pipe(
+        tap(response => console.log('📥 Permissions API response:', response)),
+        map(response => Array.isArray(response) ? response : []),
+        tap(permissions => {
+          console.log('✅ Processed permissions:', permissions.length);
+          this.permissionsSubject.next(permissions);
+        }),
+        catchError(error => {
+          console.error('❌ Permissions API error:', error);
+          return this.handleError<Permission[]>('getAllPermissions', [])(error);
+        }),
+        finalize(() => this.loadingSubject.next(false))
+      );
   }
 
   /**
@@ -274,17 +290,24 @@ export class PermissionService {
    * Get all roles
    */
   getAllRoles(): Observable<Role[]> {
+    console.log('🔍 getAllRoles called, API URL:', `${this.baseUrl}/roles`);
     this.loadingSubject.next(true);
     
-    // Return mock data for development
-    const mockRoles = this.loadMockData().roles;
-    
-    return of(mockRoles).pipe(
-      delay(500), // Simulate network delay
-      tap(roles => this.rolesSubject.next(roles)),
-      catchError(this.handleError<Role[]>('getAllRoles', [])),
-      finalize(() => this.loadingSubject.next(false))
-    );
+    // Call the real API - using /roles endpoint as requested
+    return this.http.get<Role[]>(`${this.baseUrl}/roles`, this.httpOptions)
+      .pipe(
+        tap(response => console.log('📥 Roles API response:', response)),
+        map(response => Array.isArray(response) ? response : []),
+        tap(roles => {
+          console.log('✅ Processed roles:', roles.length);
+          this.rolesSubject.next(roles);
+        }),
+        catchError(error => {
+          console.error('❌ Roles API error:', error);
+          return this.handleError<Role[]>('getAllRoles', [])(error);
+        }),
+        finalize(() => this.loadingSubject.next(false))
+      );
   }
 
   /**
@@ -355,15 +378,12 @@ export class PermissionService {
    * Get permissions for a specific role
    */
   getRolePermissions(roleId: number): Observable<Permission[]> {
-    // Return mock data for development
-    const mockData = this.loadMockData();
-    const role = mockData.roles.find(r => r.id === roleId);
-    const permissions = role ? role.permissions || [] : [];
-    
-    return of(permissions).pipe(
-      delay(300), // Simulate network delay
-      catchError(this.handleError<Permission[]>('getRolePermissions', []))
-    );
+    // Call the real API - handle direct array response
+    return this.http.get<Permission[]>(`${this.baseUrl}/roles/${roleId}/permissions`, this.httpOptions)
+      .pipe(
+        map(response => Array.isArray(response) ? response : []),
+        catchError(this.handleError<Permission[]>('getRolePermissions', []))
+      );
   }
 
   /**
@@ -506,26 +526,24 @@ export class PermissionService {
    * Get permission statistics
    */
   getPermissionStats(): Observable<PermissionStats> {
-    // Return mock statistics for development
-    const mockData = this.loadMockData();
-    const mockStats: PermissionStats = {
-      totalPermissions: mockData.permissions.length,
-      totalRoles: mockData.roles.length,
-      totalAssignments: mockData.roles.reduce((sum, role) => sum + (role.permissions?.length || 0), 0),
-      resourceGroups: Array.from(new Set(mockData.permissions.map(p => p.resource))).length,
-      recentChanges: Math.floor(Math.random() * 10) + 1 // Random number for demo
-    };
-
-    return of(mockStats).pipe(
-      delay(400), // Simulate network delay
-      catchError(this.handleError<PermissionStats>('getPermissionStats', {
-        totalPermissions: 0,
-        totalRoles: 0,
-        totalAssignments: 0,
-        resourceGroups: 0,
-        recentChanges: 0
-      }))
-    );
+    // Call the real API for statistics - use /statistics endpoint
+    return this.http.get<any>(`${this.baseUrl}/permissions/statistics`, this.httpOptions)
+      .pipe(
+        map(response => ({
+          totalPermissions: response.totalPermissions || 0,
+          totalRoles: response.totalRoles || 0,
+          totalAssignments: response.totalAssignments || 0,
+          resourceGroups: response.resourceGroups || 0,
+          recentChanges: response.recentChanges || 0
+        })),
+        catchError(this.handleError<PermissionStats>('getPermissionStats', {
+          totalPermissions: 0,
+          totalRoles: 0,
+          totalAssignments: 0,
+          resourceGroups: 0,
+          recentChanges: 0
+        }))
+      );
   }
 
   /**

@@ -11,7 +11,7 @@
           <path d="M3 21v-5h5"/>
         </svg>
       </button>
-      <button class="btn btn-primary" (click)="addRole()">
+      <button class="btn btn-primary" (click)="addRole()" *hasPermission="'Roles:manage'">
         <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
           <path d="M12 5v14M5 12h14"/>
         </svg>
@@ -21,7 +21,8 @@
         class="btn btn-success"
         [disabled]="!hasUnsavedChanges || loading"
         (click)="saveMatrixChanges()"
-        *ngIf="hasUnsavedChanges">
+        *ngIf="hasUnsavedChanges"
+        *hasPermission="'Roles:manage'">
         <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
           <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
           <polyline points="17,21 17,13 7,13 7,21"/>

@@ -61,14 +61,14 @@ public class Permission {
      * Resource/module this permission applies to
      * Examples: users, roles, dashboard, teams, tasks
      */
-    @Column(name = "resource", nullable = false, length = 50)
+    @Column(name = "\"resource\"", nullable = false, length = 50)
     private String resource;
 
     /**
      * Action that can be performed on the resource
      * Examples: read, write, delete, admin
      */
-    @Column(name = "action", nullable = false, length = 20)
+    @Column(name = "\"action\"", nullable = false, length = 20)
     private String action;
 
     /**

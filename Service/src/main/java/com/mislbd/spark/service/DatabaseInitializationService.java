@@ -34,6 +34,10 @@ public class DatabaseInitializationService implements CommandLineRunner {
         try {
             // Create RBAC tables if they don't exist
             createRBACTables();
+            
+            // Populate tables with initial data
+            populateInitialData();
+            
             logger.info("RBAC database initialization completed successfully!");
             
         } catch (Exception e) {
@@ -230,5 +234,75 @@ public class DatabaseInitializationService implements CommandLineRunner {
         } catch (Exception e) {
             logger.info("Constraint might already exist: chk_role_system");
         }
+    }
+    
+    /**
+     * Populate database with initial RBAC data if tables are empty
+     */
+    private void populateInitialData() {
+        try {
+            // Check if permissions already exist
+            Integer permissionCount = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM SPARK_PERMISSION", Integer.class);
+            if (permissionCount == null || permissionCount == 0) {
+                createDefaultPermissions();
+                logger.info("Default permissions created");
+            } else {
+                logger.info("Permissions already exist, skipping default data creation");
+            }
+            
+        } catch (Exception e) {
+            logger.info("Error populating initial data: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * Create default permissions for the system
+     */
+    private void createDefaultPermissions() {
+        String[] defaultPermissions = {
+            // Dashboard permissions
+            "INSERT INTO SPARK_PERMISSION (id, code, name, description, \"resource\", \"action\", category, display_order, active, system_permission) VALUES (SEQ_SPARK_PERMISSION.NEXTVAL, 'DASHBOARD_VIEW', 'View Dashboard', 'Access main dashboard page', 'Dashboard', 'view', 'Dashboard', 10, 1, 1)",
+            "INSERT INTO SPARK_PERMISSION (id, code, name, description, \"resource\", \"action\", category, display_order, active, system_permission) VALUES (SEQ_SPARK_PERMISSION.NEXTVAL, 'DASHBOARD_EDIT', 'Edit Dashboard', 'Modify dashboard settings', 'Dashboard', 'edit', 'Dashboard', 20, 1, 1)",
+            
+            // User management permissions
+            "INSERT INTO SPARK_PERMISSION (id, code, name, description, \"resource\", \"action\", category, display_order, active, system_permission) VALUES (SEQ_SPARK_PERMISSION.NEXTVAL, 'USER_VIEW', 'View Users', 'View user list and profiles', 'Users', 'view', 'User Management', 100, 1, 1)",
+            "INSERT INTO SPARK_PERMISSION (id, code, name, description, \"resource\", \"action\", category, display_order, active, system_permission) VALUES (SEQ_SPARK_PERMISSION.NEXTVAL, 'USER_CREATE', 'Create User', 'Create new user accounts', 'Users', 'create', 'User Management', 110, 1, 1)",
+            "INSERT INTO SPARK_PERMISSION (id, code, name, description, \"resource\", \"action\", category, display_order, active, system_permission) VALUES (SEQ_SPARK_PERMISSION.NEXTVAL, 'USER_EDIT', 'Edit User', 'Modify user information', 'Users', 'edit', 'User Management', 120, 1, 1)",
+            "INSERT INTO SPARK_PERMISSION (id, code, name, description, \"resource\", \"action\", category, display_order, active, system_permission) VALUES (SEQ_SPARK_PERMISSION.NEXTVAL, 'USER_DELETE', 'Delete User', 'Remove user accounts', 'Users', 'delete', 'User Management', 130, 1, 1)",
+            
+            // Role management permissions
+            "INSERT INTO SPARK_PERMISSION (id, code, name, description, \"resource\", \"action\", category, display_order, active, system_permission) VALUES (SEQ_SPARK_PERMISSION.NEXTVAL, 'ROLE_VIEW', 'View Roles', 'View roles and permissions', 'Roles', 'view', 'Role Management', 200, 1, 1)",
+            "INSERT INTO SPARK_PERMISSION (id, code, name, description, \"resource\", \"action\", category, display_order, active, system_permission) VALUES (SEQ_SPARK_PERMISSION.NEXTVAL, 'ROLE_MANAGE', 'Manage Roles', 'Create and modify roles', 'Roles', 'manage', 'Role Management', 210, 1, 1)",
+            
+            // Team management permissions
+            "INSERT INTO SPARK_PERMISSION (id, code, name, description, \"resource\", \"action\", category, display_order, active, system_permission) VALUES (SEQ_SPARK_PERMISSION.NEXTVAL, 'TEAM_VIEW', 'View Teams', 'View team information', 'Teams', 'view', 'Team Management', 300, 1, 1)",
+            "INSERT INTO SPARK_PERMISSION (id, code, name, description, \"resource\", \"action\", category, display_order, active, system_permission) VALUES (SEQ_SPARK_PERMISSION.NEXTVAL, 'TEAM_MANAGE', 'Manage Teams', 'Create and manage teams', 'Teams', 'manage', 'Team Management', 310, 1, 1)",
+            
+            // Project management permissions
+            "INSERT INTO SPARK_PERMISSION (id, code, name, description, \"resource\", \"action\", category, display_order, active, system_permission) VALUES (SEQ_SPARK_PERMISSION.NEXTVAL, 'PROJECT_VIEW', 'View Projects', 'View project details', 'Projects', 'view', 'Project Management', 400, 1, 1)",
+            "INSERT INTO SPARK_PERMISSION (id, code, name, description, \"resource\", \"action\", category, display_order, active, system_permission) VALUES (SEQ_SPARK_PERMISSION.NEXTVAL, 'PROJECT_CREATE', 'Create Project', 'Create new projects', 'Projects', 'create', 'Project Management', 410, 1, 1)",
+            "INSERT INTO SPARK_PERMISSION (id, code, name, description, \"resource\", \"action\", category, display_order, active, system_permission) VALUES (SEQ_SPARK_PERMISSION.NEXTVAL, 'PROJECT_EDIT', 'Edit Project', 'Modify project settings', 'Projects', 'edit', 'Project Management', 420, 1, 1)",
+            "INSERT INTO SPARK_PERMISSION (id, code, name, description, \"resource\", \"action\", category, display_order, active, system_permission) VALUES (SEQ_SPARK_PERMISSION.NEXTVAL, 'PROJECT_DELETE', 'Delete Project', 'Remove projects', 'Projects', 'delete', 'Project Management', 430, 1, 1)",
+            
+            // Task management permissions
+            "INSERT INTO SPARK_PERMISSION (id, code, name, description, \"resource\", \"action\", category, display_order, active, system_permission) VALUES (SEQ_SPARK_PERMISSION.NEXTVAL, 'TASK_VIEW', 'View Tasks', 'View task information', 'Tasks', 'view', 'Task Management', 500, 1, 1)",
+            "INSERT INTO SPARK_PERMISSION (id, code, name, description, \"resource\", \"action\", category, display_order, active, system_permission) VALUES (SEQ_SPARK_PERMISSION.NEXTVAL, 'TASK_CREATE', 'Create Task', 'Create new tasks', 'Tasks', 'create', 'Task Management', 510, 1, 1)",
+            "INSERT INTO SPARK_PERMISSION (id, code, name, description, \"resource\", \"action\", category, display_order, active, system_permission) VALUES (SEQ_SPARK_PERMISSION.NEXTVAL, 'TASK_EDIT', 'Edit Task', 'Modify task details', 'Tasks', 'edit', 'Task Management', 520, 1, 1)",
+            "INSERT INTO SPARK_PERMISSION (id, code, name, description, \"resource\", \"action\", category, display_order, active, system_permission) VALUES (SEQ_SPARK_PERMISSION.NEXTVAL, 'TASK_DELETE', 'Delete Task', 'Remove tasks', 'Tasks', 'delete', 'Task Management', 530, 1, 1)",
+            
+            // Admin permissions
+            "INSERT INTO SPARK_PERMISSION (id, code, name, description, \"resource\", \"action\", category, display_order, active, system_permission) VALUES (SEQ_SPARK_PERMISSION.NEXTVAL, 'ADMIN_ACCESS', 'Admin Access', 'Access admin panel', 'Admin', 'access', 'Administration', 900, 1, 1)",
+            "INSERT INTO SPARK_PERMISSION (id, code, name, description, \"resource\", \"action\", category, display_order, active, system_permission) VALUES (SEQ_SPARK_PERMISSION.NEXTVAL, 'ADMIN_SETTINGS', 'System Settings', 'Modify system settings', 'Admin', 'settings', 'Administration', 910, 1, 1)"
+        };
+        
+        for (String sql : defaultPermissions) {
+            try {
+                jdbcTemplate.update(sql);
+            } catch (Exception e) {
+                logger.info("Permission might already exist: " + e.getMessage());
+            }
+        }
+        
+        logger.info("Default permissions inserted successfully");
     }
 }
