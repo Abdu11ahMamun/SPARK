@@ -115,29 +115,41 @@ export const PERMISSION_NAMES = {
   [PERMISSION_CODES.SPRINT_VIEW]: 'sprints.read',
   [PERMISSION_CODES.SPRINT_CREATE]: 'sprints.write',
   [PERMISSION_CODES.SPRINT_DELETE]: 'sprints.delete',
-  [PERMISSION_CODES.ADMIN_ACCESS]: 'system.read',
-  [PERMISSION_CODES.SYSTEM_CONFIG]: 'system.write',
+  [PERMISSION_CODES.ADMIN_ACCESS]: 'admin.access',
+  [PERMISSION_CODES.SYSTEM_CONFIG]: 'system.config',
   [PERMISSION_CODES.SYSTEM_ADMIN]: 'system.admin'
-} as const;
+};
 
-// Category display names
-export const CATEGORY_DISPLAY_NAMES = {
-  [PermissionCategory.DASHBOARD]: 'Dashboard',
-  [PermissionCategory.USER_MANAGEMENT]: 'User Management',
-  [PermissionCategory.ROLE_MANAGEMENT]: 'Role Management',
-  [PermissionCategory.TEAM_MANAGEMENT]: 'Team Management',
-  [PermissionCategory.TASK_MANAGEMENT]: 'Task Management',
-  [PermissionCategory.PROJECT_MANAGEMENT]: 'Project Management',
-  [PermissionCategory.SYSTEM_ADMIN]: 'System Administration'
-} as const;
-
-// Default role names
-export const DEFAULT_ROLES = {
-  ADMIN: 'ADMIN',
-  DEV: 'DEV',
-  QA: 'QA',
-  PROJECT_MANAGER: 'PROJECT_MANAGER',
-  VIEWER: 'VIEWER'
-} as const;
-
-export type DefaultRoleName = typeof DEFAULT_ROLES[keyof typeof DEFAULT_ROLES];
+// Permission descriptions for UI
+export const PERMISSION_DESCRIPTIONS = {
+  [PERMISSION_CODES.DASHBOARD_VIEW]: 'View dashboard and basic analytics',
+  [PERMISSION_CODES.DASHBOARD_ADMIN]: 'Manage dashboard configuration and advanced analytics',
+  [PERMISSION_CODES.USER_VIEW]: 'View user profiles and basic information',
+  [PERMISSION_CODES.USER_CREATE]: 'Create and edit user accounts',
+  [PERMISSION_CODES.USER_DELETE]: 'Delete user accounts and manage user lifecycle',
+  [PERMISSION_CODES.USER_ADMIN]: 'Full user management including role assignments',
+  [PERMISSION_CODES.ROLE_VIEW]: 'View roles and their permissions',
+  [PERMISSION_CODES.ROLE_CREATE]: 'Create and modify roles',
+  [PERMISSION_CODES.ROLE_DELETE]: 'Delete roles and manage role lifecycle',
+  [PERMISSION_CODES.ROLE_ADMIN]: 'Full role management including permission assignments',
+  [PERMISSION_CODES.TEAM_VIEW]: 'View team information and membership',
+  [PERMISSION_CODES.TEAM_CREATE]: 'Create and modify teams',
+  [PERMISSION_CODES.TEAM_DELETE]: 'Delete teams and manage team lifecycle',
+  [PERMISSION_CODES.TEAM_ADMIN]: 'Full team management including member assignments',
+  [PERMISSION_CODES.TASK_VIEW]: 'View tasks and task details',
+  [PERMISSION_CODES.TASK_CREATE]: 'Create and modify tasks',
+  [PERMISSION_CODES.TASK_DELETE]: 'Delete tasks and manage task lifecycle',
+  [PERMISSION_CODES.TASK_ADMIN]: 'Full task management including assignments and status changes',
+  [PERMISSION_CODES.TASK_TYPE_VIEW]: 'View task types and configurations',
+  [PERMISSION_CODES.TASK_TYPE_CREATE]: 'Create and modify task types',
+  [PERMISSION_CODES.TASK_TYPE_DELETE]: 'Delete task types and manage task type lifecycle',
+  [PERMISSION_CODES.PROJECT_VIEW]: 'View projects and project details',
+  [PERMISSION_CODES.PROJECT_CREATE]: 'Create and modify projects',
+  [PERMISSION_CODES.PROJECT_DELETE]: 'Delete projects and manage project lifecycle',
+  [PERMISSION_CODES.SPRINT_VIEW]: 'View sprints and sprint details',
+  [PERMISSION_CODES.SPRINT_CREATE]: 'Create and modify sprints',
+  [PERMISSION_CODES.SPRINT_DELETE]: 'Delete sprints and manage sprint lifecycle',
+  [PERMISSION_CODES.ADMIN_ACCESS]: 'Access administrative functions and panels',
+  [PERMISSION_CODES.SYSTEM_CONFIG]: 'Configure system settings and parameters',
+  [PERMISSION_CODES.SYSTEM_ADMIN]: 'Full system administration access'
+};

@@ -3,51 +3,29 @@ import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { Observable, BehaviorSubject, throwError, of } from 'rxjs';
 import { map, catchError, tap, finalize, delay } from 'rxjs/operators';
 import { environment } from '../../../../environments/environment';
-
-// Import models (these should be created based on the backend DTOs)
-interface Permission {
-  id: number;
-  name: string;
-  resource: string;
-  action: string;
-  description?: string;
-  createdAt?: Date;
-  updatedAt?: Date;
-}
-
-interface Role {
-  id: number;
-  name: string;
-  description?: string;
-  permissions?: Permission[];
-  createdAt?: Date;
-  updatedAt?: Date;
-}
-
-interface User {
-  id: number;
-  username: string;
-  email: string;
-  roles?: Role[];
-  createdAt?: Date;
-  updatedAt?: Date;
-}
-
-interface PermissionMatrix {
-  roles: Role[];
-  permissions: Permission[];
-  assignments: { [roleId: number]: { [permissionId: number]: boolean } };
-}
+import { 
+  Permission, 
+  Role, 
+  UserRole,
+  PermissionRequest,
+  RoleRequest,
+  GroupedPermissionsDto,
+  RolePermissionRequest,
+  BulkRolePermissionRequest,
+  UserRoleRequest,
+  PermissionCheck,
+  PermissionCheckResponse,
+  ApiResponse,
+  PermissionStatistics,
+  PermissionAuditLog,
+  PagedResponse,
+  PermissionMatrix
+} from '../../../core/models/permission.model';
+import { ResourceType, PermissionAction, PermissionCode, PERMISSION_CODES } from '../../../core/models/permission.constants';
 
 interface PermissionGroup {
   resource: string;
   permissions: Permission[];
-}
-
-interface ApiResponse<T> {
-  success: boolean;
-  data?: T;
-  message?: string;
   errors?: string[];
 }
 
@@ -122,67 +100,177 @@ export class PermissionService {
    */
   private loadMockData(): { permissions: Permission[], roles: Role[] } {
     const mockPermissions: Permission[] = [
-      { id: 1, name: 'View Dashboard', resource: 'Dashboard', action: 'view', description: 'View main dashboard page' },
-      { id: 2, name: 'Edit Dashboard', resource: 'Dashboard', action: 'edit', description: 'Modify dashboard settings' },
-      { id: 3, name: 'View Users', resource: 'Users', action: 'view', description: 'View user list and profiles' },
-      { id: 4, name: 'Create User', resource: 'Users', action: 'create', description: 'Create new user accounts' },
-      { id: 5, name: 'Edit User', resource: 'Users', action: 'edit', description: 'Modify user information' },
-      { id: 6, name: 'Delete User', resource: 'Users', action: 'delete', description: 'Remove user accounts' },
-      { id: 7, name: 'View Roles', resource: 'Roles', action: 'view', description: 'View roles and permissions' },
-      { id: 8, name: 'Manage Roles', resource: 'Roles', action: 'manage', description: 'Create and modify roles' },
-      { id: 9, name: 'View Teams', resource: 'Teams', action: 'view', description: 'View team information' },
-      { id: 10, name: 'Manage Teams', resource: 'Teams', action: 'manage', description: 'Create and manage teams' },
-      { id: 11, name: 'View Projects', resource: 'Projects', action: 'view', description: 'View project details' },
-      { id: 12, name: 'Create Project', resource: 'Projects', action: 'create', description: 'Create new projects' },
-      { id: 13, name: 'Edit Project', resource: 'Projects', action: 'edit', description: 'Modify project settings' },
-      { id: 14, name: 'Delete Project', resource: 'Projects', action: 'delete', description: 'Remove projects' },
-      { id: 15, name: 'View Tasks', resource: 'Tasks', action: 'view', description: 'View task information' },
-      { id: 16, name: 'Create Task', resource: 'Tasks', action: 'create', description: 'Create new tasks' },
-      { id: 17, name: 'Edit Task', resource: 'Tasks', action: 'edit', description: 'Modify task details' },
-      { id: 18, name: 'Delete Task', resource: 'Tasks', action: 'delete', description: 'Remove tasks' },
-      { id: 19, name: 'Admin Access', resource: 'Admin', action: 'access', description: 'Access admin panel' },
-      { id: 20, name: 'System Settings', resource: 'Admin', action: 'settings', description: 'Modify system settings' }
+      { 
+        id: 1, 
+        code: PERMISSION_CODES.DASHBOARD_VIEW,
+        name: 'View Dashboard', 
+        resource: ResourceType.DASHBOARD, 
+        action: PermissionAction.READ, 
+        description: 'View main dashboard page',
+        active: true,
+        systemPermission: true,
+        displayOrder: 1
+      },
+      { 
+        id: 2, 
+        code: PERMISSION_CODES.DASHBOARD_ADMIN,
+        name: 'Admin Dashboard', 
+        resource: ResourceType.DASHBOARD, 
+        action: PermissionAction.ADMIN, 
+        description: 'Modify dashboard settings',
+        active: true,
+        systemPermission: true,
+        displayOrder: 2
+      },
+      { 
+        id: 3, 
+        code: PERMISSION_CODES.USER_VIEW,
+        name: 'View Users', 
+        resource: ResourceType.USERS, 
+        action: PermissionAction.READ, 
+        description: 'View user list and profiles',
+        active: true,
+        systemPermission: true,
+        displayOrder: 3
+      },
+      { 
+        id: 4, 
+        code: PERMISSION_CODES.USER_CREATE,
+        name: 'Create User', 
+        resource: ResourceType.USERS, 
+        action: PermissionAction.WRITE, 
+        description: 'Create new user accounts',
+        active: true,
+        systemPermission: true,
+        displayOrder: 4
+      },
+      { 
+        id: 5, 
+        code: PERMISSION_CODES.USER_DELETE,
+        name: 'Delete User', 
+        resource: ResourceType.USERS, 
+        action: PermissionAction.DELETE, 
+        description: 'Remove user accounts',
+        active: true,
+        systemPermission: true,
+        displayOrder: 5
+      },
+      { 
+        id: 6, 
+        code: PERMISSION_CODES.USER_ADMIN,
+        name: 'Admin Users', 
+        resource: ResourceType.USERS, 
+        action: PermissionAction.ADMIN, 
+        description: 'Full user administration access',
+        active: true,
+        systemPermission: true,
+        displayOrder: 6
+      },
+      { 
+        id: 7, 
+        code: PERMISSION_CODES.ROLE_VIEW,
+        name: 'View Roles', 
+        resource: ResourceType.ROLES, 
+        action: PermissionAction.READ, 
+        description: 'View roles and permissions',
+        active: true,
+        systemPermission: true,
+        displayOrder: 7
+      },
+      { 
+        id: 8, 
+        code: PERMISSION_CODES.ROLE_ADMIN,
+        name: 'Admin Roles', 
+        resource: ResourceType.ROLES, 
+        action: PermissionAction.ADMIN, 
+        description: 'Create and modify roles',
+        active: true,
+        systemPermission: true,
+        displayOrder: 8
+      },
+      { 
+        id: 9, 
+        code: PERMISSION_CODES.TEAM_VIEW,
+        name: 'View Teams', 
+        resource: ResourceType.TEAMS, 
+        action: PermissionAction.READ, 
+        description: 'View team information',
+        active: true,
+        systemPermission: true,
+        displayOrder: 9
+      },
+      { 
+        id: 10, 
+        code: PERMISSION_CODES.TEAM_ADMIN,
+        name: 'Admin Teams', 
+        resource: ResourceType.TEAMS, 
+        action: PermissionAction.ADMIN, 
+        description: 'Create and manage teams',
+        active: true,
+        systemPermission: true,
+        displayOrder: 10
+      }
     ];
 
     const mockRoles: Role[] = [
       { 
         id: 1, 
+        code: 'SUPER_ADMIN',
         name: 'Super Admin', 
         description: 'Full system access with all permissions',
-        permissions: mockPermissions // Super admin has all permissions
+        permissions: mockPermissions,
+        active: true,
+        systemRole: true,
+        userCount: 1
       },
       { 
         id: 2, 
+        code: 'PROJECT_MANAGER',
         name: 'Project Manager', 
         description: 'Manage projects and teams',
         permissions: mockPermissions.filter(p => 
-          ['Dashboard', 'Projects', 'Teams', 'Tasks'].includes(p.resource) && 
-          !p.action.includes('delete')
-        )
+          [ResourceType.DASHBOARD, ResourceType.TEAMS].includes(p.resource) && 
+          p.action !== PermissionAction.DELETE
+        ),
+        active: true,
+        systemRole: true,
+        userCount: 3
       },
       { 
         id: 3, 
+        code: 'TEAM_LEAD',
         name: 'Team Lead', 
         description: 'Lead team activities and view reports',
         permissions: mockPermissions.filter(p => 
-          ['Dashboard', 'Teams', 'Tasks'].includes(p.resource) && 
-          ['view', 'edit', 'create'].includes(p.action)
-        )
+          [ResourceType.DASHBOARD, ResourceType.TEAMS].includes(p.resource) && 
+          [PermissionAction.READ, PermissionAction.WRITE].includes(p.action)
+        ),
+        active: true,
+        systemRole: true,
+        userCount: 5
       },
       { 
         id: 4, 
+        code: 'DEVELOPER',
         name: 'Developer', 
         description: 'Standard developer access',
         permissions: mockPermissions.filter(p => 
-          ['Dashboard', 'Projects', 'Tasks'].includes(p.resource) && 
-          ['view', 'edit'].includes(p.action)
-        )
+          [ResourceType.DASHBOARD, ResourceType.TEAMS].includes(p.resource) && 
+          [PermissionAction.READ, PermissionAction.WRITE].includes(p.action)
+        ),
+        active: true,
+        systemRole: true,
+        userCount: 12
       },
       { 
         id: 5, 
+        code: 'VIEWER',
         name: 'Viewer', 
         description: 'Read-only access to most resources',
-        permissions: mockPermissions.filter(p => p.action === 'view')
+        permissions: mockPermissions.filter(p => p.action === PermissionAction.READ),
+        active: true,
+        systemRole: false,
+        userCount: 8
       }
     ];
 
@@ -662,4 +750,6 @@ export class PermissionService {
       return throwError(() => new Error(errorMessage));
     };
   }
+
+
 }
