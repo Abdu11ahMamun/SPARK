@@ -16,6 +16,7 @@ import { SprintDetailsComponent } from './modules/sprints/sprint-details.compone
 import { RolesComponent } from './modules/admin/roles/roles.component';
 import { TaskTypesComponent } from './modules/admin/task-types/task-types.component';
 import { PermissionManagementComponent } from './modules/admin/permissions/permission-management.component';
+// Removed broken imports - these components don't exist yet
 
 
 // Prevent authenticated users from revisiting /login
@@ -32,18 +33,24 @@ const loginRedirectGuard: CanActivateFn = () => {
 };
 
 export const routes: Routes = [
-  { path: '', component: DashboardComponent, canActivate: [authGuard] },
+  // Public routes
   { path: 'login', component: LoginComponent, canActivate: [loginRedirectGuard] },
-  { path: 'users', component: UsersComponent, canActivate: [authGuard] },
+
+  // Basic authenticated routes (using existing authGuard temporarily)
+  { path: '', component: DashboardComponent, canActivate: [authGuard] },
+  { path: 'dashboard', component: DashboardComponent, canActivate: [authGuard] },
+  { path: 'my-tasks', component: MyTasksComponent, canActivate: [authGuard] },
   { path: 'teams', component: TeamsComponent, canActivate: [authGuard] },
+  { path: 'users', component: UsersComponent, canActivate: [authGuard] },
   { path: 'products', component: ProductsComponent, canActivate: [authGuard] },
   { path: 'product-modules', component: ProductModulesComponent, canActivate: [authGuard] },
-  { path: 'my-tasks', component: MyTasksComponent, canActivate: [authGuard] },
   { path: 'backlog', component: BacklogComponent, canActivate: [authGuard] },
   { path: 'sprints', component: SprintsComponent, canActivate: [authGuard] },
   { path: 'sprints/:id', component: SprintDetailsComponent, canActivate: [authGuard] },
   { path: 'roles', component: RolesComponent, canActivate: [authGuard] },
-  { path: 'permissions', component: PermissionManagementComponent, canActivate: [authGuard] },
+  { path: 'permissions', component: PermissionManagementComponent, canActivate: [authGuard], runGuardsAndResolvers: 'always' },
   { path: 'task-types', component: TaskTypesComponent, canActivate: [authGuard] },
-  { path: '**', redirectTo: '' }
+  // Temporarily removed broken routes
+
+  { path: '**', redirectTo: '/dashboard' }
 ];

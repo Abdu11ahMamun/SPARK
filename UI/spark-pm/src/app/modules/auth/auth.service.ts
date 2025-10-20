@@ -1,19 +1,26 @@
 import { Injectable, signal, computed } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Router } from '@angular/router';
+import { Observable, of } from 'rxjs';
+import { map, catchError } from 'rxjs/operators';
 import { environment } from '../../../environments/environment';
+import { PermissionService } from '../../core/services/permission.service';
+import { Permission, Role } from '../../core/models/permission.model';
 
 interface UserProfile {
+  id?: number;
   username: string;
   firstName?: string;
   lastName?: string;
   email: string;
   roles: string[];
+  permissions?: string[];
   teamIds?: number[];
   teams?: { id: number; name: string; }[];
 }
 
 interface LoginResponse { 
+  id?: number;
   username: string; 
   firstName?: string;
   lastName?: string;
@@ -35,7 +42,11 @@ export class AuthService {
   isAuthenticated = computed(() => !!this._username());
   userProfile = computed(() => this._userProfile());
 
-  constructor(private http: HttpClient, private router: Router) {
+  constructor(
+    private http: HttpClient, 
+    private router: Router,
+    private permissionService: PermissionService
+  ) {
     const stored = localStorage.getItem(this.tokenKey);
     const user = localStorage.getItem(this.userKey);
     const profile = localStorage.getItem(this.profileKey);
@@ -49,7 +60,84 @@ export class AuthService {
           console.warn('Invalid profile data in localStorage');
         }
       }
+    } else {
+      // For development - auto login as admin
+      console.log('🔧 Development mode: auto-login as admin');
+      this.devAutoLogin();
     }
+  }
+
+  private devAutoLogin(): void {
+    // Check if there's a dev role preference in localStorage
+    const devRole = localStorage.getItem('dev-role') || 'admin';
+    
+    let devUser: string;
+    let devProfile: UserProfile;
+    
+    switch (devRole) {
+      case 'developer':
+        devUser = 'developer';
+        devProfile = {
+          id: 2,
+          username: devUser,
+          firstName: 'John',
+          lastName: 'Developer',
+          email: 'john.dev@spark.com',
+          roles: ['USER', 'Developer'],
+          permissions: ['dashboard:view', 'project:view', 'project:edit', 'task:create', 'task:edit'],
+          teamIds: [2],
+          teams: [{ id: 2, name: 'Development Team' }]
+        };
+        break;
+      
+      case 'manager':
+        devUser = 'manager';
+        devProfile = {
+          id: 3,
+          username: devUser,
+          firstName: 'Jane',
+          lastName: 'Manager',
+          email: 'jane.manager@spark.com',
+          roles: ['USER', 'Project Manager'],
+          permissions: ['dashboard:view', 'project:view', 'project:edit', 'project:create', 'user:view', 'team:manage'],
+          teamIds: [1, 2],
+          teams: [{ id: 1, name: 'Management Team' }, { id: 2, name: 'Development Team' }]
+        };
+        break;
+      
+      default: // admin
+        devUser = 'admin';
+        devProfile = {
+          id: 1,
+          username: devUser,
+          firstName: 'Admin',
+          lastName: 'User',
+          email: 'admin@spark.com',
+          roles: ['ADMIN', 'Super Admin', 'USER'],
+          permissions: ['*'], // Admin has all permissions
+          teamIds: [1],
+          teams: [{ id: 1, name: 'Admin Team' }]
+        };
+    }
+
+    // Store auth data
+    localStorage.setItem(this.tokenKey, btoa(`${devUser}:${devUser}`));
+    localStorage.setItem(this.userKey, devUser);
+    localStorage.setItem(this.profileKey, JSON.stringify(devProfile));
+    
+    this._username.set(devUser);
+    this._userProfile.set(devProfile);
+    
+    console.log(`✅ Development auto-login complete as ${devUser}:`, devProfile.roles);
+  }
+
+  // Helper method to switch dev roles for testing
+  switchDevRole(role: 'admin' | 'manager' | 'developer'): void {
+    localStorage.setItem('dev-role', role);
+    localStorage.removeItem(this.tokenKey);
+    localStorage.removeItem(this.userKey);
+    localStorage.removeItem(this.profileKey);
+    location.reload(); // Simple reload to trigger auto-login with new role
   }
 
   login(username: string, password: string) {
@@ -68,6 +156,7 @@ export class AuthService {
         
         // Create and store user profile
         const profile: UserProfile = {
+          id: res.id,
           username: res.username || username,
           firstName: res.firstName,
           lastName: res.lastName,
@@ -79,6 +168,11 @@ export class AuthService {
         
         localStorage.setItem(this.profileKey, JSON.stringify(profile));
         this._userProfile.set(profile);
+        
+        // Load user permissions after successful login
+        this.loadUserPermissions().catch(error => {
+          console.warn('Failed to load permissions after login:', error);
+        });
         
         return true;
       })
@@ -127,9 +221,7 @@ export class AuthService {
     return this._userProfile()?.teamIds || [];
   }
   
-  hasRole(role: string): boolean {
-    return this.getUserRoles().includes(role);
-  }
+
   
   isInTeam(teamId: number): boolean {
     return this.getUserTeamIds().includes(teamId);
@@ -172,5 +264,95 @@ export class AuthService {
     } catch (e) {
       console.error('Failed to refresh user teams', e);
     }
+  }
+
+  // RBAC Permission Methods
+  hasPermission(permission: string): boolean {
+    const profile = this._userProfile();
+    if (!profile) return false;
+
+    // Check direct permissions
+    if (profile.permissions?.includes(permission)) {
+      return true;
+    }
+
+    // Check role-based permissions (fallback if permissions not loaded)
+    if (profile.roles?.includes('ADMIN')) {
+      return true;
+    }
+
+    return false;
+  }
+
+  hasRole(role: string): boolean {
+    const profile = this._userProfile();
+    return profile?.roles?.includes(role) || false;
+  }
+
+  hasAnyRole(roles: string[]): boolean {
+    const profile = this._userProfile();
+    if (!profile?.roles) return false;
+    return roles.some(role => profile.roles.includes(role));
+  }
+
+  hasAllRoles(roles: string[]): boolean {
+    const profile = this._userProfile();
+    if (!profile?.roles) return false;
+    return roles.every(role => profile.roles.includes(role));
+  }
+
+  checkAccess(requiredPermissions: string[], requireAll: boolean = false): boolean {
+    if (requireAll) {
+      return requiredPermissions.every(permission => this.hasPermission(permission));
+    } else {
+      return requiredPermissions.some(permission => this.hasPermission(permission));
+    }
+  }
+
+  async loadUserPermissions(): Promise<void> {
+    const profile = this._userProfile();
+    if (!profile?.id) return;
+
+    try {
+      const permissionObjects = await this.permissionService.getUserPermissions(profile.id).toPromise();
+      // Convert Permission objects to string array for the profile
+      const permissions = permissionObjects?.map(p => p.name) || [];
+      const updatedProfile = { ...profile, permissions };
+      this._userProfile.set(updatedProfile);
+      localStorage.setItem(this.profileKey, JSON.stringify(updatedProfile));
+    } catch (error) {
+      console.error('Failed to load user permissions:', error);
+    }
+  }
+
+  getPermissionsByGroup(group: string): string[] {
+    const profile = this._userProfile();
+    if (!profile?.permissions) return [];
+    
+    return profile.permissions.filter(permission => 
+      permission.startsWith(`${group}:`) || permission.startsWith(`${group}_`)
+    );
+  }
+
+  canAccessModule(module: string): boolean {
+    const modulePermissions = [
+      `${module}:read`,
+      `${module}:view`,
+      `${module}_read`,
+      `${module}_view`
+    ];
+    return this.hasAnyRole(['ADMIN']) || this.checkAccess(modulePermissions);
+  }
+
+  canModifyModule(module: string): boolean {
+    const modifyPermissions = [
+      `${module}:write`,
+      `${module}:update`,
+      `${module}:create`,
+      `${module}_write`,
+      `${module}_update`,
+      `${module}_create`
+    ];
+    return this.hasAnyRole(['ADMIN']) || this.checkAccess(modifyPermissions);
   }
 }

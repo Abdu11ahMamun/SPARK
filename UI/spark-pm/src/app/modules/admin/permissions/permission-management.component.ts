@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormControl } from '@angular/forms';
 import { Subject, combineLatest } from 'rxjs';
@@ -174,7 +174,7 @@ interface PermissionMatrixCell {
           </div>
           <h3>Error Loading Data</h3>
           <p>{{error}}</p>
-          <button class="btn btn-primary" (click)="loadInitialData()">
+          <button class="btn btn-primary" (click)="loadData()">
             <i class="fas fa-refresh"></i> Retry
           </button>
         </div>
@@ -623,24 +623,24 @@ export class PermissionManagementComponent implements OnInit, OnDestroy {
   constructor(
     private permissionService: PermissionService,
     private router: Router,
-    private route: ActivatedRoute
+    private route: ActivatedRoute,
+    private cdr: ChangeDetectorRef
   ) {}
+  
 
   ngOnInit(): void {
     console.log('🎯 PermissionManagementComponent ngOnInit called');
     this.setupSubscriptions();
-    this.loadInitialData();
     
-    // Listen to route changes to refresh data when navigating to this component
+    // Load data immediately and on every navigation
+    this.loadData();
+    
+    // Force reload on navigation to ensure data loads every time
     this.router.events.pipe(
       takeUntil(this.destroy$)
     ).subscribe(event => {
-      if (event instanceof NavigationEnd && event.url.includes('/permissions')) {
-        console.log('🎯 Route activated for permissions, ensuring data is loaded');
-        // Small delay to ensure component is fully initialized
-        setTimeout(() => {
-          this.loadInitialData();
-        }, 100);
+      if (event instanceof NavigationEnd && event.url === '/permissions') {
+         this.loadData();
       }
     });
   }
@@ -665,18 +665,12 @@ export class PermissionManagementComponent implements OnInit, OnDestroy {
     console.log('🔥 Subscriptions setup complete');
   }
 
-  loadInitialData(): void {
-    // Prevent multiple simultaneous loads
-    if (this.loading) {
-      console.log('⏳ Data loading already in progress, skipping duplicate request');
-      return;
-    }
-
-    console.log('🚀 Loading permission management data from APIs...');
-    this.loading = true;
-    this.error = null;
+  loadData(): void {
+    if (this.loading) return; // Prevent duplicate calls
     
-    // Use real APIs only - no fallbacks, no mock data
+    this.error = null;
+    this.loading = true;
+    
     combineLatest([
       this.permissionService.getAllPermissions(),
       this.permissionService.getAllRoles()
@@ -684,8 +678,6 @@ export class PermissionManagementComponent implements OnInit, OnDestroy {
       takeUntil(this.destroy$)
     ).subscribe({
       next: ([permissions, roles]) => {
-        console.log('✅ API Response - Permissions:', permissions.length, 'Roles:', roles.length);
-        
         this.permissions = permissions || [];
         this.roles = roles || [];
         
@@ -694,19 +686,17 @@ export class PermissionManagementComponent implements OnInit, OnDestroy {
         this.filterData();
         this.loading = false;
         
-        console.log('🎉 Data loaded successfully and UI updated');
-        
-        if (this.permissions.length === 0) {
-          console.warn('⚠️ No permissions received from API');
-        }
-        if (this.roles.length === 0) {
-          console.warn('⚠️ No roles received from API');
-        }
+        // Manually trigger change detection
+        this.cdr.detectChanges();
+        console.log('🔄 Change detection triggered after data load');
       },
       error: (error) => {
-        console.error('❌ API Error loading permission data:', error);
+        console.error('Failed to load permission data:', error);
+        this.error = 'Failed to load permission data. Please try again.';
+        this.permissions = [];
+        this.roles = [];
         this.loading = false;
-        this.error = `Failed to load data: ${error.message || 'Unknown error'}`;
+        this.cdr.detectChanges();
       }
     });
   }
@@ -750,12 +740,18 @@ export class PermissionManagementComponent implements OnInit, OnDestroy {
       return total + (role.permissions?.length || 0);
     }, 0);
 
+    // Create a new object to trigger change detection
     this.stats = {
       totalPermissions: this.permissions.length,
       totalRoles: this.roles.length,
       totalAssignments: totalAssignments,
       resourceGroups: this.resourceFilters.length
     };
+    
+    console.log('📊 Stats updated:', this.stats);
+    
+    // Force change detection for stats
+    setTimeout(() => this.cdr.markForCheck(), 0);
   }
 
   // Permission Matrix Methods
@@ -840,7 +836,7 @@ export class PermissionManagementComponent implements OnInit, OnDestroy {
       this.resetMatrixChanges();
       
       // Refresh data
-      this.loadInitialData();
+      this.loadData();
       
       console.log('Matrix changes saved successfully');
     } catch (error) {

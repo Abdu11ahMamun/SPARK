@@ -68,46 +68,7 @@ export class PermissionService {
   };
 
   constructor(private http: HttpClient) {
-    this.initializeData();
-  }
-
-  /**
-   * Initialize service and pre-load essential data
-   */
-  private initializeData(): void {
-    console.log('🚀 Permission Service initialized - pre-loading essential data');
-    
-    // Pre-load permissions and roles for immediate availability
-    this.preloadData();
-  }
-
-  /**
-   * Pre-load permissions and roles data
-   */
-  private preloadData(): void {
-    // Load permissions
-    this.http.get<Permission[]>(`${this.baseUrl}/permissions`, this.httpOptions)
-      .subscribe({
-        next: (permissions) => {
-          console.log('🎯 Pre-loaded permissions:', permissions?.length || 0);
-          this.permissionsSubject.next(permissions || []);
-        },
-        error: (error) => {
-          console.warn('⚠️ Failed to pre-load permissions:', error.message);
-        }
-      });
-
-    // Load roles
-    this.http.get<Role[]>(`${this.baseUrl}/roles`, this.httpOptions)
-      .subscribe({
-        next: (roles) => {
-          console.log('🎯 Pre-loaded roles:', roles?.length || 0);
-          this.rolesSubject.next(roles || []);
-        },
-        error: (error) => {
-          console.warn('⚠️ Failed to pre-load roles:', error.message);
-        }
-      });
+    console.log('🚀 PermissionService constructor - service ready for API calls');
   }
 
   /**
@@ -306,22 +267,18 @@ export class PermissionService {
    */
   getAllPermissions(): Observable<Permission[]> {
     console.log('🔍 Calling permissions API:', `${this.baseUrl}/permissions`);
-    
-    // If we have cached data and it's fresh, return it immediately
-    const cachedPermissions = this.permissionsSubject.value;
-    if (cachedPermissions.length > 0) {
-      console.log('📦 Returning cached permissions:', cachedPermissions.length);
-      return of(cachedPermissions);
-    }
+    this.loadingSubject.next(true);
     
     return this.http.get<Permission[]>(`${this.baseUrl}/permissions`, this.httpOptions)
       .pipe(
         tap(response => {
           console.log('📥 Permissions API response:', response?.length || 0, 'items');
           this.permissionsSubject.next(response || []);
+          this.loadingSubject.next(false);
         }),
         catchError(error => {
           console.error('❌ Permissions API error:', error);
+          this.loadingSubject.next(false);
           return throwError(() => error);
         })
       );
@@ -399,22 +356,18 @@ export class PermissionService {
    */
   getAllRoles(): Observable<Role[]> {
     console.log('🔍 Calling roles API:', `${this.baseUrl}/roles`);
-    
-    // If we have cached data and it's fresh, return it immediately
-    const cachedRoles = this.rolesSubject.value;
-    if (cachedRoles.length > 0) {
-      console.log('📦 Returning cached roles:', cachedRoles.length);
-      return of(cachedRoles);
-    }
+    this.loadingSubject.next(true);
     
     return this.http.get<Role[]>(`${this.baseUrl}/roles`, this.httpOptions)
       .pipe(
         tap(response => {
           console.log('📥 Roles API response:', response?.length || 0, 'items');
           this.rolesSubject.next(response || []);
+          this.loadingSubject.next(false);
         }),
         catchError(error => {
           console.error('❌ Roles API error:', error);
+          this.loadingSubject.next(false);
           return throwError(() => error);
         })
       );
