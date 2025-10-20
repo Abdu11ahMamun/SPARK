@@ -72,27 +72,42 @@ export class PermissionService {
   }
 
   /**
-   * Initialize service by loading basic data
+   * Initialize service and pre-load essential data
    */
   private initializeData(): void {
-    // Load real data from backend API
-    this.loadPermissions().subscribe({
-      next: (permissions) => console.log('Permissions loaded:', permissions.length),
-      error: (error) => {
-        console.error('Failed to load permissions:', error);
-        // Fallback to mock data if API fails
-        this.loadMockData();
-      }
-    });
+    console.log('🚀 Permission Service initialized - pre-loading essential data');
     
-    this.loadRoles().subscribe({
-      next: (roles) => console.log('Roles loaded:', roles.length),
-      error: (error) => {
-        console.error('Failed to load roles:', error);
-        // Fallback to mock data if API fails
-        this.loadMockData();
-      }
-    });
+    // Pre-load permissions and roles for immediate availability
+    this.preloadData();
+  }
+
+  /**
+   * Pre-load permissions and roles data
+   */
+  private preloadData(): void {
+    // Load permissions
+    this.http.get<Permission[]>(`${this.baseUrl}/permissions`, this.httpOptions)
+      .subscribe({
+        next: (permissions) => {
+          console.log('🎯 Pre-loaded permissions:', permissions?.length || 0);
+          this.permissionsSubject.next(permissions || []);
+        },
+        error: (error) => {
+          console.warn('⚠️ Failed to pre-load permissions:', error.message);
+        }
+      });
+
+    // Load roles
+    this.http.get<Role[]>(`${this.baseUrl}/roles`, this.httpOptions)
+      .subscribe({
+        next: (roles) => {
+          console.log('🎯 Pre-loaded roles:', roles?.length || 0);
+          this.rolesSubject.next(roles || []);
+        },
+        error: (error) => {
+          console.warn('⚠️ Failed to pre-load roles:', error.message);
+        }
+      });
   }
 
   /**
@@ -287,26 +302,28 @@ export class PermissionService {
   // ===========================================
 
   /**
-   * Get all permissions
+   * Get all permissions from API
    */
   getAllPermissions(): Observable<Permission[]> {
-    console.log('🔍 getAllPermissions called, API URL:', `${this.baseUrl}/permissions`);
-    this.loadingSubject.next(true);
+    console.log('🔍 Calling permissions API:', `${this.baseUrl}/permissions`);
     
-    // Call the real API - handle direct array response
+    // If we have cached data and it's fresh, return it immediately
+    const cachedPermissions = this.permissionsSubject.value;
+    if (cachedPermissions.length > 0) {
+      console.log('📦 Returning cached permissions:', cachedPermissions.length);
+      return of(cachedPermissions);
+    }
+    
     return this.http.get<Permission[]>(`${this.baseUrl}/permissions`, this.httpOptions)
       .pipe(
-        tap(response => console.log('📥 Permissions API response:', response)),
-        map(response => Array.isArray(response) ? response : []),
-        tap(permissions => {
-          console.log('✅ Processed permissions:', permissions.length);
-          this.permissionsSubject.next(permissions);
+        tap(response => {
+          console.log('📥 Permissions API response:', response?.length || 0, 'items');
+          this.permissionsSubject.next(response || []);
         }),
         catchError(error => {
           console.error('❌ Permissions API error:', error);
-          return this.handleError<Permission[]>('getAllPermissions', [])(error);
-        }),
-        finalize(() => this.loadingSubject.next(false))
+          return throwError(() => error);
+        })
       );
   }
 
@@ -377,24 +394,29 @@ export class PermissionService {
   /**
    * Get all roles
    */
+  /**
+   * Get all roles from API
+   */
   getAllRoles(): Observable<Role[]> {
-    console.log('🔍 getAllRoles called, API URL:', `${this.baseUrl}/roles`);
-    this.loadingSubject.next(true);
+    console.log('🔍 Calling roles API:', `${this.baseUrl}/roles`);
     
-    // Call the real API - using /roles endpoint as requested
+    // If we have cached data and it's fresh, return it immediately
+    const cachedRoles = this.rolesSubject.value;
+    if (cachedRoles.length > 0) {
+      console.log('📦 Returning cached roles:', cachedRoles.length);
+      return of(cachedRoles);
+    }
+    
     return this.http.get<Role[]>(`${this.baseUrl}/roles`, this.httpOptions)
       .pipe(
-        tap(response => console.log('📥 Roles API response:', response)),
-        map(response => Array.isArray(response) ? response : []),
-        tap(roles => {
-          console.log('✅ Processed roles:', roles.length);
-          this.rolesSubject.next(roles);
+        tap(response => {
+          console.log('📥 Roles API response:', response?.length || 0, 'items');
+          this.rolesSubject.next(response || []);
         }),
         catchError(error => {
           console.error('❌ Roles API error:', error);
-          return this.handleError<Role[]>('getAllRoles', [])(error);
-        }),
-        finalize(() => this.loadingSubject.next(false))
+          return throwError(() => error);
+        })
       );
   }
 

@@ -3,22 +3,9 @@ import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormControl } from '@angular/forms';
 import { Subject, combineLatest } from 'rxjs';
 import { takeUntil, debounceTime, distinctUntilChanged } from 'rxjs/operators';
+import { ActivatedRoute, Router, NavigationEnd } from '@angular/router';
 import { PermissionService } from '../services/permission.service';
-
-interface Permission {
-  id: number;
-  name: string;
-  resource: string;
-  action: string;
-  description?: string;
-}
-
-interface Role {
-  id: number;
-  name: string;
-  description?: string;
-  permissions?: Permission[];
-}
+import { Permission, Role } from '../../../core/models/permission.model';
 
 interface PermissionMatrixCell {
   roleId: number;
@@ -180,8 +167,20 @@ interface PermissionMatrixCell {
           </table>
         </div>
 
+        <!-- Error State -->
+        <div *ngIf="!loading && error" class="error-state">
+          <div class="error-icon">
+            <i class="fas fa-exclamation-triangle"></i>
+          </div>
+          <h3>Error Loading Data</h3>
+          <p>{{error}}</p>
+          <button class="btn btn-primary" (click)="loadInitialData()">
+            <i class="fas fa-refresh"></i> Retry
+          </button>
+        </div>
+
         <!-- Empty State -->
-        <div *ngIf="!loading && (permissions.length === 0 || roles.length === 0)" 
+        <div *ngIf="!loading && !error && (permissions.length === 0 || roles.length === 0)" 
              class="empty-state">
           <div class="empty-icon">
             <i class="fas fa-table"></i>
@@ -539,21 +538,33 @@ interface PermissionMatrixCell {
     }
 
     /* Empty State */
-    .empty-state {
+    .empty-state, .error-state {
       padding: 4rem 2rem;
       text-align: center;
       color: #6c757d;
     }
 
-    .empty-icon {
+    .empty-icon, .error-icon {
       font-size: 4rem;
       margin-bottom: 1rem;
       color: #dee2e6;
     }
 
-    .empty-state h3 {
+    .empty-state h3, .error-state h3 {
       margin-bottom: 1rem;
       color: #495057;
+    }
+    
+    .error-state {
+      color: #dc3545;
+    }
+    
+    .error-icon {
+      color: #dc3545;
+    }
+    
+    .error-state h3 {
+      color: #dc3545;
     }
 
     /* Responsive */
@@ -592,6 +603,7 @@ export class PermissionManagementComponent implements OnInit, OnDestroy {
   
   // UI State
   loading = false;
+  error: string | null = null;
   searchControl = new FormControl('');
   selectedResource = '';
   resourceFilters: string[] = [];
@@ -608,11 +620,29 @@ export class PermissionManagementComponent implements OnInit, OnDestroy {
   matrixChanges = new Map<string, boolean>();
   pendingChanges: { roleId: number; permissionId: number; assigned: boolean }[] = [];
   
-  constructor(private permissionService: PermissionService) {}
+  constructor(
+    private permissionService: PermissionService,
+    private router: Router,
+    private route: ActivatedRoute
+  ) {}
 
   ngOnInit(): void {
+    console.log('🎯 PermissionManagementComponent ngOnInit called');
     this.setupSubscriptions();
     this.loadInitialData();
+    
+    // Listen to route changes to refresh data when navigating to this component
+    this.router.events.pipe(
+      takeUntil(this.destroy$)
+    ).subscribe(event => {
+      if (event instanceof NavigationEnd && event.url.includes('/permissions')) {
+        console.log('🎯 Route activated for permissions, ensuring data is loaded');
+        // Small delay to ensure component is fully initialized
+        setTimeout(() => {
+          this.loadInitialData();
+        }, 100);
+      }
+    });
   }
 
   ngOnDestroy(): void {
@@ -631,40 +661,22 @@ export class PermissionManagementComponent implements OnInit, OnDestroy {
       .subscribe(() => {
         this.filterData();
       });
-
-    // Subscribe to permissions changes
-    this.permissionService.permissions$
-      .pipe(takeUntil(this.destroy$))
-      .subscribe(permissions => {
-        this.permissions = permissions;
-        this.updateResourceFilters();
-        this.updateStats();
-        this.filterData();
-      });
-
-    // Subscribe to roles changes
-    this.permissionService.roles$
-      .pipe(takeUntil(this.destroy$))
-      .subscribe(roles => {
-        this.roles = roles;
-        this.updateStats();
-        this.filterData();
-      });
-
-    // Subscribe to loading state
-    this.permissionService.loading$
-      .pipe(takeUntil(this.destroy$))
-      .subscribe(loading => {
-        this.loading = loading;
-      });
+      
+    console.log('🔥 Subscriptions setup complete');
   }
 
-  private loadInitialData(): void {
-    // For development, trigger data loading to ensure observables are populated
+  loadInitialData(): void {
+    // Prevent multiple simultaneous loads
+    if (this.loading) {
+      console.log('⏳ Data loading already in progress, skipping duplicate request');
+      return;
+    }
+
+    console.log('🚀 Loading permission management data from APIs...');
     this.loading = true;
+    this.error = null;
     
-    // Call the service methods to ensure data is loaded
-    // These return the mock data immediately
+    // Use real APIs only - no fallbacks, no mock data
     combineLatest([
       this.permissionService.getAllPermissions(),
       this.permissionService.getAllRoles()
@@ -672,14 +684,39 @@ export class PermissionManagementComponent implements OnInit, OnDestroy {
       takeUntil(this.destroy$)
     ).subscribe({
       next: ([permissions, roles]) => {
-        console.log('Data loaded:', { permissions: permissions.length, roles: roles.length });
+        console.log('✅ API Response - Permissions:', permissions.length, 'Roles:', roles.length);
+        
+        this.permissions = permissions || [];
+        this.roles = roles || [];
+        
+        this.updateResourceFilters();
+        this.updateStats();
+        this.filterData();
         this.loading = false;
+        
+        console.log('🎉 Data loaded successfully and UI updated');
+        
+        if (this.permissions.length === 0) {
+          console.warn('⚠️ No permissions received from API');
+        }
+        if (this.roles.length === 0) {
+          console.warn('⚠️ No roles received from API');
+        }
       },
-      error: (error: any) => {
-        console.error('Failed to load initial data:', error);
+      error: (error) => {
+        console.error('❌ API Error loading permission data:', error);
         this.loading = false;
+        this.error = `Failed to load data: ${error.message || 'Unknown error'}`;
       }
     });
+  }
+
+  private checkDataLoadComplete(): void {
+    // Only set loading to false when we have both permissions and roles
+    if (this.permissions.length > 0 && this.roles.length > 0) {
+      console.log('Data load complete, hiding loading state');
+      this.loading = false;
+    }
   }
 
   private filterData(): void {
@@ -729,7 +766,9 @@ export class PermissionManagementComponent implements OnInit, OnDestroy {
       return this.matrixChanges.get(changeKey)!;
     }
     
-    return role.permissions?.some(p => p.id === permission.id) || false;
+    // For now, since we don't have role-permission relationship API,
+    // return false - this can be enhanced when the API is available
+    return false;
   }
 
   isPermissionChanged(role: Role, permission: Permission): boolean {
