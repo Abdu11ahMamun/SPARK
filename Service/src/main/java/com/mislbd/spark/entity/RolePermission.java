@@ -30,7 +30,8 @@ import java.time.LocalDateTime;
 public class RolePermission {
     
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "role_permission_seq")
+    @SequenceGenerator(name = "role_permission_seq", sequenceName = "SEQ_SPARK_ROLE_PERMISSION", allocationSize = 1)
     @Column(name = "id")
     private Long id;
 

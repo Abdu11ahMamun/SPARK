@@ -482,12 +482,16 @@ export class PermissionService {
    * Bulk assign permissions to a role
    */
   bulkAssignPermissions(request: BulkAssignRequest): Observable<boolean> {
-    return this.http.post<ApiResponse<any>>(
-      `${this.baseUrl}/roles/${request.roleId}/permissions/bulk-assign`,
-      { permissionIds: request.permissionIds },
+    return this.http.post<any>(
+      `${this.baseUrl}/roles/${request.roleId}/permissions`,
+      { 
+        permissionIds: request.permissionIds,
+        grantedBy: 'admin',
+        notes: 'Bulk assignment via UI'
+      },
       this.httpOptions
     ).pipe(
-      map(response => response.success),
+      map(response => response && (response.success === true || response.assigned > 0)),
       tap(() => this.refreshRoles()),
       catchError(this.handleError<boolean>('bulkAssignPermissions', false))
     );
@@ -497,12 +501,14 @@ export class PermissionService {
    * Bulk revoke permissions from a role
    */
   bulkRevokePermissions(request: BulkRevokeRequest): Observable<boolean> {
-    return this.http.post<ApiResponse<any>>(
-      `${this.baseUrl}/roles/${request.roleId}/permissions/bulk-revoke`,
-      { permissionIds: request.permissionIds },
-      this.httpOptions
+    return this.http.delete<any>(
+      `${this.baseUrl}/roles/${request.roleId}/permissions`,
+      { 
+        body: { permissionIds: request.permissionIds },
+        ...this.httpOptions 
+      }
     ).pipe(
-      map(response => response.success),
+      map(response => response && (response.success === true || response.removed > 0)),
       tap(() => this.refreshRoles()),
       catchError(this.handleError<boolean>('bulkRevokePermissions', false))
     );

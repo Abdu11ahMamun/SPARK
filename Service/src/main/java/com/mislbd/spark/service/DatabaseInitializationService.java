@@ -60,10 +60,13 @@ public class DatabaseInitializationService implements CommandLineRunner {
             // 4. Create SPARK_USER_ROLE table
             createUserRoleTable();
             
-            // 5. Update SPARK_ROLE table with new columns
+            // 5. Create SPARK_USER_SESSION_METADATA table
+            createUserSessionMetadataTable();
+            
+            // 6. Update SPARK_ROLE table with new columns
             updateRoleTable();
             
-            // 6. Create indexes
+            // 7. Create indexes
             createIndexes();
             
         } catch (Exception e) {
@@ -75,7 +78,8 @@ public class DatabaseInitializationService implements CommandLineRunner {
         String[] sequences = {
             "CREATE SEQUENCE SEQ_SPARK_PERMISSION START WITH 1 INCREMENT BY 1 NOCACHE",
             "CREATE SEQUENCE SEQ_SPARK_ROLE_PERMISSION START WITH 1 INCREMENT BY 1 NOCACHE",
-            "CREATE SEQUENCE SEQ_SPARK_USER_ROLE START WITH 1 INCREMENT BY 1 NOCACHE"
+            "CREATE SEQUENCE SEQ_SPARK_USER_ROLE START WITH 1 INCREMENT BY 1 NOCACHE",
+            "CREATE SEQUENCE SEQ_SPARK_SESSION_METADATA START WITH 1 INCREMENT BY 1 NOCACHE"
         };
         
         for (String seq : sequences) {
@@ -97,7 +101,12 @@ public class DatabaseInitializationService implements CommandLineRunner {
             "CREATE INDEX idx_role_permission_permission ON SPARK_ROLE_PERMISSION(permission_id)",
             "CREATE INDEX idx_user_role_user ON SPARK_USER_ROLE(user_id)",
             "CREATE INDEX idx_user_role_role ON SPARK_USER_ROLE(role_id)",
-            "CREATE INDEX idx_user_role_active ON SPARK_USER_ROLE(active)"
+            "CREATE INDEX idx_user_role_active ON SPARK_USER_ROLE(active)",
+            "CREATE INDEX idx_session_token ON SPARK_USER_SESSION_METADATA(session_token)",
+            "CREATE INDEX idx_session_user_active ON SPARK_USER_SESSION_METADATA(user_id, active)",
+            "CREATE INDEX idx_session_expires_at ON SPARK_USER_SESSION_METADATA(expires_at)",
+            "CREATE INDEX idx_session_last_activity ON SPARK_USER_SESSION_METADATA(last_activity_at)",
+            "CREATE INDEX idx_session_device_type ON SPARK_USER_SESSION_METADATA(device_type)"
         };
         
         for (String index : indexes) {
@@ -205,6 +214,51 @@ public class DatabaseInitializationService implements CommandLineRunner {
         
         jdbcTemplate.execute(sql);
         logger.info("SPARK_USER_ROLE table creation attempted");
+    }
+    
+    private void createUserSessionMetadataTable() {
+        String sql = """
+            BEGIN
+                EXECUTE IMMEDIATE 'CREATE TABLE SPARK_USER_SESSION_METADATA (
+                    id NUMBER(19) NOT NULL,
+                    user_id NUMBER(19) NOT NULL,
+                    session_token VARCHAR2(255) NOT NULL,
+                    roles_json CLOB,
+                    permissions_json CLOB,
+                    resources_json CLOB,
+                    primary_role VARCHAR2(100),
+                    display_name VARCHAR2(150),
+                    email VARCHAR2(255),
+                    is_admin NUMBER(1) DEFAULT 0,
+                    is_system_admin NUMBER(1) DEFAULT 0,
+                    permissions_count NUMBER(10),
+                    roles_count NUMBER(10),
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    last_activity_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    expires_at TIMESTAMP,
+                    active NUMBER(1) DEFAULT 1,
+                    ip_address VARCHAR2(45),
+                    user_agent VARCHAR2(500),
+                    device_type VARCHAR2(20) DEFAULT ''Web'',
+                    login_source VARCHAR2(20) DEFAULT ''Manual'',
+                    notes VARCHAR2(500),
+                    CONSTRAINT pk_spark_session_metadata PRIMARY KEY (id),
+                    CONSTRAINT fk_session_metadata_user FOREIGN KEY (user_id) REFERENCES SPARK_USER(id),
+                    CONSTRAINT uk_session_token UNIQUE (session_token),
+                    CONSTRAINT chk_session_active CHECK (active IN (0, 1)),
+                    CONSTRAINT chk_session_is_admin CHECK (is_admin IN (0, 1)),
+                    CONSTRAINT chk_session_is_system_admin CHECK (is_system_admin IN (0, 1))
+                )';
+            EXCEPTION
+                WHEN OTHERS THEN
+                    IF SQLCODE != -955 THEN
+                        RAISE;
+                    END IF;
+            END;
+            """;
+        
+        jdbcTemplate.execute(sql);
+        logger.info("SPARK_USER_SESSION_METADATA table creation attempted");
     }
     
     private void updateRoleTable() {

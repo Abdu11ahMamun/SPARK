@@ -117,14 +117,19 @@ public class RolePermissionController {
                                                     @RequestBody Map<String, Object> request) {
         try {
             @SuppressWarnings("unchecked")
-            List<Long> permissionIds = (List<Long>) request.get("permissionIds");
-            String grantedBy = (String) request.get("grantedBy");
+            List<Object> permissionIdsRaw = (List<Object>) request.get("permissionIds");
+            String grantedBy = (String) request.getOrDefault("grantedBy", "system");
             String notes = (String) request.get("notes");
 
-            if (permissionIds == null || permissionIds.isEmpty()) {
+            if (permissionIdsRaw == null || permissionIdsRaw.isEmpty()) {
                 return ResponseEntity.badRequest()
                         .body(Map.of("error", "Permission IDs are required"));
             }
+
+            // Convert Integer/Long objects to Long
+            List<Long> permissionIds = permissionIdsRaw.stream()
+                    .map(obj -> obj instanceof Integer ? ((Integer) obj).longValue() : (Long) obj)
+                    .collect(Collectors.toList());
 
             Map<String, Object> result;
             if (permissionIds.size() == 1) {
@@ -195,12 +200,17 @@ public class RolePermissionController {
                                                   @RequestBody Map<String, Object> request) {
         try {
             @SuppressWarnings("unchecked")
-            List<Long> permissionIds = (List<Long>) request.get("permissionIds");
+            List<Object> permissionIdsRaw = (List<Object>) request.get("permissionIds");
 
-            if (permissionIds == null || permissionIds.isEmpty()) {
+            if (permissionIdsRaw == null || permissionIdsRaw.isEmpty()) {
                 return ResponseEntity.badRequest()
                         .body(Map.of("error", "Permission IDs are required"));
             }
+
+            // Convert Integer/Long objects to Long
+            List<Long> permissionIds = permissionIdsRaw.stream()
+                    .map(obj -> obj instanceof Integer ? ((Integer) obj).longValue() : (Long) obj)
+                    .collect(Collectors.toList());
 
             Map<String, Object> result = rolePermissionService.bulkRemovePermissions(id, permissionIds);
             

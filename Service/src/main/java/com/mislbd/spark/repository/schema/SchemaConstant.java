@@ -24,6 +24,7 @@ public class SchemaConstant {
     public static final String PERMISSION_TABLE_NAME = TABLE_NAME_PREFIX + "PERMISSION";
     public static final String ROLE_PERMISSION_TABLE_NAME = TABLE_NAME_PREFIX + "ROLE_PERMISSION";
     public static final String USER_ROLE_TABLE_NAME = TABLE_NAME_PREFIX + "USER_ROLE";
+    public static final String USER_SESSION_METADATA_TABLE_NAME = TABLE_NAME_PREFIX + "USER_SESSION_METADATA";
     
     // Future expansion
     // Add more table names as needed

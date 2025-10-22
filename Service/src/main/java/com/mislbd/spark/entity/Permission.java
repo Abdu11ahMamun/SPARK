@@ -33,7 +33,8 @@ import java.util.Set;
 public class Permission {
     
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "permission_seq")
+    @SequenceGenerator(name = "permission_seq", sequenceName = "SEQ_SPARK_PERMISSION", allocationSize = 1)
     @Column(name = "id")
     private Long id;
 
