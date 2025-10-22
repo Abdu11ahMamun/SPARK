@@ -4,8 +4,8 @@ import { Router } from '@angular/router';
 import { Observable, of } from 'rxjs';
 import { map, catchError } from 'rxjs/operators';
 import { environment } from '../../../environments/environment';
-import { PermissionService } from '../../core/services/permission.service';
 import { Permission, Role } from '../../core/models/permission.model';
+import { PermissionService } from '../admin/services/permission.service';
 
 interface UserProfile {
   id?: number;
@@ -314,9 +314,9 @@ export class AuthService {
     if (!profile?.id) return;
 
     try {
-      const permissionObjects = await this.permissionService.getUserPermissions(profile.id).toPromise();
-      // Convert Permission objects to string array for the profile
-      const permissions = permissionObjects?.map(p => p.name) || [];
+      // TODO: Implement getUserPermissions API endpoint in backend
+      // For now, using mock permissions based on user roles
+      const permissions = this.getMockPermissionsForUser(profile);
       const updatedProfile = { ...profile, permissions };
       this._userProfile.set(updatedProfile);
       localStorage.setItem(this.profileKey, JSON.stringify(updatedProfile));
@@ -354,5 +354,74 @@ export class AuthService {
       `${module}_create`
     ];
     return this.hasAnyRole(['ADMIN']) || this.checkAccess(modifyPermissions);
+  }
+
+  private getMockPermissionsForUser(profile: UserProfile): string[] {
+    // Mock permissions based on user roles using the actual permission codes from the API
+    const rolePermissions: { [key: string]: string[] } = {
+      'ADMIN': [
+        // Dashboard
+        'DASHBOARD_VIEW',
+        // User Management
+        'USER_VIEW', 'USER_CREATE', 'USER_EDIT', 'USER_DELETE',
+        // Role Management  
+        'ROLE_VIEW', 'ROLE_CREATE', 'ROLE_EDIT', 'ROLE_DELETE',
+        // Team Management
+        'TEAM_VIEW', 'TEAM_CREATE', 'TEAM_EDIT', 'TEAM_DELETE',
+        // Project Management
+        'PROJECT_VIEW', 'PROJECT_CREATE', 'PROJECT_EDIT', 'PROJECT_DELETE',
+        // Module Management
+        'MODULE_VIEW', 'MODULE_CREATE', 'MODULE_EDIT', 'MODULE_DELETE',
+        // Task Management
+        'TASK_VIEW', 'TASK_CREATE', 'TASK_EDIT', 'TASK_DELETE',
+        // Sprint Management
+        'SPRINT_VIEW', 'SPRINT_CREATE', 'SPRINT_EDIT', 'SPRINT_DELETE',
+        // Backlog Management
+        'BACKLOG_VIEW', 'BACKLOG_CREATE', 'BACKLOG_EDIT', 'BACKLOG_DELETE',
+        // Client Management
+        'CLIENT_VIEW', 'CLIENT_CREATE', 'CLIENT_EDIT', 'CLIENT_DELETE',
+        // Job Types
+        'JOB_TYPE_VIEW', 'JOB_TYPE_CREATE', 'JOB_TYPE_EDIT', 'JOB_TYPE_DELETE',
+        // Document Management
+        'DOCUMENT_VIEW', 'DOCUMENT_CREATE', 'DOCUMENT_EDIT', 'DOCUMENT_DELETE',
+        // Reports
+        'REPORT_VIEW', 'REPORT_CREATE',
+        // System Admin
+        'SYSTEM_ADMIN'
+      ],
+      'MANAGER': [
+        'DASHBOARD_VIEW', 'USER_VIEW', 'TEAM_VIEW', 'TEAM_EDIT', 
+        'PROJECT_VIEW', 'PROJECT_CREATE', 'PROJECT_EDIT',
+        'TASK_VIEW', 'TASK_CREATE', 'TASK_EDIT', 'TASK_DELETE',
+        'SPRINT_VIEW', 'SPRINT_CREATE', 'SPRINT_EDIT',
+        'BACKLOG_VIEW', 'BACKLOG_CREATE', 'BACKLOG_EDIT',
+        'REPORT_VIEW', 'REPORT_CREATE'
+      ],
+      'Project Manager': [
+        'DASHBOARD_VIEW', 'PROJECT_VIEW', 'PROJECT_EDIT', 
+        'TASK_VIEW', 'TASK_CREATE', 'TASK_EDIT',
+        'TEAM_VIEW', 'USER_VIEW'
+      ],
+      'DEVELOPER': [
+        'DASHBOARD_VIEW', 'TASK_VIEW', 'TASK_EDIT',
+        'PROJECT_VIEW', 'TEAM_VIEW', 'BACKLOG_VIEW'
+      ],
+      'Developer': [
+        'DASHBOARD_VIEW', 'TASK_VIEW', 'TASK_EDIT',
+        'PROJECT_VIEW', 'TEAM_VIEW', 'BACKLOG_VIEW'
+      ],
+      'USER': [
+        'DASHBOARD_VIEW', 'TASK_VIEW'
+      ]
+    };
+
+    const allPermissions: string[] = [];
+    profile.roles.forEach(role => {
+      const permissions = rolePermissions[role] || [];
+      allPermissions.push(...permissions);
+    });
+
+    // Remove duplicates and return
+    return [...new Set(allPermissions)];
   }
 }
