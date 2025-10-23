@@ -679,9 +679,26 @@ export class PermissionManagementComponent implements OnInit, OnDestroy {
         this.permissionService.getAllPermissions().toPromise(),
         this.permissionService.getAllRoles().toPromise()
       ]);
-      
+
       this.permissions = permissions || [];
       this.roles = roles || [];
+
+      // Fetch current permissions for each role if not already populated or to ensure freshness
+      await Promise.all(
+        this.roles.map(async role => {
+          try {
+            const perms = await this.permissionService.getRolePermissions(role.id).toPromise();
+            if (perms && perms.length) {
+              role.permissions = perms;
+            } else if (!role.permissions) {
+              role.permissions = [];
+            }
+          } catch (e) {
+            console.warn(`Failed to load permissions for role ${role.id}`, e);
+            if (!role.permissions) role.permissions = [];
+          }
+        })
+      );
       
       this.updateResourceFilters();
       this.updateStats();
@@ -762,10 +779,8 @@ export class PermissionManagementComponent implements OnInit, OnDestroy {
     if (this.matrixChanges.has(changeKey)) {
       return this.matrixChanges.get(changeKey)!;
     }
-    
-    // For now, since we don't have role-permission relationship API,
-    // return false - this can be enhanced when the API is available
-    return false;
+    // Use actual role.permissions loaded from API
+    return !!role.permissions?.some(p => p.id === permission.id);
   }
 
   isPermissionChanged(role: Role, permission: Permission): boolean {
