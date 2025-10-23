@@ -9,7 +9,7 @@ import { NotificationService, Notification } from '../../../core/services/notifi
   template: `
     <div class="notifications-container">
       <div 
-        *ngFor="let notification of notifications" 
+        *ngFor="let notification of notifications; trackBy: trackNotification" 
         class="notification"
         [class]="'notification-' + notification.type"
       >
@@ -58,8 +58,9 @@ import { NotificationService, Notification } from '../../../core/services/notifi
       position: fixed;
       top: 1rem;
       right: 1rem;
-      z-index: 1000;
+      z-index: 9999;
       max-width: 400px;
+      pointer-events: none;
     }
 
     .notification {
@@ -68,8 +69,10 @@ import { NotificationService, Notification } from '../../../core/services/notifi
       padding: 1rem;
       margin-bottom: 0.5rem;
       border-radius: 0.5rem;
-      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
       animation: slideIn 0.3s ease-out;
+      pointer-events: auto;
+      min-width: 300px;
     }
 
     .notification-success {
@@ -156,11 +159,17 @@ export class NotificationsComponent implements OnInit {
 
   ngOnInit() {
     this.notificationService.notifications.subscribe(
-      (notifications: Notification[]) => this.notifications = notifications
+      (notifications: Notification[]) => {
+        this.notifications = notifications;
+      }
     );
   }
 
   close(id: string) {
     this.notificationService.remove(id);
+  }
+
+  trackNotification(index: number, notification: Notification): string {
+    return notification.id;
   }
 }

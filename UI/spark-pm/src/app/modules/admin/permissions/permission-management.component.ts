@@ -6,6 +6,7 @@ import { takeUntil, debounceTime, distinctUntilChanged } from 'rxjs/operators';
 import { ActivatedRoute, Router, NavigationEnd } from '@angular/router';
 import { PermissionService } from '../services/permission.service';
 import { Permission, Role } from '../../../core/models/permission.model';
+import { NotificationService } from '../../../core/services/notification.service';
 
 interface PermissionMatrixCell {
   roleId: number;
@@ -94,7 +95,7 @@ interface PermissionMatrixCell {
             [disabled]="pendingChanges.length === 0 || loading"
             (click)="saveMatrixChanges()">
             <i class="fas fa-save"></i>
-            Save Changes ({{pendingChanges.length}})
+            Apply {{pendingChanges.length}} Change{{pendingChanges.length === 1 ? '' : 's'}}
           </button>
           
           <button 
@@ -102,8 +103,9 @@ interface PermissionMatrixCell {
             [disabled]="pendingChanges.length === 0"
             (click)="resetMatrixChanges()">
             <i class="fas fa-undo"></i>
-            Reset
+            Reset Changes
           </button>
+          
         </div>
       </div>
 
@@ -624,7 +626,8 @@ export class PermissionManagementComponent implements OnInit, OnDestroy {
     private permissionService: PermissionService,
     private router: Router,
     private route: ActivatedRoute,
-    private cdr: ChangeDetectorRef
+    private cdr: ChangeDetectorRef,
+    private notificationService: NotificationService
   ) {}
   
 
@@ -665,40 +668,37 @@ export class PermissionManagementComponent implements OnInit, OnDestroy {
     console.log('🔥 Subscriptions setup complete');
   }
 
-  loadData(): void {
+  async loadData(): Promise<void> {
     if (this.loading) return; // Prevent duplicate calls
     
     this.error = null;
     this.loading = true;
     
-    combineLatest([
-      this.permissionService.getAllPermissions(),
-      this.permissionService.getAllRoles()
-    ]).pipe(
-      takeUntil(this.destroy$)
-    ).subscribe({
-      next: ([permissions, roles]) => {
-        this.permissions = permissions || [];
-        this.roles = roles || [];
-        
-        this.updateResourceFilters();
-        this.updateStats();
-        this.filterData();
-        this.loading = false;
-        
-        // Manually trigger change detection
-        this.cdr.detectChanges();
-        console.log('🔄 Change detection triggered after data load');
-      },
-      error: (error) => {
-        console.error('Failed to load permission data:', error);
-        this.error = 'Failed to load permission data. Please try again.';
-        this.permissions = [];
-        this.roles = [];
-        this.loading = false;
-        this.cdr.detectChanges();
-      }
-    });
+    try {
+      const [permissions, roles] = await Promise.all([
+        this.permissionService.getAllPermissions().toPromise(),
+        this.permissionService.getAllRoles().toPromise()
+      ]);
+      
+      this.permissions = permissions || [];
+      this.roles = roles || [];
+      
+      this.updateResourceFilters();
+      this.updateStats();
+      this.filterData();
+      
+      // Manually trigger change detection
+      this.cdr.detectChanges();
+      console.log('🔄 Data loaded and change detection triggered - Stats:', this.stats);
+    } catch (error) {
+      console.error('Failed to load permission data:', error);
+      this.error = 'Failed to load permission data. Please try again.';
+      this.permissions = [];
+      this.roles = [];
+      this.cdr.detectChanges();
+    } finally {
+      this.loading = false;
+    }
   }
 
   private checkDataLoadComplete(): void {
@@ -751,7 +751,8 @@ export class PermissionManagementComponent implements OnInit, OnDestroy {
     console.log('📊 Stats updated:', this.stats);
     
     // Force change detection for stats
-    setTimeout(() => this.cdr.markForCheck(), 0);
+    this.cdr.markForCheck();
+    this.cdr.detectChanges();
   }
 
   // Permission Matrix Methods
@@ -795,6 +796,8 @@ export class PermissionManagementComponent implements OnInit, OnDestroy {
     } else {
       this.pendingChanges.push({ roleId, permissionId, assigned: newAssignment });
     }
+    
+    console.log(`📝 Permission ${newAssignment ? 'marked for assignment' : 'marked for removal'}: ${permission.name} ${newAssignment ? 'to' : 'from'} ${role.name}`);
   }
 
   async saveMatrixChanges(): Promise<void> {
@@ -816,12 +819,19 @@ export class PermissionManagementComponent implements OnInit, OnDestroy {
         targetMap.get(change.roleId)!.push(change.permissionId);
       });
 
+      let totalAssignments = 0;
+      let totalRevocations = 0;
+
       // Execute bulk assign operations
       for (const [roleId, permissionIds] of assignOperations.entries()) {
         await this.permissionService.bulkAssignPermissions({
           roleId,
           permissionIds
         }).toPromise();
+        totalAssignments += permissionIds.length;
+        
+        // Update local state immediately
+        this.updateLocalRolePermissions(roleId, permissionIds, true);
       }
 
       // Execute bulk revoke operations
@@ -830,17 +840,63 @@ export class PermissionManagementComponent implements OnInit, OnDestroy {
           roleId,
           permissionIds
         }).toPromise();
+        totalRevocations += permissionIds.length;
+        
+        // Update local state immediately
+        this.updateLocalRolePermissions(roleId, permissionIds, false);
       }
 
-      // Clear pending changes
+  // Show detailed success notification
+  type ChangeSummary = string;
+  const changesMessage: ChangeSummary[] = [];
+      const rolesAffected = new Set([...assignOperations.keys(), ...revokeOperations.keys()]);
+      
+      if (totalAssignments > 0) {
+        changesMessage.push(`${totalAssignments} permission${totalAssignments === 1 ? '' : 's'} assigned`);
+      }
+      if (totalRevocations > 0) {
+        changesMessage.push(`${totalRevocations} permission${totalRevocations === 1 ? '' : 's'} revoked`);
+      }
+      
+      const roleNames = Array.from(rolesAffected).map(roleId => {
+        const role = this.roles.find(r => r.id === roleId);
+        return role ? role.name : `Role ${roleId}`;
+      }).join(', ');
+      
+      // Clear pending changes first
       this.resetMatrixChanges();
       
-      // Refresh data
-      this.loadData();
+      // Update UI immediately to show changes are being processed
+      this.cdr.detectChanges();
       
-      console.log('Matrix changes saved successfully');
+      // Show notification immediately
+      setTimeout(() => {
+        this.notificationService.show({
+          type: 'success',
+          title: 'Permissions Updated Successfully',
+          message: `${changesMessage.join(', ')} across ${rolesAffected.size} role${rolesAffected.size === 1 ? '' : 's'}: ${roleNames}`,
+          autoClose: true,
+          duration: 8000
+        });
+      }, 100); // Small delay to ensure UI is updated
+      
+      // Refresh data in background to ensure consistency
+      this.loadData().then(() => {
+        console.log('✅ Data refreshed after permission changes');
+      });
     } catch (error) {
       console.error('Failed to save matrix changes:', error);
+      
+      // Show detailed error based on the error type
+      let errorMessage = 'Failed to update role permissions. Please try again.';
+      if (error instanceof Error) {
+        errorMessage = `Update failed: ${error.message}`;
+      }
+      
+      this.notificationService.error(
+        'Permission Update Failed',
+        errorMessage
+      );
     } finally {
       this.loading = false;
     }
@@ -851,11 +907,44 @@ export class PermissionManagementComponent implements OnInit, OnDestroy {
     this.pendingChanges = [];
   }
 
+
+  updateLocalRolePermissions(roleId: number, permissionIds: number[], assigned: boolean): void {
+    const role = this.roles.find(r => r.id === roleId);
+    if (!role) return;
+
+    if (assigned) {
+      // Add permissions to role
+      const permissionsToAdd = this.permissions.filter(p => permissionIds.includes(p.id));
+      if (!role.permissions) {
+        role.permissions = [];
+      }
+      permissionsToAdd.forEach(permission => {
+        if (!role.permissions!.some(p => p.id === permission.id)) {
+          role.permissions!.push(permission);
+        }
+      });
+    } else {
+      // Remove permissions from role
+      if (role.permissions) {
+        role.permissions = role.permissions.filter(p => !permissionIds.includes(p.id));
+      }
+    }
+    
+    // Update stats immediately
+    this.updateStats();
+    
+    // Trigger change detection
+    this.cdr.detectChanges();
+  }
+
+
+
   onResourceFilterChange(event: Event): void {
     const target = event.target as HTMLSelectElement;
     this.selectedResource = target.value;
     this.filterData();
   }
+
 
   // Tracking functions for performance
   trackPermission(index: number, permission: Permission): number {
