@@ -4,13 +4,15 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { SprintService } from './sprint.service';
 import { HttpClient } from '@angular/common/http';
+import { ProductModule } from './sprint-details.component';
 
 interface DialogTaskItem {
 	id: number;
-	mitsNo: string;
+	mitsId: string;
 	title: string;
 	productModuleId?: number;
 	taskType?: any;
+	tasktypeid?: number;
 	assigneeUserId?: number;
 	status?: string;
 	priority?: string;
@@ -27,9 +29,12 @@ interface DialogTaskItem {
 	styleUrls: ['./sprint-add-tasks-dialog.component.scss']
 })
 export class SprintAddTasksDialogComponent implements OnInit, OnChanges {
+	
 	@Input() open = false;
 	@Input() sprintId!: number;
 	@Input() teamId!: number; // initial team context
+	@Input() productModules!: ProductModule[]; // initial team context
+	@Input() jobTypes!: { id: number; name: string, description: string }[]; // initial team context
 	@Output() close = new EventEmitter<void>();
 	@Output() added = new EventEmitter<number[]>();
 
@@ -122,7 +127,7 @@ export class SprintAddTasksDialogComponent implements OnInit, OnChanges {
 		if (term) {
 			list = list.filter(t => 
 				t.title?.toLowerCase().includes(term) || 
-				t.mitsNo?.toLowerCase().includes(term)
+				t.mitsId?.toLowerCase().includes(term)
 			);
 			console.log('After search filter:', list.length);
 		}
@@ -169,4 +174,22 @@ export class SprintAddTasksDialogComponent implements OnInit, OnChanges {
 	}
 
 	closeDialog() { this.close.emit(); }
+
+	/**
+	 * Returns the name of the product module for a given id, or '—' if not found.
+	 */
+	getProductModuleName(id?: number): string {
+		if (!id || !Array.isArray(this.productModules)) return '—';
+		const mod = this.productModules.find(m => m.id === id);
+		return mod?.name || '—';
+	}
+
+	/**
+	 * Returns the name of the task type for a given id, or '—' if not found.
+	 */
+	getTaskTypeName(id?: number): string {
+		if (!id || !Array.isArray(this.jobTypes)) return '—';
+		const task = this.jobTypes.find(m => m.id === id);
+		return task?.name || '—';
+	}
 }
