@@ -16,10 +16,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 
 /**
  * Session Validation Filter
@@ -158,20 +155,29 @@ public class SessionValidationFilter extends OncePerRequestFilter {
 
     private void setupSecurityContext(UserSessionMetadata session) {
         // Create authorities from user roles and permissions
-        List<SimpleGrantedAuthority> authorities = Collections.emptyList();
+        List<SimpleGrantedAuthority> authorities = new ArrayList<>();
         
-        if (session.getPrimaryRole() != null) {
-            authorities = List.of(new SimpleGrantedAuthority("ROLE_" + session.getPrimaryRole()));
+        // Add role authorities (ROLE_ prefix for Spring Security)
+        Set<String> roles = parseJsonToSet(session.getRolesJson());
+        for (String role : roles) {
+            authorities.add(new SimpleGrantedAuthority("ROLE_" + role));
+        }
+        
+        // Add permission authorities (no prefix for permissions)
+        Set<String> permissions = parseJsonToSet(session.getPermissionsJson());
+        for (String permission : permissions) {
+            authorities.add(new SimpleGrantedAuthority(permission));
         }
 
         // DETAILED SECURITY CONTEXT DEBUG LOGS
         System.out.println("=== SECURITY CONTEXT SETUP DEBUG ===");
         System.out.println("Session Primary Role: " + session.getPrimaryRole());
-        System.out.println("Authorities Created: " + authorities);
-        System.out.println("Authority Count: " + authorities.size());
-        if (!authorities.isEmpty()) {
-            authorities.forEach(auth -> System.out.println("Authority: " + auth.getAuthority()));
-        }
+        System.out.println("Session Roles JSON: " + session.getRolesJson());
+        System.out.println("Session Permissions JSON: " + session.getPermissionsJson());
+        System.out.println("Parsed Roles: " + roles);
+        System.out.println("Parsed Permissions: " + permissions);
+        System.out.println("Total Authorities Created: " + authorities.size());
+        authorities.forEach(auth -> System.out.println("Authority: " + auth.getAuthority()));
         System.out.println("Username for Auth Token: " + session.getUsername());
         System.out.println("=====================================");
 
@@ -207,5 +213,21 @@ public class SessionValidationFilter extends OncePerRequestFilter {
         );
         
         response.getWriter().write(jsonResponse);
+    }
+    
+    /**
+     * Parse JSON string to Set of Strings
+     */
+    private Set<String> parseJsonToSet(String jsonString) {
+        if (jsonString == null || jsonString.trim().isEmpty()) {
+            return Collections.emptySet();
+        }
+        
+        try {
+            return objectMapper.readValue(jsonString, objectMapper.getTypeFactory().constructCollectionType(Set.class, String.class));
+        } catch (Exception e) {
+            log.warn("Failed to parse JSON to Set: {}", jsonString, e);
+            return Collections.emptySet();
+        }
     }
 }
