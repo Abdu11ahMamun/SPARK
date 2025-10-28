@@ -26,7 +26,7 @@ import java.util.HashSet;
 @Entity
 @Table(name = SchemaConstant.USER_SESSION_METADATA_TABLE_NAME, 
        indexes = {
-           @Index(name = "idx_session_token", columnList = "session_token"),
+           @Index(name = "idx_session_id", columnList = "session_id"),
            @Index(name = "idx_user_active", columnList = "user_id, active"),
            @Index(name = "idx_expires_at", columnList = "expires_at")
        })
@@ -54,9 +54,21 @@ public class UserSessionMetadata {
     private User user;
 
     /**
+     * User ID for quick access without joining to user table
+     */
+    @Column(name = "user_id", insertable = false, updatable = false)
+    private Long userId;
+
+    /**
+     * Username for quick access without joining to user table
+     */
+    @Column(name = "username", nullable = false, length = 100)
+    private String username;
+
+    /**
      * Unique session token for this login session
      */
-    @Column(name = "session_token", nullable = false, unique = true, length = 255)
+    @Column(name = "session_id", nullable = false, unique = true, length = 255)
     private String sessionToken;
 
     /**
@@ -245,16 +257,16 @@ public class UserSessionMetadata {
     }
 
     /**
-     * Get username from user entity
+     * Get username from cached field (avoid lazy loading)
      */
     public String getUsername() {
-        return user != null ? user.getUsername() : null;
+        return username;
     }
 
     /**
-     * Get user ID for quick access
+     * Get user ID from cached field (avoid lazy loading)
      */
     public Long getUserId() {
-        return user != null ? user.getId() : null;
+        return userId;
     }
 }

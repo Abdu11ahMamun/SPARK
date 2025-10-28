@@ -90,6 +90,13 @@ public interface UserSessionMetadataRepository extends JpaRepository<UserSession
     int cleanupExpiredSessions(@Param("now") LocalDateTime now);
 
     /**
+     * Clean up inactive sessions (based on last activity)
+     */
+    @Modifying
+    @Query("UPDATE UserSessionMetadata s SET s.active = false WHERE s.lastActivityAt < :cutoffTime AND s.active = true")
+    int cleanupInactiveSessions(@Param("cutoffTime") LocalDateTime cutoffTime);
+
+    /**
      * Find sessions by IP address (security monitoring)
      */
     @Query("SELECT s FROM UserSessionMetadata s WHERE s.ipAddress = :ipAddress AND s.active = true ORDER BY s.createdAt DESC")

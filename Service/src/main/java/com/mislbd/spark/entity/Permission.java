@@ -61,6 +61,8 @@ public class Permission {
     /**
      * Resource/module this permission applies to
      * Examples: users, roles, dashboard, teams, tasks
+
+
      */
     @Column(name = "\"resource\"", nullable = false, length = 50)
     private String resource;

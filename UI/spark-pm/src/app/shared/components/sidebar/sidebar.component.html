@@ -71,120 +71,23 @@
   </div>
   
   <ul class="sidebar-menu">
-    <li>
-      <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" [title]="isCollapsed() ? 'Dashboard' : ''">
-        <span class="menu-icon" [innerHTML]="icons.home"></span>
-        <span class="menu-text" [class.hidden]="isCollapsed()">Dashboard</span>
-      </a>
-    </li>
-    
-    <!-- Management Section -->
-    <li class="menu-section-divider" [class.hidden]="isCollapsed()">
-      <span class="section-title">Management</span>
-    </li>
-    <li>
-      <a routerLink="/teams" routerLinkActive="active" [title]="isCollapsed() ? 'Team Management' : ''">
-        <span class="menu-icon" [innerHTML]="icons.teamList"></span>
-        <span class="menu-text" [class.hidden]="isCollapsed()">Team Management</span>
-      </a>
-    </li>
-    <li>
-      <a routerLink="/users" routerLinkActive="active" [title]="isCollapsed() ? 'User Management' : ''">
-        <span class="menu-icon" [innerHTML]="icons.userInfo"></span>
-        <span class="menu-text" [class.hidden]="isCollapsed()">User Management</span>
-      </a>
-    </li>
-    <li>
-      <a routerLink="/products" routerLinkActive="active" [title]="isCollapsed() ? 'Products' : ''">
-        <span class="menu-icon" [innerHTML]="icons.productList"></span>
-        <span class="menu-text" [class.hidden]="isCollapsed()">Products</span>
-      </a>
-    </li>
-    <li>
-      <a routerLink="/product-modules" routerLinkActive="active" [title]="isCollapsed() ? 'Product Modules' : ''">
-        <span class="menu-icon" [innerHTML]="icons.productModule"></span>
-        <span class="menu-text" [class.hidden]="isCollapsed()">Product Modules</span>
-      </a>
-    </li>
-    <li>
-      <a routerLink="/roles" routerLinkActive="active" [title]="isCollapsed() ? 'Roles' : ''">
-        <span class="menu-icon" [innerHTML]="icons.roles"></span>
-        <span class="menu-text" [class.hidden]="isCollapsed()">Roles</span>
-      </a>
-    </li>
-    <li>
-      <a routerLink="/permissions" routerLinkActive="active" [title]="isCollapsed() ? 'Permission Management' : ''">
-        <span class="menu-icon" [innerHTML]="icons.permissions"></span>
-        <span class="menu-text" [class.hidden]="isCollapsed()">Permission Management</span>
-      </a>
-    </li>
-    <li>
-      <a routerLink="/task-types" routerLinkActive="active" [title]="isCollapsed() ? 'Task Types' : ''">
-        <span class="menu-icon" [innerHTML]="icons.taskTypes"></span>
-        <span class="menu-text" [class.hidden]="isCollapsed()">Task Types</span>
-      </a>
-    </li>
-
-    <!-- Task & Backlog Management Section -->
-    <li class="menu-section-divider" [class.hidden]="isCollapsed()">
-      <span class="section-title">Task & Backlog</span>
-    </li>
-    <li>
-      <a routerLink="/my-tasks" routerLinkActive="active" [title]="isCollapsed() ? 'My Tasks' : ''">
-        <span class="menu-icon" [innerHTML]="icons.myTasks"></span>
-        <span class="menu-text" [class.hidden]="isCollapsed()">My Tasks</span>
-      </a>
-    </li>
-    <li>
-      <a routerLink="/backlog" routerLinkActive="active" [title]="isCollapsed() ? 'Backlog Management' : ''">
-        <span class="menu-icon" [innerHTML]="icons.backlog"></span>
-        <span class="menu-text" [class.hidden]="isCollapsed()">Backlog Management</span>
-      </a>
-    </li>
-
-    <!-- Sprint Management Section -->
-    <li class="menu-section-divider" [class.hidden]="isCollapsed()">
-      <span class="section-title">Sprint Management</span>
-    </li>
-    <li>
-      <a routerLink="/sprints" routerLinkActive="active" [title]="isCollapsed() ? 'Sprint Management' : ''">
-        <span class="menu-icon" [innerHTML]="icons.sprints"></span>
-        <span class="menu-text" [class.hidden]="isCollapsed()">Sprint Management</span>
-      </a>
-    </li>
-
-    <!-- Reports Section -->
-    <li class="menu-section-divider" [class.hidden]="isCollapsed()">
-      <span class="section-title">Reports</span>
-    </li>
-    <li class="menu-item-disabled">
-      <span class="menu-icon" [innerHTML]="icons.comparativeStatement"></span>
-      <span class="menu-text" [class.hidden]="isCollapsed()">
-        Comparative Statement
-        <small class="dev-badge">Under Development</small>
-      </span>
-    </li>
-    <li class="menu-item-disabled">
-      <span class="menu-icon" [innerHTML]="icons.summaryReport"></span>
-      <span class="menu-text" [class.hidden]="isCollapsed()">
-        Summary Report
-        <small class="dev-badge">Under Development</small>
-      </span>
-    </li>
-    <li class="menu-item-disabled">
-      <span class="menu-icon" [innerHTML]="icons.userComparative"></span>
-      <span class="menu-text" [class.hidden]="isCollapsed()">
-        User Comparative
-        <small class="dev-badge">Under Development</small>
-      </span>
-    </li>
-    <li class="menu-item-disabled">
-      <span class="menu-icon" [innerHTML]="icons.backlogTaskAssigned"></span>
-      <span class="menu-text" [class.hidden]="isCollapsed()">
-        Backlog Task Assigned
-        <small class="dev-badge">Under Development</small>
-      </span>
-    </li>
+    <ng-container *ngFor="let item of visibleMenuItems()">
+      <!-- Section Divider -->
+      <li *ngIf="item.section" class="menu-section-divider" [class.hidden]="isCollapsed()">
+        <span class="section-title">{{ item.label }}</span>
+      </li>
+      <!-- Regular Item -->
+      <li *ngIf="!item.section" [class.menu-item-disabled]="item.disabled">
+        <a *ngIf="item.path" [routerLink]="item.path" routerLinkActive="active" [routerLinkActiveOptions]="{exact: item.path==='/' }" [title]="isCollapsed() ? item.label : ''">
+          <span class="menu-icon" [innerHTML]="icons[item.iconKey]"></span>
+          <span class="menu-text" [class.hidden]="isCollapsed()">{{ item.label }} <small *ngIf="item.devNote" class="dev-badge">{{ item.devNote }}</small></span>
+        </a>
+        <div *ngIf="!item.path" class="menu-text" [class.hidden]="isCollapsed()">
+          <span class="menu-icon" [innerHTML]="icons[item.iconKey]"></span>
+          {{ item.label }}
+        </div>
+      </li>
+    </ng-container>
   </ul>
 
 </nav>

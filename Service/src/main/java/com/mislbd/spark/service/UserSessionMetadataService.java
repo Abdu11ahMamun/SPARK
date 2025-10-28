@@ -99,6 +99,7 @@ public class UserSessionMetadataService {
         // Create session metadata
         UserSessionMetadata sessionMetadata = UserSessionMetadata.builder()
             .user(user)
+            .username(user.getUsername())
             .sessionToken(sessionToken)
             .rolesJson(rolesJson)
             .permissionsJson(permissionsJson)
@@ -175,6 +176,17 @@ public class UserSessionMetadataService {
         int cleaned = sessionRepository.cleanupExpiredSessions(LocalDateTime.now());
         if (cleaned > 0) {
             log.info("Cleaned up {} expired sessions", cleaned);
+        }
+    }
+
+    /**
+     * Clean up inactive sessions (scheduled task)
+     */
+    public void cleanupInactiveSessions(int inactivityMinutes) {
+        LocalDateTime cutoffTime = LocalDateTime.now().minusMinutes(inactivityMinutes);
+        int cleaned = sessionRepository.cleanupInactiveSessions(cutoffTime);
+        if (cleaned > 0) {
+            log.info("Cleaned up {} inactive sessions (inactive for >{}m)", cleaned, inactivityMinutes);
         }
     }
 

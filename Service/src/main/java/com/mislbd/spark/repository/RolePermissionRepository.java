@@ -153,6 +153,8 @@ public interface RolePermissionRepository extends JpaRepository<RolePermission, 
            "COUNT(DISTINCT rp.permission.id) as permissionsAssigned " +
            "FROM RolePermission rp")
     Object[] getRolePermissionStatistics();
+
+
     
     // Additional methods needed by the services
     

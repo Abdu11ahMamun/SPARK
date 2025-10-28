@@ -1,3 +1,4 @@
+
 /**
  * Permission constants and enums for RBAC system
  * These constants must match the backend Permission entity

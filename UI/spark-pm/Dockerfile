@@ -1,3 +1,4 @@
+
 # Multi-stage build for Angular application
 FROM node:20-alpine AS build
 

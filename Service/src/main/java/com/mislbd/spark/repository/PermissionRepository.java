@@ -136,6 +136,7 @@ public interface PermissionRepository extends JpaRepository<Permission, Long> {
            "COUNT(CASE WHEN p.active = true THEN 1 END) as activePermissions " +
            "FROM Permission p")
     Object[] getPermissionStatistics();
+
     
     // Additional methods needed by PermissionService
     

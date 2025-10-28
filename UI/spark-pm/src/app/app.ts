@@ -19,8 +19,10 @@ export class App {
 
   showLayout = computed(() => {
     const url = this.currentUrl();
-    // Hide sidebar & notifications on login route or when not authenticated
-    return this.auth.isAuthenticated() && !url.startsWith('/login');
+    // Hide sidebar & notifications on login or unauthorized pages, or when not authenticated
+    const publicRoutes = ['/login', '/unauthorized'];
+    const isPublicRoute = publicRoutes.some(route => url.startsWith(route));
+    return this.auth.isAuthenticated() && !isPublicRoute;
   });
 
   constructor(private router: Router, private auth: AuthService) {

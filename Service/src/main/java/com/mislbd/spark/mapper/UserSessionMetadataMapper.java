@@ -1,6 +1,7 @@
 package com.mislbd.spark.mapper;
 
 import com.mislbd.spark.dto.UserSessionMetadataDto;
+import com.mislbd.spark.dto.LoginResponse;
 import com.mislbd.spark.entity.UserSessionMetadata;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -151,6 +152,25 @@ public class UserSessionMetadataMapper {
             log.warn("Failed to parse JSON to Set: {}", json, e);
             return Collections.emptySet();
         }
+    }
+
+    /**
+     * Convert entity to UserSessionDto for login response
+     */
+    public LoginResponse.UserSessionDto toUserDto(UserSessionMetadata entity) {
+        if (entity == null) return null;
+
+        return LoginResponse.UserSessionDto.builder()
+            .id(entity.getId())
+            .username(entity.getUsername())
+            .displayName(entity.getDisplayName())
+            .email(entity.getEmail())
+            .primaryRole(entity.getPrimaryRole())
+            .isAdmin(entity.getIsAdmin())
+            .isSystemAdmin(entity.getIsSystemAdmin())
+            .permissionsCount(entity.getPermissionsCount())
+            .rolesCount(entity.getRolesCount())
+            .build();
     }
 
     /**

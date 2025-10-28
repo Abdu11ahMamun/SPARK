@@ -19,6 +19,8 @@ import java.time.LocalDateTime;
  * @since 2025-10-12
  */
 @Entity
+
+
 @Table(name = SchemaConstant.ROLE_PERMISSION_TABLE_NAME)
 @Getter
 @Setter

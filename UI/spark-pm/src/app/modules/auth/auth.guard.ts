@@ -7,8 +7,15 @@ export const authGuard: CanActivateFn = (route: ActivatedRouteSnapshot, state: R
   const router = inject(Router);
   const authenticated = auth.isAuthenticated();
   console.debug('[authGuard] state.url=', state.url, 'authenticated=', authenticated);
-  if (authenticated) { return true; }
+  
+  if (authenticated) { 
+    // Update activity on route access
+    auth.refreshSession();
+    return true; 
+  }
+  
+  // Session invalid or expired, redirect to login
+  console.log('🔐 Access denied - session invalid, redirecting to login');
   const tree = router.createUrlTree(['/login'], { queryParams: { returnUrl: state.url } });
-  console.debug('[authGuard] Redirecting to /login with returnUrl', state.url);
   return tree;
 };

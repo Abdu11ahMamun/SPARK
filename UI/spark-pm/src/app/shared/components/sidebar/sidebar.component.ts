@@ -1,7 +1,9 @@
-import { Component, signal, output, effect } from '@angular/core';
+import { Component, signal, output, effect, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink, RouterLinkActive } from '@angular/router';
-import { sidebarIcons } from './sidebar-icons';
+import { sidebarIcons, SidebarIconKey } from './sidebar-icons';
+import { MENU_ITEMS } from '../../config/menu.config';
+import { MenuItem } from '../../models/menu-item.model';
 import { AuthService } from '../../../modules/auth/auth.service';
 
 @Component({
@@ -12,7 +14,8 @@ import { AuthService } from '../../../modules/auth/auth.service';
   styleUrls: ['./sidebar.component.scss']
 })
 export class SidebarComponent {
-  icons = sidebarIcons;
+  // Typed icon map - ensures template indexing safety
+  icons: Record<SidebarIconKey, string> = sidebarIcons;
   isCollapsed = signal(false);
   sidebarToggled = output<boolean>();
 
@@ -25,8 +28,28 @@ export class SidebarComponent {
   fullName = signal<string>('John Doe'); // Default full name - can be updated from backend
   userEmail = signal<string>('user@example.com'); // Default email - can be updated from backend
 
+  // Full menu definition
+  private allMenuItems: MenuItem[] = MENU_ITEMS;
+
+  // Filtered menu based on permissions
+  visibleMenuItems = computed(() => {
+    return this.allMenuItems.filter(item => {
+      // Section markers always shown (permission gating handled by children)
+      if (item.section) return true;
+      if (!item.requiredPermissions || item.requiredPermissions.length === 0) return true;
+      // Admin wildcard '*' permission support
+      const profile = this.auth.userProfile();
+      const userPerms = profile?.permissions || [];
+      if (userPerms.includes('*')) return true;
+      const has = item.requireAll
+        ? item.requiredPermissions.every(p => this.auth.hasPermission(p))
+        : item.requiredPermissions.some(p => this.auth.hasPermission(p));
+      return has;
+    });
+  });
+
   constructor(private auth: AuthService) {
-    this.username.set(this.auth.username() || 'User');
+  this.username.set(this.auth.username() || 'User');
     
     // Get enhanced user data from auth service
     const userProfile = this.auth.userProfile();
@@ -62,15 +85,12 @@ export class SidebarComponent {
   toggleUserMenu(ev: Event) { 
     ev.preventDefault(); 
     const newState = !this.userMenuOpen();
-    console.log('Toggling user menu:', newState); // Debug log
     this.userMenuOpen.set(newState); 
   }
   closeUserMenu() { 
-    console.log('Closing user menu'); // Debug log
     this.userMenuOpen.set(false); 
   }
   logout() { 
-    console.log('Logout clicked'); // Debug log
     this.auth.logout(); 
   }
 }

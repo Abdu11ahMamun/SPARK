@@ -3,6 +3,7 @@ package com.mislbd.spark.service;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,6 +26,9 @@ public class DatabaseInitializationService implements CommandLineRunner {
     
     @Autowired
     private JdbcTemplate jdbcTemplate;
+    
+    @Autowired
+    private PasswordEncoder passwordEncoder;
     
     @Override
     @Transactional
@@ -71,6 +75,15 @@ public class DatabaseInitializationService implements CommandLineRunner {
             
         } catch (Exception e) {
             logger.warning("Some DDL operations failed (this is normal if tables already exist): " + e.getMessage());
+        }
+        
+        // Always try to update session metadata table schema (even if tables already exist)
+        try {
+            logger.info("Updating session metadata table schema...");
+            updateSessionMetadataTable();
+            logger.info("Session metadata table schema update completed");
+        } catch (Exception e) {
+            logger.warning("Session metadata table schema update failed: " + e.getMessage());
         }
     }
     
@@ -222,6 +235,7 @@ public class DatabaseInitializationService implements CommandLineRunner {
                 EXECUTE IMMEDIATE 'CREATE TABLE SPARK_USER_SESSION_METADATA (
                     id NUMBER(19) NOT NULL,
                     user_id NUMBER(19) NOT NULL,
+                    username VARCHAR2(100) NOT NULL,
                     session_token VARCHAR2(255) NOT NULL,
                     roles_json CLOB,
                     permissions_json CLOB,
@@ -289,7 +303,55 @@ public class DatabaseInitializationService implements CommandLineRunner {
             logger.info("Constraint might already exist: chk_role_system");
         }
     }
-    
+
+    private void updateSessionMetadataTable() {
+        // Add missing columns to SPARK_USER_SESSION_METADATA table if they don't exist
+        String[] alterStatements = {
+            "ALTER TABLE SPARK_USER_SESSION_METADATA ADD username VARCHAR2(100)",
+            "ALTER TABLE SPARK_USER_SESSION_METADATA ADD last_activity_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP",
+            "ALTER TABLE SPARK_USER_SESSION_METADATA ADD roles_count NUMBER(10)",
+            "ALTER TABLE SPARK_USER_SESSION_METADATA ADD permissions_count NUMBER(10)",
+            "ALTER TABLE SPARK_USER_SESSION_METADATA ADD roles_json CLOB",
+            "ALTER TABLE SPARK_USER_SESSION_METADATA ADD permissions_json CLOB", 
+            "ALTER TABLE SPARK_USER_SESSION_METADATA ADD resources_json CLOB",
+            "ALTER TABLE SPARK_USER_SESSION_METADATA ADD primary_role VARCHAR2(100)",
+            "ALTER TABLE SPARK_USER_SESSION_METADATA ADD display_name VARCHAR2(150)",
+            "ALTER TABLE SPARK_USER_SESSION_METADATA ADD email VARCHAR2(255)",
+            "ALTER TABLE SPARK_USER_SESSION_METADATA ADD is_admin NUMBER(1) DEFAULT 0",
+            "ALTER TABLE SPARK_USER_SESSION_METADATA ADD is_system_admin NUMBER(1) DEFAULT 0",
+            "ALTER TABLE SPARK_USER_SESSION_METADATA ADD ip_address VARCHAR2(45)",
+            "ALTER TABLE SPARK_USER_SESSION_METADATA ADD user_agent VARCHAR2(500)",
+            "ALTER TABLE SPARK_USER_SESSION_METADATA ADD device_type VARCHAR2(20) DEFAULT 'Web'",
+            "ALTER TABLE SPARK_USER_SESSION_METADATA ADD login_source VARCHAR2(20) DEFAULT 'Manual'",
+            "ALTER TABLE SPARK_USER_SESSION_METADATA ADD notes VARCHAR2(500)"
+        };
+        
+        for (String statement : alterStatements) {
+            try {
+                jdbcTemplate.execute(statement);
+                logger.info("Added missing column to session metadata table: " + statement);
+            } catch (Exception e) {
+                // Column might already exist - this is OK
+                logger.info("Skipped (column might exist): " + statement.substring(0, Math.min(statement.length(), 80)) + "... - " + e.getMessage());
+            }
+        }
+        
+        // Add constraints for the new columns
+        String[] constraintStatements = {
+            "ALTER TABLE SPARK_USER_SESSION_METADATA ADD CONSTRAINT chk_session_is_admin CHECK (is_admin IN (0, 1))",
+            "ALTER TABLE SPARK_USER_SESSION_METADATA ADD CONSTRAINT chk_session_is_system_admin CHECK (is_system_admin IN (0, 1))"
+        };
+        
+        for (String statement : constraintStatements) {
+            try {
+                jdbcTemplate.execute(statement);
+                logger.info("Added constraint to session metadata table: " + statement);
+            } catch (Exception e) {
+                logger.info("Skipped constraint (might exist): " + e.getMessage());
+            }
+        }
+    }
+
     /**
      * Populate database with initial RBAC data if tables are empty
      */
@@ -303,6 +365,18 @@ public class DatabaseInitializationService implements CommandLineRunner {
             } else {
                 logger.info("Permissions already exist, skipping default data creation");
             }
+            
+            // Check if any users exist
+            Integer userCount = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM SPARK_USER", Integer.class);
+            if (userCount == null || userCount == 0) {
+                createDefaultUsers();
+                logger.info("Default users created");
+            } else {
+                logger.info("Users already exist, skipping default user creation");
+            }
+            
+            // Always run user role migration to ensure SPARK_USER_ROLE table is populated
+            migrateUserRolesToUserRoleTable();
             
         } catch (Exception e) {
             logger.info("Error populating initial data: " + e.getMessage());
@@ -358,5 +432,84 @@ public class DatabaseInitializationService implements CommandLineRunner {
         }
         
         logger.info("Default permissions inserted successfully");
+    }
+    
+    /**
+     * Create default users for the system
+     */
+    private void createDefaultUsers() {
+        String[] defaultUsers = {
+            // Admin user
+            String.format("INSERT INTO SPARK_USER (id, firstName, lastName, username, password, email, role, activeStatus, createdate) VALUES (1, 'System', 'Admin', 'admin', '%s', 'admin@spark.local', 'ADMIN', 'ACTIVE', CURRENT_TIMESTAMP)", passwordEncoder.encode("admin123")),
+            // Test user
+            String.format("INSERT INTO SPARK_USER (id, firstName, lastName, username, password, email, role, activeStatus, createdate) VALUES (2, 'Test', 'User', 'testuser', '%s', 'test@spark.local', 'USER', 'ACTIVE', CURRENT_TIMESTAMP)", passwordEncoder.encode("test123")),
+            // Demo user with common credentials
+            String.format("INSERT INTO SPARK_USER (id, firstName, lastName, username, password, email, role, activeStatus, createdate) VALUES (3, 'Demo', 'User', 'demo', '%s', 'demo@spark.local', 'USER', 'ACTIVE', CURRENT_TIMESTAMP)", passwordEncoder.encode("demo")),
+            String.format("INSERT INTO SPARK_USER (id, firstName, lastName, username, password, email, role, activeStatus, createdate) VALUES (4, 'Mamun', 'Khan', 'mamun', '%s', 'mamun@spark.local', 'USER', 'ACTIVE', CURRENT_TIMESTAMP)", passwordEncoder.encode("a")),
+            String.format("INSERT INTO SPARK_USER (id, firstName, lastName, username, password, email, role, activeStatus, createdate) VALUES (5, 'Nayem', 'Ahmed', 'nayem', '%s', 'nayem@spark.local', 'ADMIN', 'ACTIVE', CURRENT_TIMESTAMP)", passwordEncoder.encode("1234"))
+        };
+        
+        for (String sql : defaultUsers) {
+            try {
+                jdbcTemplate.update(sql);
+            } catch (Exception e) {
+                logger.info("User might already exist: " + e.getMessage());
+            }
+        }
+        
+        logger.info("Default users inserted successfully");
+    }
+    
+    /**
+     * Migrate user roles from SPARK_USER.role field to SPARK_USER_ROLE table
+     * This ensures the RBAC system works properly
+     */
+    private void migrateUserRolesToUserRoleTable() {
+        logger.info("Migrating user roles to SPARK_USER_ROLE table...");
+        
+        try {
+            // First, create default roles if they don't exist
+            String[] defaultRoles = {
+                "INSERT INTO SPARK_ROLE (id, name, description, active) VALUES (1, 'ADMIN', 'Administrator with full system access', 1)",
+                "INSERT INTO SPARK_ROLE (id, name, description, active) VALUES (2, 'USER', 'Regular user with basic access', 1)",
+                "INSERT INTO SPARK_ROLE (id, name, description, active) VALUES (3, 'MANAGER', 'Manager with team management access', 1)",
+                "INSERT INTO SPARK_ROLE (id, name, description, active) VALUES (4, 'DEVELOPER', 'Developer with development access', 1)"
+            };
+            
+            for (String sql : defaultRoles) {
+                try {
+                    jdbcTemplate.update(sql);
+                } catch (Exception e) {
+                    logger.info("Role might already exist: " + e.getMessage());
+                }
+            }
+            
+            // Now migrate users to SPARK_USER_ROLE table based on their SPARK_USER.role field
+            String migrationSQL = """
+                INSERT INTO SPARK_USER_ROLE (id, user_id, role_id, active, is_primary, assigned_at, assigned_by)
+                SELECT 
+                    ROWNUM as id,
+                    u.id as user_id,
+                    r.id as role_id,
+                    1 as active,
+                    1 as is_primary,
+                    CURRENT_TIMESTAMP as assigned_at,
+                    'SYSTEM' as assigned_by
+                FROM SPARK_USER u
+                INNER JOIN SPARK_ROLE r ON u.role = r.name
+                WHERE NOT EXISTS (
+                    SELECT 1 FROM SPARK_USER_ROLE ur 
+                    WHERE ur.user_id = u.id AND ur.role_id = r.id
+                )
+                """;
+            
+            int migratedCount = jdbcTemplate.update(migrationSQL);
+            logger.info("Migrated " + migratedCount + " user-role assignments");
+            
+        } catch (Exception e) {
+            logger.severe("Failed to migrate user roles: " + e.getMessage());
+        }
+        
+        logger.info("User role migration completed");
     }
 }

@@ -17,6 +17,8 @@ interface UserProfile {
   permissions?: string[];
   teamIds?: number[];
   teams?: { id: number; name: string; }[];
+  loginTime?: number; // Timestamp when user logged in
+  lastActivity?: number; // Timestamp of last user activity
 }
 
 interface LoginResponse { 
@@ -35,11 +37,22 @@ export class AuthService {
   private tokenKey = 'basicAuthToken';
   private userKey = 'authUser';
   private profileKey = 'userProfile';
+  private sessionTimeoutKey = 'sessionTimeout';
+  
+  // Session configuration (in milliseconds)
+  private readonly SESSION_TIMEOUT = 30 * 60 * 1000; // 30 minutes
+  private readonly INACTIVITY_TIMEOUT = 15 * 60 * 1000; // 15 minutes of inactivity
+  private readonly SESSION_CHECK_INTERVAL = 60 * 1000; // Check every minute
   
   private _username = signal<string | null>(null);
   private _userProfile = signal<UserProfile | null>(null);
+  private sessionCheckInterval: any;
   
-  isAuthenticated = computed(() => !!this._username());
+  isAuthenticated = computed(() => {
+    const hasUser = !!this._username();
+    const isSessionValid = this.isSessionValid();
+    return hasUser && isSessionValid;
+  });
   userProfile = computed(() => this._userProfile());
 
   constructor(
@@ -47,23 +60,34 @@ export class AuthService {
     private router: Router,
     private permissionService: PermissionService
   ) {
+    this.initializeAuth();
+    this.startSessionMonitoring();
+    this.setupActivityTracking();
+  }
+
+  private initializeAuth(): void {
     const stored = localStorage.getItem(this.tokenKey);
     const user = localStorage.getItem(this.userKey);
     const profile = localStorage.getItem(this.profileKey);
     
-    if (stored && user) {
+    if (stored && user && this.isSessionValid()) {
       this._username.set(user);
       if (profile) {
         try {
-          this._userProfile.set(JSON.parse(profile));
+          const parsedProfile = JSON.parse(profile);
+          // Update last activity to current time
+          parsedProfile.lastActivity = Date.now();
+          this._userProfile.set(parsedProfile);
+          this.saveSession(parsedProfile);
         } catch (e) {
           console.warn('Invalid profile data in localStorage');
+          this.clearSession();
         }
       }
-    } else {
-      // For development - auto login as admin
-      console.log('🔧 Development mode: auto-login as admin');
-      this.devAutoLogin();
+    } else if (stored || user || profile) {
+      // Clear invalid/expired session
+      console.log('🔐 Session expired or invalid, clearing auth data');
+      this.clearSession();
     }
   }
 
@@ -134,64 +158,235 @@ export class AuthService {
   // Helper method to switch dev roles for testing
   switchDevRole(role: 'admin' | 'manager' | 'developer'): void {
     localStorage.setItem('dev-role', role);
+    this.logout();
+  }
+
+  // Helper method to create test accounts for login testing
+  createTestUser(username: string, role: 'admin' | 'manager' | 'developer' = 'admin'): { username: string; password: string } {
+    // For testing purposes - return credentials that work with mock login
+    return { username, password: username };
+  }
+
+  // Get session info for debugging
+  getSessionInfo(): any {
+    const profile = this._userProfile();
+    if (!profile) return null;
+
+    const now = Date.now();
+    return {
+      username: profile.username,
+      loginTime: profile.loginTime,
+      lastActivity: profile.lastActivity,
+      sessionAge: profile.loginTime ? now - profile.loginTime : 0,
+      inactivityTime: profile.lastActivity ? now - profile.lastActivity : 0,
+      isValid: this.isSessionValid(),
+      timeUntilExpiry: profile.loginTime ? this.SESSION_TIMEOUT - (now - profile.loginTime) : 0
+    };
+  }
+
+  private startSessionMonitoring(): void {
+    // Clear any existing interval
+    if (this.sessionCheckInterval) {
+      clearInterval(this.sessionCheckInterval);
+    }
+    
+    // Check session validity every minute
+    this.sessionCheckInterval = setInterval(() => {
+      if (!this.isSessionValid()) {
+        console.log('🔐 Session expired, logging out');
+        this.logout();
+      } else {
+        this.checkSessionWarning();
+      }
+    }, this.SESSION_CHECK_INTERVAL);
+  }
+
+  private checkSessionWarning(): void {
+    const profile = this._userProfile();
+    if (!profile || !profile.loginTime) return;
+
+    const now = Date.now();
+    const sessionAge = now - profile.loginTime;
+    const timeUntilExpiry = this.SESSION_TIMEOUT - sessionAge;
+    
+    // Warn when 5 minutes remaining
+    if (timeUntilExpiry <= 5 * 60 * 1000 && timeUntilExpiry > 4 * 60 * 1000) {
+      console.warn('⚠️ Session will expire in 5 minutes');
+      // You can add a notification service call here
+    }
+  }
+
+  private setupActivityTracking(): void {
+    // Track user activity to update lastActivity timestamp
+    const activityEvents = ['click', 'keypress', 'scroll', 'mousemove'];
+    
+    activityEvents.forEach(event => {
+      document.addEventListener(event, () => {
+        this.updateLastActivity();
+      }, { passive: true });
+    });
+  }
+
+  private updateLastActivity(): void {
+    const profile = this._userProfile();
+    if (profile) {
+      const now = Date.now();
+      // Only update if more than 30 seconds have passed (avoid too frequent updates)
+      if (!profile.lastActivity || now - profile.lastActivity > 30000) {
+        profile.lastActivity = now;
+        this._userProfile.set({ ...profile });
+        this.saveSession(profile);
+      }
+    }
+  }
+
+  isLoggedIn(): boolean {
+    const token = localStorage.getItem(this.tokenKey);
+    const username = localStorage.getItem(this.userKey);
+    const profile = this._userProfile();
+    
+    // Check if we have basic auth data
+    const hasAuthData = !!(token && username);
+    
+    // Check if session is still valid (not expired)
+    const hasValidSession = profile ? this.isSessionValid() : false;
+    
+    return hasAuthData && hasValidSession;
+  }
+
+  getUserProfile(): UserProfile | null {
+    return this._userProfile();
+  }
+
+  private handleSessionExpiry(): void {
+    console.log('🔐 Session expired, clearing data and redirecting to login');
+    this.clearSession();
+    this.router.navigate(['/login']);
+  }
+
+  private isSessionValid(): boolean {
+    const profile = this._userProfile();
+    if (!profile || !profile.loginTime) {
+      return false;
+    }
+
+    const now = Date.now();
+    const sessionAge = now - profile.loginTime;
+    const inactivityTime = profile.lastActivity ? now - profile.lastActivity : sessionAge;
+
+    // Check if session has expired due to time limit
+    if (sessionAge > this.SESSION_TIMEOUT) {
+      console.debug('🔐 Session expired due to timeout:', sessionAge / 60000, 'minutes');
+      return false;
+    }
+
+    // Check if session has expired due to inactivity
+    if (inactivityTime > this.INACTIVITY_TIMEOUT) {
+      console.debug('🔐 Session expired due to inactivity:', inactivityTime / 60000, 'minutes');
+      return false;
+    }
+
+    return true;
+  }
+
+  private saveSession(profile: UserProfile): void {
+    localStorage.setItem(this.profileKey, JSON.stringify(profile));
+    localStorage.setItem(this.sessionTimeoutKey, (profile.loginTime! + this.SESSION_TIMEOUT).toString());
+  }
+
+  private clearSession(): void {
     localStorage.removeItem(this.tokenKey);
     localStorage.removeItem(this.userKey);
     localStorage.removeItem(this.profileKey);
-    location.reload(); // Simple reload to trigger auto-login with new role
+    localStorage.removeItem(this.sessionTimeoutKey);
+    this._username.set(null);
+    this._userProfile.set(null);
+  }
+
+  refreshSession(): void {
+    const profile = this._userProfile();
+    if (profile) {
+      const now = Date.now();
+      profile.lastActivity = now;
+      // Optionally extend login time for active users
+      if (profile.loginTime && (now - profile.loginTime) > (this.SESSION_TIMEOUT * 0.75)) {
+        profile.loginTime = now - (this.SESSION_TIMEOUT * 0.25); // Give 75% more time
+        console.log('🔄 Session refreshed due to continued activity');
+      }
+      this._userProfile.set({ ...profile });
+      this.saveSession(profile);
+    }
   }
 
   login(username: string, password: string) {
-    const basic = btoa(`${username}:${password}`);
-    const headers = new HttpHeaders({ 'Authorization': `Basic ${basic}` });
+    const loginRequest = { username, password };
     
-    return this.http.get<LoginResponse>(`${environment.apiUrl}/api/users/me`, { headers })
+    return this.http.post<any>(`${environment.apiUrl}/api/auth/login`, loginRequest)
       .toPromise()
       .then(res => {
-        if (!res) throw new Error('No response received');
+        if (!res || !res.sessionToken) throw new Error('No session token received');
         
-        // Store basic auth data
-        localStorage.setItem(this.tokenKey, basic);
-        localStorage.setItem(this.userKey, username);
-        this._username.set(username);
+        console.log('🔐 Login successful, received session token');
         
-        // Create and store user profile
+        // Store session token (Bearer format for API calls)
+        localStorage.setItem(this.tokenKey, res.sessionToken);
+        localStorage.setItem(this.userKey, res.user.username);
+        this._username.set(res.user.username);
+        
+        // Create user profile with session timestamps and server data
+        const now = Date.now();
         const profile: UserProfile = {
-          id: res.id,
-          username: res.username || username,
-          firstName: res.firstName,
-          lastName: res.lastName,
-          email: res.email || `${username}@company.com`, // fallback email
-          roles: res.roles || ['USER'],
-          teamIds: res.teamIds || [],
-          teams: res.teams || []
+          id: res.user.id,
+          username: res.user.username,
+          firstName: res.user.displayName?.split(' ')[0] || res.user.username,
+          lastName: res.user.displayName?.split(' ')[1] || '',
+          email: res.user.email || `${username}@company.com`,
+          roles: Array.from(res.roles || ['USER']),
+          permissions: Array.from(res.permissions || []),
+          teamIds: [],
+          teams: [],
+          loginTime: now,
+          lastActivity: now
         };
         
-        localStorage.setItem(this.profileKey, JSON.stringify(profile));
+        this.saveSession(profile);
         this._userProfile.set(profile);
         
-        // Load user permissions after successful login
-        this.loadUserPermissions().catch(error => {
-          console.warn('Failed to load permissions after login:', error);
-        });
-        
+        console.log('✅ Session established with', res.permissions?.size || 0, 'permissions');
         return true;
       })
       .catch(err => {
+        console.error('🔐 Login failed:', err);
         throw err;
       });
   }
 
   getAuthHeader(): string | null {
     const token = localStorage.getItem(this.tokenKey);
-    return token ? `Basic ${token}` : null;
+    return token ? `Bearer ${token}` : null;
   }
 
   logout() {
-    localStorage.removeItem(this.tokenKey);
-    localStorage.removeItem(this.userKey);
-    localStorage.removeItem(this.profileKey);
-    this._username.set(null);
-    this._userProfile.set(null);
+    // Clear session monitoring
+    if (this.sessionCheckInterval) {
+      clearInterval(this.sessionCheckInterval);
+    }
+    
+    // Call backend logout if we have a session
+    const token = localStorage.getItem(this.tokenKey);
+    if (token) {
+      this.http.post(`${environment.apiUrl}/api/auth/logout`, {}, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      }).subscribe({
+        next: () => console.log('🔐 Backend session invalidated'),
+        error: (err) => console.warn('Failed to invalidate backend session:', err)
+      });
+    }
+    
+    // Clear all session data
+    this.clearSession();
+    
+    console.log('🔐 User logged out');
     this.router.navigate(['/login']);
   }
 
@@ -210,6 +405,58 @@ export class AuthService {
   
   getUserRoles(): string[] {
     return this._userProfile()?.roles || [];
+  }
+
+  getAllPermissions(): string[] {
+    const profile = this._userProfile();
+    return profile?.permissions || [];
+  }
+
+  // Convenience wrapper (alias) for readability in some consumers
+  getPermissions(): string[] { return this.getAllPermissions(); }
+
+  hasAny(permissions: string[]): boolean {
+    const perms = this.getAllPermissions();
+    if (perms.includes('*')) return true;
+    return permissions.some(p => this.hasPermission(p));
+  }
+
+  hasAll(permissions: string[]): boolean {
+    const perms = this.getAllPermissions();
+    if (perms.includes('*')) return true;
+    return permissions.every(p => this.hasPermission(p));
+  }
+
+  /**
+   * Determine the first accessible app route path for the current user.
+   * Used for initial redirect after login or root navigation.
+   * Order priority mirrors main navigation layout.
+   */
+  firstAccessiblePath(): string {
+    // If wildcard, default to dashboard root
+    const perms = this.getAllPermissions();
+    if (perms.includes('*')) return '/';
+
+    const ordered: { path: string; any: string[]; all?: string[] }[] = [
+      { path: '/dashboard', any: ['DASHBOARD_VIEW'] },
+      { path: '/my-tasks', any: ['TASK_VIEW'] },
+      { path: '/backlog', any: ['BACKLOG_VIEW','TASK_VIEW'] },
+      { path: '/sprints', any: ['SPRINT_VIEW','TASK_VIEW'] },
+      { path: '/teams', any: ['TEAM_VIEW'] },
+      { path: '/users', any: ['USER_VIEW'] },
+      { path: '/products', any: ['PROJECT_VIEW','MODULE_VIEW','PRODUCT_VIEW'] },
+      { path: '/product-modules', any: ['MODULE_VIEW'] },
+      { path: '/roles', any: ['ROLE_VIEW'] },
+      { path: '/permissions', any: ['SYSTEM_ADMIN','ROLE_VIEW','USER_VIEW'] },
+      { path: '/task-types', any: ['TASK_VIEW'] }
+    ];
+
+    for (const entry of ordered) {
+      const allowed = this.hasAny(entry.any) && (!entry.all || this.hasAll(entry.all));
+      if (allowed) return entry.path;
+    }
+    // Fallback if nothing matched and user is authenticated
+    return '/unauthorized';
   }
   
   getUserTeams(): { id: number; name: string; }[] {
@@ -269,18 +516,24 @@ export class AuthService {
   // RBAC Permission Methods
   hasPermission(permission: string): boolean {
     const profile = this._userProfile();
-    if (!profile) return false;
+    if (!profile) {
+      console.debug('[hasPermission] No profile', permission);
+      return false;
+    }
 
-    // Check direct permissions
-    if (profile.permissions?.includes(permission)) {
+    // Check direct permissions (including wildcard *)
+    if (profile.permissions?.includes(permission) || profile.permissions?.includes('*')) {
+      console.debug('[hasPermission] Permission granted via direct/wildcard', permission, profile.permissions);
       return true;
     }
 
     // Check role-based permissions (fallback if permissions not loaded)
     if (profile.roles?.includes('ADMIN')) {
+      console.debug('[hasPermission] Permission granted via ADMIN role', permission);
       return true;
     }
 
+    console.debug('[hasPermission] Permission denied', permission, 'user permissions:', profile.permissions, 'roles:', profile.roles);
     return false;
   }
 
@@ -307,6 +560,55 @@ export class AuthService {
     } else {
       return requiredPermissions.some(permission => this.hasPermission(permission));
     }
+  }
+
+  validateSession(): Observable<boolean> {
+    if (!this.isLoggedIn()) {
+      console.log('🚫 No active session found');
+      return of(false);
+    }
+
+    // First check local session expiry for quick validation
+    const profile = this.getUserProfile();
+    if (profile && profile.loginTime && profile.lastActivity) {
+      const now = Date.now();
+      const sessionAge = now - profile.loginTime;
+      const timeSinceActivity = now - profile.lastActivity;
+
+      if (sessionAge > this.SESSION_TIMEOUT || timeSinceActivity > this.INACTIVITY_TIMEOUT) {
+        console.log('⏰ Local session validation failed');
+        this.handleSessionExpiry();
+        return of(false);
+      }
+    }
+
+    // Validate with backend
+    const token = localStorage.getItem(this.tokenKey);
+    if (!token) {
+      return of(false);
+    }
+
+    return this.http.get<any>(`${environment.apiUrl}/api/auth/validate`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    }).pipe(
+      map((response) => {
+        if (response.valid) {
+          console.log('✅ Backend session validation successful');
+          // Update last activity time
+          this.updateLastActivity();
+          return true;
+        } else {
+          console.log('🚫 Backend session validation failed');
+          this.handleSessionExpiry();
+          return false;
+        }
+      }),
+      catchError((error) => {
+        console.error('❌ Session validation error:', error);
+        this.handleSessionExpiry();
+        return of(false);
+      })
+    );
   }
 
   async loadUserPermissions(): Promise<void> {
@@ -357,6 +659,11 @@ export class AuthService {
   }
 
   private getMockPermissionsForUser(profile: UserProfile): string[] {
+    // If user already has wildcard permission, keep it
+    if (profile.permissions?.includes('*')) {
+      return ['*'];
+    }
+    
     // Mock permissions based on user roles using the actual permission codes from the API
     const rolePermissions: { [key: string]: string[] } = {
       'ADMIN': [
