@@ -36,7 +36,7 @@ interface UserProgress {
 }
 
 // Additional interfaces for component use
-interface ProductModule {
+export interface ProductModule {
   id: number;
   name: string;
   productId: number;
@@ -75,7 +75,7 @@ export class SprintDetailsComponent implements OnInit, AfterViewInit, OnDestroy 
   sprintCapacities: SprintCapacity[] = [];
   userProgress: UserProgress[] = [];
   // Cached job types/modules (will lazily load when first needed)
-  jobTypes: { id: number; type: string }[] = [];
+  jobTypes: { id: number; name: string, description: string }[] = [];
 
   // Inline edit state
   editingTaskId: number | null = null;
@@ -182,7 +182,7 @@ export class SprintDetailsComponent implements OnInit, AfterViewInit, OnDestroy 
       users: this.http.get<User[]>(`${environment.apiUrl}/api/users`),
       products: this.http.get<Product[]>(`${environment.apiUrl}/api/products`).pipe(delay(0)),
       productModules: this.http.get<ProductModule[]>(`${environment.apiUrl}/api/product-modules`).pipe(delay(0)),
-      jobTypes: this.http.get<{id:number; type:string}[]>(`${environment.apiUrl}/api/job-types`).pipe(delay(0))
+      jobTypes: this.http.get<{id:number; name:string; description:string;}[]>(`${environment.apiUrl}/api/job-types`).pipe(delay(0))
     }).pipe(
       delay(100) // Small delay to ensure component is ready
     ).subscribe({
@@ -578,7 +578,7 @@ export class SprintDetailsComponent implements OnInit, AfterViewInit, OnDestroy 
     if (typeof taskType === 'string' && isNaN(Number(taskType))) return taskType; // already a label
     const id = typeof taskType === 'string' ? Number(taskType) : taskType;
     const jt = this.jobTypes.find(j => j.id === id);
-    return jt?.type || this.fallbackTaskType(id);
+    return jt?.name || this.fallbackTaskType(id);
   }
 
   private fallbackTaskType(id: number): string {
@@ -758,10 +758,11 @@ export class SprintDetailsComponent implements OnInit, AfterViewInit, OnDestroy 
         this.editingTaskId = null;
         this.editBuffer = {};
         this.showInlineCalcFor = null;
-        this.groupTasksToKanban();
-        this.calculateUserProgress();
-        this.buildBurndown();
-        this.cdr.detectChanges();
+        this.fetchAll();
+        // this.groupTasksToKanban();
+        // this.calculateUserProgress();
+        // this.buildBurndown();
+        // this.cdr.detectChanges();
       },
       error: (err) => {
         console.error('Failed to persist task inline edit', err);
