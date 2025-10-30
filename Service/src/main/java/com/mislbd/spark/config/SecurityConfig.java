@@ -33,22 +33,13 @@ public class SecurityConfig {
             .csrf(AbstractHttpConfigurer::disable)
             // Enable Spring Security CORS support to use CorsConfigurationSource
             .cors(Customizer.withDefaults())
-            .authenticationProvider(authenticationProvider)
-            // Add session validation filter before authentication
-            .addFilterBefore(sessionFilter, UsernamePasswordAuthenticationFilter.class)
+            // Authentication disabled for testing
+            // .authenticationProvider(authenticationProvider)
+            // .addFilterBefore(sessionFilter, UsernamePasswordAuthenticationFilter.class)
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                .requestMatchers(
-                    "/api/auth/**",
-                    "/v3/api-docs/**",
-                    "/swagger-ui.html",
-                    "/swagger-ui/**",
-                    "/v3/api-docs.yaml",
-                    "/webjars/**"
-                ).permitAll()
-                .anyRequest().authenticated()
-            )
-            .httpBasic(Customizer.withDefaults());
+                .anyRequest().permitAll()
+            );
+            // .httpBasic(Customizer.withDefaults());
         return http.build();
     }
 

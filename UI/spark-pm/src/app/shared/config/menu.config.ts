@@ -16,6 +16,7 @@ export const MENU_ITEMS: MenuItem[] = [
 
   { section: 'Task & Backlog', label: 'Task & Backlog', iconKey: 'tasks' },
   { label: 'My Tasks', path: '/my-tasks', iconKey: 'myTasks', requiredPermissions: ['TASK_VIEW'] },
+  { label: 'Team Sprint Tasks', path: '/team-sprint-tasks', iconKey: 'teamTasks', requiredPermissions: ['TASK_VIEW', 'TEAM_VIEW', 'SPRINT_VIEW'], requireAll: false },
   { label: 'Backlog Management', path: '/backlog', iconKey: 'backlog', requiredPermissions: ['BACKLOG_VIEW','TASK_VIEW'], requireAll: false },
 
   { section: 'Sprint Management', label: 'Sprint Management', iconKey: 'sprints' },

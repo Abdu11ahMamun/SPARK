@@ -468,15 +468,15 @@ public class DatabaseInitializationService implements CommandLineRunner {
         logger.info("Migrating user roles to SPARK_USER_ROLE table...");
         
         try {
-            // First, create default roles if they don't exist
-            String[] defaultRoles = {
-                "INSERT INTO SPARK_ROLE (id, name, description, active) VALUES (1, 'ADMIN', 'Administrator with full system access', 1)",
-                "INSERT INTO SPARK_ROLE (id, name, description, active) VALUES (2, 'USER', 'Regular user with basic access', 1)",
-                "INSERT INTO SPARK_ROLE (id, name, description, active) VALUES (3, 'MANAGER', 'Manager with team management access', 1)",
-                "INSERT INTO SPARK_ROLE (id, name, description, active) VALUES (4, 'DEVELOPER', 'Developer with development access', 1)"
+            // First, create default roles if they don't exist (with MERGE to avoid duplicates)
+            String[] defaultRolesMerge = {
+                "MERGE INTO SPARK_ROLE r USING (SELECT 'ADMIN' as name, 'Administrator with full system access' as description FROM DUAL) d ON (r.name = d.name) WHEN NOT MATCHED THEN INSERT (id, name, description, active) VALUES (1, d.name, d.description, 1)",
+                "MERGE INTO SPARK_ROLE r USING (SELECT 'USER' as name, 'Regular user with basic access' as description FROM DUAL) d ON (r.name = d.name) WHEN NOT MATCHED THEN INSERT (id, name, description, active) VALUES (2, d.name, d.description, 1)",
+                "MERGE INTO SPARK_ROLE r USING (SELECT 'MANAGER' as name, 'Manager with team management access' as description FROM DUAL) d ON (r.name = d.name) WHEN NOT MATCHED THEN INSERT (id, name, description, active) VALUES (3, d.name, d.description, 1)",
+                "MERGE INTO SPARK_ROLE r USING (SELECT 'DEVELOPER' as name, 'Developer with development access' as description FROM DUAL) d ON (r.name = d.name) WHEN NOT MATCHED THEN INSERT (id, name, description, active) VALUES (4, d.name, d.description, 1)"
             };
             
-            for (String sql : defaultRoles) {
+            for (String sql : defaultRolesMerge) {
                 try {
                     jdbcTemplate.update(sql);
                 } catch (Exception e) {
@@ -484,27 +484,44 @@ public class DatabaseInitializationService implements CommandLineRunner {
                 }
             }
             
-            // Now migrate users to SPARK_USER_ROLE table based on their SPARK_USER.role field
-            String migrationSQL = """
-                INSERT INTO SPARK_USER_ROLE (id, user_id, role_id, active, is_primary, assigned_at, assigned_by)
-                SELECT 
-                    ROWNUM as id,
-                    u.id as user_id,
-                    r.id as role_id,
-                    1 as active,
-                    1 as is_primary,
-                    CURRENT_TIMESTAMP as assigned_at,
-                    'SYSTEM' as assigned_by
-                FROM SPARK_USER u
-                INNER JOIN SPARK_ROLE r ON u.role = r.name
-                WHERE NOT EXISTS (
-                    SELECT 1 FROM SPARK_USER_ROLE ur 
-                    WHERE ur.user_id = u.id AND ur.role_id = r.id
-                )
-                """;
+            // Check existing user-role mappings to avoid duplicates
+            Integer existingMappings = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM SPARK_USER_ROLE", Integer.class);
+            if (existingMappings == null) existingMappings = 0;
             
-            int migratedCount = jdbcTemplate.update(migrationSQL);
-            logger.info("Migrated " + migratedCount + " user-role assignments");
+            logger.info("Found " + existingMappings + " existing user-role mappings");
+            
+            // Only migrate if we have few or no existing mappings
+            if (existingMappings < 5) {
+                // Use MERGE to avoid primary key violations
+                String migrationSQL = """
+                    MERGE INTO SPARK_USER_ROLE ur
+                    USING (
+                        SELECT 
+                            u.id as user_id,
+                            r.id as role_id,
+                            1 as active,
+                            1 as is_primary,
+                            CURRENT_TIMESTAMP as assigned_at,
+                            'SYSTEM' as assigned_by
+                        FROM SPARK_USER u
+                        INNER JOIN SPARK_ROLE r ON UPPER(u.role) = UPPER(r.name)
+                        WHERE u.role IS NOT NULL
+                    ) src ON (ur.user_id = src.user_id AND ur.role_id = src.role_id)
+                    WHEN NOT MATCHED THEN 
+                        INSERT (id, user_id, role_id, active, is_primary, assigned_at, assigned_by)
+                        VALUES (SEQ_SPARK_USER_ROLE.NEXTVAL, src.user_id, src.role_id, src.active, src.is_primary, src.assigned_at, src.assigned_by)
+                    """;
+                
+                int migratedCount = jdbcTemplate.update(migrationSQL);
+                logger.info("Migrated " + migratedCount + " user-role assignments using MERGE");
+            } else {
+                logger.info("Skipping migration, sufficient mappings already exist");
+            }
+            
+            // Verify migration results
+            Integer finalMappings = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM SPARK_USER_ROLE", Integer.class);
+            if (finalMappings == null) finalMappings = 0;
+            logger.info("Total user-role mappings after migration: " + finalMappings);
             
         } catch (Exception e) {
             logger.severe("Failed to migrate user roles: " + e.getMessage());

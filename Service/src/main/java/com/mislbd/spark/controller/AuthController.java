@@ -87,27 +87,39 @@ public class AuthController {
             Set<String> permissions = sessionService.getUserPermissions(sessionToken);
             Set<String> roles = sessionService.getUserRoles(sessionToken);
             
-            // DETAILED SESSION DEBUGGING LOGS
-            System.out.println("=== LOGIN SUCCESS - DETAILED SESSION DEBUG ===");
-            System.out.println("Username: " + user.getUsername());
-            System.out.println("Email: " + user.getEmail());
-            System.out.println("User ID: " + user.getId());
-            System.out.println("Session Token: " + sessionToken);
-            System.out.println("IP Address: " + ipAddress);
-            System.out.println("User Agent: " + userAgent);
-            System.out.println("Session Created At: " + sessionMetadata.getCreatedAt());
-            System.out.println("Session Expires At: " + sessionMetadata.getExpiresAt());
-            System.out.println("Session Last Activity: " + sessionMetadata.getLastActivityAt());
-            System.out.println("Session Active: " + sessionMetadata.getActive());
-            System.out.println("User Roles: " + roles);
-            System.out.println("User Permissions: " + permissions);
-            System.out.println("Role Count: " + roles.size());
-            System.out.println("Permission Count: " + permissions.size());
-            System.out.println("Session Metadata - Username Field: " + sessionMetadata.getUsername());
-            System.out.println("Session Metadata - Email Field: " + sessionMetadata.getEmail());
-            System.out.println("Session Metadata - Roles JSON: " + sessionMetadata.getRolesJson());
-            System.out.println("Session Metadata - Permissions JSON: " + sessionMetadata.getPermissionsJson());
-            System.out.println("============================================");
+            // PROFESSIONAL SESSION STATUS LOG
+            System.out.println("\n┌─── AUTHENTICATION SUCCESSFUL ───────────────────────────────────────┐");
+            System.out.println("│                                                                      │");
+            System.out.printf("│  User: %-20s │  Email: %-28s │%n", user.getUsername(), user.getEmail());
+            System.out.printf("│  Session ID: %-55s │%n", sessionToken.substring(0, Math.min(sessionToken.length(), 55)));
+            System.out.printf("│  IP Address: %-16s │  Created: %-25s │%n", 
+                ipAddress, sessionMetadata.getCreatedAt().toString().substring(0, 19));
+            System.out.println("│                                                                      │");
+            System.out.println("├─── ACCESS PRIVILEGES ───────────────────────────────────────────────┤");
+            System.out.printf("│  Roles Assigned: %-8d │  Permissions Granted: %-8d        │%n", 
+                roles.size(), permissions.size());
+            
+            if (!roles.isEmpty()) {
+                System.out.printf("│  Active Roles: %-49s │%n", 
+                    roles.stream().limit(3).collect(java.util.stream.Collectors.joining(", ")) + 
+                    (roles.size() > 3 ? " (+" + (roles.size() - 3) + " more)" : ""));
+            } else {
+                System.out.println("│  ⚠️  WARNING: No roles assigned to this user                        │");
+            }
+            
+            if (!permissions.isEmpty()) {
+                System.out.printf("│  Key Permissions: %-46s │%n", 
+                    permissions.stream().limit(2).collect(java.util.stream.Collectors.joining(", ")) + 
+                    (permissions.size() > 2 ? " (+" + (permissions.size() - 2) + " more)" : ""));
+            } else {
+                System.out.println("│  ⚠️  WARNING: No permissions assigned to this user                  │");
+            }
+            
+            System.out.println("│                                                                      │");
+            System.out.printf("│  Session Status: %-8s │  Expires: %-25s │%n", 
+                sessionMetadata.getActive() ? "ACTIVE" : "INACTIVE", 
+                sessionMetadata.getExpiresAt().toString().substring(0, 19));
+            System.out.println("└──────────────────────────────────────────────────────────────────────┘\n");
             
             // Convert to response DTO
             LoginResponse response = LoginResponse.builder()

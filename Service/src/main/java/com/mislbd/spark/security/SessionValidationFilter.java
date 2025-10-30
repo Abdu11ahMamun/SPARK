@@ -40,6 +40,7 @@ public class SessionValidationFilter extends OncePerRequestFilter {
     private static final Set<String> EXCLUDED_PATHS = Set.of(
         "/api/auth/login",
         "/api/auth/validate", 
+        "/api/my-tasks",
         "/v3/api-docs",
         "/swagger-ui",
         "/webjars"

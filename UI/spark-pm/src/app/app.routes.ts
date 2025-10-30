@@ -10,6 +10,7 @@ import { UsersComponent } from './modules/users/users.component';
 import { ProductsComponent } from './modules/products/products.component';
 import { ProductModulesComponent } from './modules/product-modules/product-modules.component';
 import { MyTasksComponent } from './modules/tasks/my-tasks.component';
+import { TeamSprintTasksComponent } from './modules/tasks/team-sprint-tasks.component';
 import { BacklogComponent } from './modules/backlog/backlog.component';
 import { SprintsComponent } from './modules/sprints/sprints.component';
 import { SprintDetailsComponent } from './modules/sprints/sprint-details.component';
@@ -71,6 +72,7 @@ export const routes: Routes = [
   { path: '', redirectTo: '/dashboard', pathMatch: 'full' },
   { path: 'dashboard', component: DashboardComponent, canActivate: [authGuard, permissionGuard], data: { requiredPermissions: ['DASHBOARD_VIEW'] } },
   { path: 'my-tasks', component: MyTasksComponent, canActivate: [authGuard, permissionGuard], data: { requiredPermissions: ['TASK_VIEW'] } },
+  { path: 'team-sprint-tasks', component: TeamSprintTasksComponent, canActivate: [authGuard, permissionGuard], data: { requiredPermissions: ['TASK_VIEW', 'TEAM_VIEW', 'SPRINT_VIEW'], requireAll: false } },
   { path: 'teams', component: TeamsComponent, canActivate: [authGuard, permissionGuard], data: { requiredPermissions: ['TEAM_VIEW'] } },
   { path: 'users', component: UsersComponent, canActivate: [authGuard, permissionGuard], data: { requiredPermissions: ['USER_VIEW'] } },
   { path: 'products', component: ProductsComponent, canActivate: [authGuard, permissionGuard], data: { requiredPermissions: ['PROJECT_VIEW','PRODUCT_VIEW','MODULE_VIEW'], requireAll: false } },
