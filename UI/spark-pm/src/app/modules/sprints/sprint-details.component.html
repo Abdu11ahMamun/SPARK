@@ -304,7 +304,7 @@
                   <td>
                     <ng-container *ngIf="editingTaskId === task.id; else viewType">
                       <select class="inline-input" [(ngModel)]="editBuffer.taskType">
-                        <option *ngFor="let jt of jobTypes" [ngValue]="jt.id">{{ jt.name }}</option>
+                        <option *ngFor="let jt of jobTypes" [ngValue]="jt.id">{{ jt.type }}</option>
                       </select>
                     </ng-container>
                     <ng-template #viewType>{{ getTaskTypeLabel(task.taskType || task.tasktypeid) }}</ng-template>
@@ -317,7 +317,6 @@
                   <td>
                     <ng-container *ngIf="editingTaskId === task.id; else viewStatus">
                       <select class="inline-input" [(ngModel)]="editBuffer.status">
-                        <option value="OPEN">Open</option>
                         <option value="TODO">To-Do</option>
                         <option value="IN_PROGRESS">In Progress</option>
                         <option value="REVIEW">Review</option>
@@ -493,8 +492,6 @@
     [open]="showAddTasksDialog"
     [sprintId]="sprintId"
     [teamId]="sprint?.tramId || 0"
-    [productModules]="productModules"
-    [jobTypes]="jobTypes"
     (close)="closeAddTasksDialog()"
     (added)="onTasksAdded($event)">
   </app-sprint-add-tasks-dialog>

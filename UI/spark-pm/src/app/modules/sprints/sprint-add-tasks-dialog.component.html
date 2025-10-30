@@ -51,21 +51,10 @@
           <tbody>
             <tr *ngFor="let t of filtered">
               <td><input type="checkbox" [checked]="selectedIds.has(t.id)" (change)="toggle(t.id, $event.target.checked)" /></td>
-              <td>
-                <a 
-                  *ngIf="t.mitsId" 
-                  [href]="'http://192.168.1.126:1234/mantis/view.php?id=' + t.mitsId" 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  style="text-decoration:underline; color:#2563eb;"
-                >
-                  {{ t.mitsId }}
-                </a>
-                <span *ngIf="!t.mitsId">—</span>
-              </td>
+              <td>{{ t.mitsNo }}</td>
               <td>{{ t.title }}</td>
-              <td>{{ getProductModuleName(t.productModuleId) }}</td>
-              <td>{{ getTaskTypeName(t.taskType) }}</td>
+              <td>{{ t.productModuleId || '—' }}</td>
+              <td>{{ t.taskType }}</td>
               <td>{{ t.assigneeUserId || '—' }}</td>
               <td>{{ t.status }}</td>
               <td>{{ t.priority }}</td>
