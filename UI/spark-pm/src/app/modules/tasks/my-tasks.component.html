@@ -109,19 +109,19 @@
           <div class="task-header">
             <div class="task-meta">
               <span class="task-id">{{ task.mitsNo || 'TASK-' + task.id }}</span>
-              <div class="task-type" [ngClass]="getTaskTypeClass(task.taskType)">
-                <span class="type-icon">{{ getTaskTypeIcon(task.taskType) }}</span>
-                <span class="type-text">{{ task.taskType }}</span>
+              <div class="task-type" [ngClass]="getTaskTypeClass(task.taskType || 'Task')">
+                <span class="type-icon">{{ getTaskTypeIcon(task.taskType || 'Task') }}</span>
+                <span class="type-text">{{ task.taskType || 'Task' }}</span>
               </div>
             </div>
-            <div class="task-priority" [ngClass]="getPriorityClass(task.priority)">
-              <span class="priority-icon">{{ getPriorityIcon(task.priority) }}</span>
+            <div class="task-priority" [ngClass]="getPriorityClass(task.priority || 'MEDIUM')">
+              <span class="priority-icon">{{ getPriorityIcon(task.priority || 'MEDIUM') }}</span>
             </div>
           </div>
 
           <!-- Task Title -->
           <div class="task-title" [title]="task.title">
-            {{ task.title }}
+            {{ task.title || 'Untitled Task' }}
           </div>
 
           <!-- Task Description -->

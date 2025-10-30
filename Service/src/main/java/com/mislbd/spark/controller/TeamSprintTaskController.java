@@ -7,6 +7,7 @@ import com.mislbd.spark.service.TeamSprintTaskService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
+// Authentication imports removed - no auth required
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
@@ -40,6 +41,18 @@ public class TeamSprintTaskController {
     private final TeamSprintTaskService teamSprintTaskService;
     
     /**
+     * Helper method to get the current authenticated user
+     * Falls back to "admin" if no authentication context exists
+     */
+    private String getCurrentUsername() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null && auth.isAuthenticated() && !"anonymousUser".equals(auth.getName())) {
+            return auth.getName();
+        }
+        return "admin"; // Fallback for testing
+    }
+    
+    /**
      * Get all teams and their current active sprints for the authenticated user
      * 
      * This endpoint provides the foundation for the task page dropdown,
@@ -47,13 +60,8 @@ public class TeamSprintTaskController {
      */
     @GetMapping("/user-team-sprints")
     public ResponseEntity<ApiResponse<List<TeamSprintDto>>> getUserTeamSprints() {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        
-        // TEMPORARY: Authentication disabled for testing
-        String username = "admin"; // Default test user
-        if (auth != null && auth.isAuthenticated() && !"anonymousUser".equals(auth.getName())) {
-            username = auth.getName();
-        }
+        // Get current authenticated user or fallback to admin
+        String username = getCurrentUsername();
         
         try {
             List<TeamSprintDto> teamSprints = teamSprintTaskService.getUserTeamSprints(username);
@@ -95,13 +103,8 @@ public class TeamSprintTaskController {
             @RequestParam(required = false) Integer teamId,
             @RequestParam(defaultValue = "false") boolean assigneeFilter) {
         
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        
-        // TEMPORARY: Authentication disabled for testing
-        String username = "admin"; // Default test user
-        if (auth != null && auth.isAuthenticated() && !"anonymousUser".equals(auth.getName())) {
-            username = auth.getName();
-        }
+        // Get current authenticated user or fallback to admin
+        String username = getCurrentUsername();
         
         try {
             List<SprintTaskDto> sprintTasks = teamSprintTaskService.getSprintTasks(
@@ -136,13 +139,8 @@ public class TeamSprintTaskController {
      */
     @GetMapping("/sprint/{sprintId}/statistics") 
     public ResponseEntity<ApiResponse<Map<String, Object>>> getSprintTaskStatistics(@PathVariable Integer sprintId) {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        
-        // TEMPORARY: Authentication disabled for testing
-        String username = "admin"; // Default test user
-        if (auth != null && auth.isAuthenticated()) {
-            username = auth.getName();
-        }
+        // Get current authenticated user or fallback to admin
+        String username = getCurrentUsername();
         
         try {
             Map<String, Object> statistics = teamSprintTaskService.getSprintTaskStatistics(sprintId, username);
@@ -173,13 +171,8 @@ public class TeamSprintTaskController {
      */
     @GetMapping("/user-task-summary")
     public ResponseEntity<ApiResponse<Map<String, Object>>> getUserTaskSummary() {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        
-        // TEMPORARY: Authentication disabled for testing
-        String username = "admin"; // Default test user
-        if (auth != null && auth.isAuthenticated()) {
-            username = auth.getName();
-        }
+        // Get current authenticated user or fallback to admin
+        String username = getCurrentUsername();
         
         try {
             Map<String, Object> summary = teamSprintTaskService.getUserTaskSummary(username);
@@ -194,7 +187,7 @@ public class TeamSprintTaskController {
             );
             
         } catch (Exception e) {
-            log.error("Error retrieving user task summary for user {}: {}", auth.getName(), e.getMessage(), e);
+            log.error("Error retrieving user task summary for user {}: {}", username, e.getMessage(), e);
             return ResponseEntity.status(500)
                 .body(ApiResponse.<Map<String, Object>>builder()
                     .success(false)

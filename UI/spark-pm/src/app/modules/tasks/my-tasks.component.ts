@@ -121,11 +121,57 @@ export class MyTasksComponent implements OnInit {
 
   private async fetchMyTasksFromSession() {
     try {
-      // Use new session-based endpoint that derives user from authentication
-      const myTasks = await this.http.get<TaskItem[]>(`${environment.apiUrl}/api/my-tasks`).toPromise();
+      console.log('Fetching tasks from:', `${environment.apiUrl}/api/my-tasks`);
       
-      if (myTasks) {
-        this._tasks.set(myTasks);
+      // Use new session-based endpoint that derives user from authentication
+      const response = await this.http.get<any>(`${environment.apiUrl}/api/my-tasks`).toPromise();
+      
+      console.log('Raw API response:', response);
+      
+      // Handle both direct array and ApiResponse wrapper
+      let myTasks: TaskItem[] = [];
+      
+      if (Array.isArray(response)) {
+        myTasks = response;
+      } else if (response && response.data && Array.isArray(response.data)) {
+        myTasks = response.data;
+      } else if (response && Array.isArray(response.tasks)) {
+        myTasks = response.tasks;
+      } else {
+        console.warn('Unexpected response format:', response);
+        return;
+      }
+      
+      console.log('Processed tasks:', myTasks);
+      console.log('Number of tasks:', myTasks.length);
+      
+      if (myTasks && myTasks.length >= 0) {
+        // Transform API data to match TaskItem interface
+        const transformedTasks: TaskItem[] = myTasks.map((task: any) => ({
+          id: task.id,
+          mitsNo: task.mitsNo || `TASK-${task.id}`,
+          taskType: task.taskType || task.type || 'Task',
+          productId: task.productId,
+          productModuleId: task.productModuleId,
+          title: task.title || 'Untitled Task',
+          description: task.description,
+          assigneeUserId: task.assigneeUserId || task.assigneeId,
+          status: task.status || 'OPEN',
+          priority: task.priority || 'MEDIUM',
+          deadline: task.deadline || task.dueDate,
+          points: task.points || task.storyPoints,
+          createdAt: task.createdAt || task.created,
+          updatedAt: task.updatedAt || task.updated
+        }));
+        
+        console.log('Transformed tasks:', transformedTasks);
+        
+        this._tasks.set(transformedTasks);
+        this.updateKanbanColumns();
+        console.log('Tasks set successfully, columns updated');
+      } else {
+        console.log('No tasks found');
+        this._tasks.set([]);
         this.updateKanbanColumns();
       }
     } catch (error) {
@@ -158,10 +204,16 @@ export class MyTasksComponent implements OnInit {
 
   private updateKanbanColumns() {
     const tasks = this._tasks();
+    console.log('Updating kanban columns with tasks:', tasks);
+    console.log('Total tasks count:', tasks.length);
     
     this.columns.forEach(column => {
-      column.tasks = tasks.filter(task => task.status === column.status);
+      const filteredTasks = tasks.filter(task => task.status === column.status);
+      column.tasks = filteredTasks;
+      console.log(`Column ${column.title} (${column.status}):`, filteredTasks.length, 'tasks');
     });
+    
+    console.log('Updated columns:', this.columns);
   }
 
   // Drag and drop handlers
@@ -219,8 +271,9 @@ export class MyTasksComponent implements OnInit {
   }
 
   // Task priority helpers
-  getPriorityClass(priority: string): string {
-    switch (priority) {
+  getPriorityClass(priority: string | null | undefined): string {
+    if (!priority || typeof priority !== 'string') return 'priority-medium';
+    switch (priority.toUpperCase()) {
       case 'CRITICAL': return 'priority-critical';
       case 'HIGH': return 'priority-high';
       case 'MEDIUM': return 'priority-medium';
@@ -229,18 +282,20 @@ export class MyTasksComponent implements OnInit {
     }
   }
 
-  getPriorityIcon(priority: string): string {
-    switch (priority) {
+  getPriorityIcon(priority: string | null | undefined): string {
+    if (!priority || typeof priority !== 'string') return '🟡';
+    switch (priority.toUpperCase()) {
       case 'CRITICAL': return '🔥';
       case 'HIGH': return '🔴';
       case 'MEDIUM': return '🟡';
       case 'LOW': return '🟢';
-      default: return '⚪';
+      default: return '🟡';
     }
   }
 
   // Task type helpers
-  getTaskTypeIcon(taskType: string): string {
+  getTaskTypeIcon(taskType: string | null | undefined): string {
+    if (!taskType || typeof taskType !== 'string') return '📋';
     const type = taskType.toLowerCase();
     if (type.includes('bug')) return '🐛';
     if (type.includes('feature')) return '✨';
@@ -249,7 +304,8 @@ export class MyTasksComponent implements OnInit {
     return '📋';
   }
 
-  getTaskTypeClass(taskType: string): string {
+  getTaskTypeClass(taskType: string | null | undefined): string {
+    if (!taskType || typeof taskType !== 'string') return 'task-type-default';
     const type = taskType.toLowerCase();
     if (type.includes('bug')) return 'task-type-bug';
     if (type.includes('feature')) return 'task-type-feature';

@@ -28,18 +28,13 @@ public class SecurityConfig {
     }
 
     @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http, AuthenticationProvider authenticationProvider, SessionValidationFilter sessionFilter) throws Exception {
+    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
             .csrf(AbstractHttpConfigurer::disable)
-            // Enable Spring Security CORS support to use CorsConfigurationSource
             .cors(Customizer.withDefaults())
-            // Authentication disabled for testing
-            // .authenticationProvider(authenticationProvider)
-            // .addFilterBefore(sessionFilter, UsernamePasswordAuthenticationFilter.class)
             .authorizeHttpRequests(auth -> auth
                 .anyRequest().permitAll()
             );
-            // .httpBasic(Customizer.withDefaults());
         return http.build();
     }
 

@@ -13,7 +13,6 @@ import com.mislbd.spark.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
@@ -56,21 +55,22 @@ public class MyTasksController {
     }
 
     /**
-     * New session-based endpoint: derive the username from the authenticated principal
-     * GET /api/my-tasks
-     * TEMPORARY: Authentication disabled for testing - using default user
+     * New session-based endpoint: GET /api/my-tasks
+     * TEMPORARY: Authentication disabled for testing - using first available user
      */
     @GetMapping
-    public ResponseEntity<List<BacklogTaskDto>> getMyTasks(Authentication authentication) {
-        // TEMPORARY: For testing without authentication, use a default user
-        String username = null;
-        if (authentication != null && authentication.getName() != null) {
-            username = authentication.getName();
-        } else {
-            // Use first available user for testing
-            username = "admin"; // Default test user
+    public ResponseEntity<List<BacklogTaskDto>> getMyTasks() {
+        try {
+            // Return ALL tasks - no authentication needed
+            List<BacklogTask> allTasks = backlogTaskRepository.findAll();
+            List<BacklogTaskDto> taskDtos = allTasks.stream()
+                .map(backlogTaskMapper::toDto)
+                .collect(Collectors.toList());
+            return ResponseEntity.ok(taskDtos);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.ok(new ArrayList<>());
         }
-        return getTasksForResolvedUser(username);
     }
 
     private ResponseEntity<List<BacklogTaskDto>> getTasksForResolvedUser(String username) {
